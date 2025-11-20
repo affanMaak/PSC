@@ -10,11 +10,17 @@ import { MailerModule } from './mailer/mailer.module';
 import { MailerService } from './mailer/mailer.service';
 import { SchedularModule } from './schedular/schedular.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { RoomModule } from './room/room.module';
+import { HallModule } from './hall/hall.module';
+import { LawnModule } from './lawn/lawn.module';
+import { PhotoshootModule } from './photoshoot/photoshoot.module';
+import { SportModule } from './sport/sport.module';
 
 @Module({
   imports: [AuthModule, AdminModule, MemberModule, BookingModule, NotificationModule, PrismaModule, ConfigModule.forRoot({
     isGlobal: true
-  }), MailerModule, SchedularModule, ScheduleModule.forRoot()],
+  }), MailerModule, SchedularModule, ScheduleModule.forRoot(), CloudinaryModule, RoomModule, HallModule, LawnModule, PhotoshootModule, SportModule],
   controllers: [],
   providers: [MailerService],
 })

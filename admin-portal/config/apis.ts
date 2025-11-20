@@ -1,6 +1,4 @@
-
 import axios from "axios";
-import { promises } from "dns";
 const base_url = "http://localhost:3000";
 
 export const authAdmin = async (data: any) => {
@@ -18,12 +16,16 @@ export const authAdmin = async (data: any) => {
 };
 export const logout = async () => {
   try {
-    const response = await axios.post(`${base_url}/auth/logout`, {}, {
-      withCredentials: true,
-      headers: {
-        "Client-Type": "web",
-      },
-    });
+    const response = await axios.post(
+      `${base_url}/auth/logout`,
+      {},
+      {
+        withCredentials: true,
+        headers: {
+          "Client-Type": "web",
+        },
+      }
+    );
     return response;
   } catch (error: any) {
     throw new Error(error);
@@ -45,11 +47,14 @@ export const userWho = async () => {
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const getAdmins = async (): Promise<any>=> {
+export const getAdmins = async (): Promise<any> => {
   try {
-    const response: {data: any[]} = await axios.get(`${base_url}/admin/get/admins`, {
-      withCredentials: true,
-    });
+    const response: { data: any[] } = await axios.get(
+      `${base_url}/admin/get/admins`,
+      {
+        withCredentials: true,
+      }
+    );
     return response.data;
   } catch (error: any) {
     throw new Error(error);
@@ -71,7 +76,13 @@ export const createAdmin = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const updateAdmin = async ({ adminID, ...updates }: {adminID: any, updates: any}) => {
+export const updateAdmin = async ({
+  adminID,
+  ...updates
+}: {
+  adminID: any;
+  updates: any;
+}) => {
   try {
     // console.log(updates)
     const response = await axios.patch(
@@ -111,7 +122,6 @@ export const deleteAdmin = async (adminID: any) => {
 
 ////////////////////////////////////////// members ///////////////////////////////////////////////////
 
-// api/admin.ts
 export const getMembers = async ({
   pageParam = 1,
   search,
@@ -129,16 +139,22 @@ export const getMembers = async ({
   if (search) params.append("search", search);
   if (status) params.append("status", status);
 
-  const res = await axios.get(`${base_url}/admin/get/members?${params.toString()}`);
+  const res = await axios.get(
+    `${base_url}/member/get/members?${params.toString()}`
+  );
   if (res.status != 200) throw new Error("Failed to fetch members");
-  return res.data
+  return res.data;
 };
 
 export const createMember = async (data: any) => {
   try {
-    const response = await axios.post(`${base_url}/admin/create/member`, data, {
-      withCredentials: true,
-    });
+    const response = await axios.post(
+      `${base_url}/member/create/member`,
+      data,
+      {
+        withCredentials: true,
+      }
+    );
     return response;
   } catch (error: any) {
     const message =
@@ -150,10 +166,16 @@ export const createMember = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const updateMember = async ({ Membership_No, ...updates }: {Membership_No: any, updates: any}): Promise<any> => {
+export const updateMember = async ({
+  Membership_No,
+  ...updates
+}: {
+  Membership_No: any;
+  updates: any;
+}): Promise<any> => {
   try {
     const response = await axios.patch(
-      `${base_url}/admin/update/member?memberID=${Membership_No}`,
+      `${base_url}/member/update/member?memberID=${Membership_No}`,
       updates.updates,
       { withCredentials: true }
     );
@@ -171,7 +193,7 @@ export const updateMember = async ({ Membership_No, ...updates }: {Membership_No
 export const deleteMember = async (memberID: any): Promise<any> => {
   try {
     const response = await axios.delete(
-      `${base_url}/admin/remove/member?memberID=${memberID}`,
+      `${base_url}/member/remove/member?memberID=${memberID}`,
       { withCredentials: true }
     );
     return response.data;
@@ -188,7 +210,7 @@ export const deleteMember = async (memberID: any): Promise<any> => {
 export const createBulkMembers = async (data: any): Promise<any> => {
   try {
     const response = await axios.post(
-      `${base_url}/admin/create/bulk/members`,
+      `${base_url}/member/create/bulk/members`,
       data,
       { withCredentials: true }
     );
@@ -207,26 +229,7 @@ export const createBulkMembers = async (data: any): Promise<any> => {
 export const searchMembers = async (searchString: any): Promise<any> => {
   try {
     const response = await axios.get(
-      `${base_url}/admin/search/members?searchFor=${searchString}`,
-      { withCredentials: true }
-    );
-    return response;
-  } catch (error: any) {
-    const message =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "Something went wrong";
-
-    throw { message, status: error.response?.status || 500 };
-  }
-};
-
-// Bookings
-export const getBookings = async (bookingsFor: any) => {
-  try {
-    const response = await axios.get(
-      `${base_url}/admin/get/bookings/all?bookingsFor=${bookingsFor}`,
+      `${base_url}/member/search/members?searchFor=${searchString}`,
       { withCredentials: true }
     );
     return response.data;
@@ -240,11 +243,30 @@ export const getBookings = async (bookingsFor: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const createBooking = async (data: any) => {
+
+// Bookings
+export const getBookings = async (bookingsFor: any): Promise<any> => {
+  try {
+    const response = await axios.get(
+      `${base_url}/booking/get/bookings/all?bookingsFor=${bookingsFor}`,
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+export const createBooking = async (data: any): Promise<any> => {
   // console.log(data)
   try {
     const response = await axios.post(
-      `${base_url}/admin/create/booking`,
+      `${base_url}/booking/create/booking`,
       data,
       { withCredentials: true }
     );
@@ -259,10 +281,10 @@ export const createBooking = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const updateBooking = async (data: any) => {
+export const updateBooking = async (data: any): Promise<any> => {
   try {
     const response = await axios.patch(
-      `${base_url}/admin/update/booking`,
+      `${base_url}/booking/update/booking`,
       data,
       { withCredentials: true }
     );
@@ -277,10 +299,13 @@ export const updateBooking = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const deleteBooking = async (bookID: any) => {
+export const deleteBooking = async (
+  bookingFor: string,
+  bookID: any
+): Promise<any> => {
   try {
     const response = await axios.delete(
-      `${base_url}/admin/delete/booking?bookID=${bookID}`,
+      `${base_url}/booking/delete/booking?bookingFor=${bookingFor}&bookID=${bookID}`,
       { withCredentials: true }
     );
     return response;
@@ -295,10 +320,32 @@ export const deleteBooking = async (bookID: any) => {
   }
 };
 
+// vouchers
+export const getVouchers = async (
+  bookingType: string,
+  bookingId: any
+): Promise<any> => {
+  try {
+    const response = await axios.get(
+      `${base_url}/booking/voucher?bookingId=${bookingId}`,
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
 // rooms
 export const getRoomTypes = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/roomTypes`, {
+    const response = await axios.get(`${base_url}/room/get/roomTypes`, {
       withCredentials: true,
     });
     return response.data;
@@ -315,7 +362,7 @@ export const getRoomTypes = async (): Promise<any> => {
 export const createRoomType = async (data: any): Promise<any> => {
   try {
     const response = await axios.post(
-      `${base_url}/admin/create/roomType`,
+      `${base_url}/room/create/roomType`,
       data,
       { withCredentials: true }
     );
@@ -330,10 +377,13 @@ export const createRoomType = async (data: any): Promise<any> => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const updateRoomType = async (id: string | number, data: any): Promise<any> => {
+export const updateRoomType = async (
+  id: string | number,
+  data: any
+): Promise<any> => {
   try {
     const response = await axios.patch(
-      `${base_url}/admin/update/roomType?id=${id}`,
+      `${base_url}/room/update/roomType?id=${id}`,
       data,
       { withCredentials: true }
     );
@@ -348,11 +398,10 @@ export const updateRoomType = async (id: string | number, data: any): Promise<an
     throw { message, status: error.response?.status || 500 };
   }
 };
-
 export const deleteRoomType = async (id: string | number): Promise<any> => {
   try {
     const response = await axios.delete(
-      `${base_url}/admin/delete/roomType?id=${id}`,
+      `${base_url}/room/delete/roomType?id=${id}`,
       { withCredentials: true }
     );
     return response.data;
@@ -366,9 +415,50 @@ export const deleteRoomType = async (id: string | number): Promise<any> => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const createRoom = async (data: any) => {
+
+// reserve room
+export const reserveRoom = async (
+  roomIds: string[],
+  reserve: boolean,
+  reserveFrom?: string,
+  reserveTo?: string
+): Promise<any> => {
   try {
-    const response = await axios.post(`${base_url}/admin/create/room`, data, {
+    const payload: any = { roomIds, reserve };
+
+    // Always include reserveFrom and reserveTo if they are provided
+    // The backend needs them to identify which specific reservation to remove
+    if (reserveFrom && reserveTo) {
+      payload.reserveFrom = reserveFrom;
+      payload.reserveTo = reserveTo;
+    } else if (reserve) {
+      // If reserving and dates are missing, throw error
+      throw new Error("Reservation dates are required when reserving rooms");
+    }
+    // If unreserving and dates are missing, still proceed - backend will handle it
+
+    console.log("Sending payload:", payload); // Debug log
+
+    const response = await axios.patch(
+      `${base_url}/room/reserve/rooms`,
+      payload,
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+export const createRoom = async (data: any): Promise<any> => {
+  try {
+    const response = await axios.post(`${base_url}/room/create/room`, data, {
       withCredentials: true,
     });
     return response;
@@ -382,11 +472,15 @@ export const createRoom = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getAvailRooms = async (roomTypeId: any) => {
+export const getAvailRooms = async (roomTypeId: any): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/rooms/available?roomTypeId=${roomTypeId}`, {
-      withCredentials: true,
-    });
+    const response = await axios.get(
+      `${base_url}/room/get/rooms/available?roomTypeId=${roomTypeId}`,
+      {
+        withCredentials: true,
+      }
+    );
+    console.log("available rooms:", response.data);
     return response;
   } catch (error: any) {
     const message =
@@ -398,9 +492,9 @@ export const getAvailRooms = async (roomTypeId: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getRoomCategories = async () => {
+export const getRoomCategories = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/rooms/categories`, {
+    const response = await axios.get(`${base_url}/room/get/rooms/categories`, {
       withCredentials: true,
     });
     return response.data;
@@ -414,9 +508,9 @@ export const getRoomCategories = async () => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getRooms = async () => {
+export const getRooms = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/rooms`, {
+    const response = await axios.get(`${base_url}/room/get/rooms`, {
       withCredentials: true,
     });
     return response.data;
@@ -430,9 +524,9 @@ export const getRooms = async () => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const updateRoom = async (data: any) => {
+export const updateRoom = async (data: any): Promise<any> => {
   try {
-    const response = await axios.patch(`${base_url}/admin/update/room`, data, {
+    const response = await axios.patch(`${base_url}/room/update/room`, data, {
       withCredentials: true,
     });
     return response;
@@ -446,13 +540,46 @@ export const updateRoom = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const deleteRoom = async () => {};
-
+export const deleteRoom = async (id: string): Promise<any> => {
+  try {
+    const response = await axios.delete(
+      `${base_url}/room/delete/room?id=${id}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+    throw { message, status: error.response?.status || 500 };
+  }
+};
 // halls
 
-export const createHall = async (data: any) => {
+export const createHall = async (data: any): Promise<any> => {
   try {
-    const response = await axios.post(`${base_url}/admin/create/hall`, data, {
+    const response = await axios.post(`${base_url}/hall/create/hall`, data, {
+      withCredentials: true,
+    });
+    console.log(response);
+    return response;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+export const getHallTypes = async (): Promise<any> => {
+  try {
+    const response = await axios.get(`${base_url}/hall/get/halls/available`, {
       withCredentials: true,
     });
     return response;
@@ -466,25 +593,9 @@ export const createHall = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getHallTypes = async () => {
+export const getHalls = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/halls/available`, {
-      withCredentials: true,
-    });
-    return response;
-  } catch (error: any) {
-    const message =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "Something went wrong";
-
-    throw { message, status: error.response?.status || 500 };
-  }
-};
-export const getHalls = async () => {
-  try {
-    const response = await axios.get(`${base_url}/admin/get/halls`, {
+    const response = await axios.get(`${base_url}/hall/get/halls`, {
       withCredentials: true,
     });
     return response.data;
@@ -498,9 +609,9 @@ export const getHalls = async () => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const updateHall = async (data: any) => {
+export const updateHall = async (data: any): Promise<any> => {
   try {
-    const response = await axios.patch(`${base_url}/admin/update/hall`, data, {
+    const response = await axios.patch(`${base_url}/hall/update/hall`, data, {
       withCredentials: true,
     });
     return response;
@@ -514,13 +625,32 @@ export const updateHall = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const deleteHall = async () => {};
+export const deleteHall = async (): Promise<any> => {};
 
 // lawns
 
-export const getLawnCategoriesNames = async (catId: any) => {
+export const getLawnCategoriesNames = async (catId: any): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/lawn/categories/names?catId=${catId}`, {
+    const response = await axios.get(
+      `${base_url}/lawn/get/lawn/categories/names?catId=${catId}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+export const getLawnCategories = async (): Promise<any> => {
+  try {
+    const response = await axios.get(`${base_url}/lawn/get/lawn/categories`, {
       withCredentials: true,
     });
     return response.data;
@@ -534,26 +664,10 @@ export const getLawnCategoriesNames = async (catId: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getLawnCategories = async () => {
-  try {
-    const response = await axios.get(`${base_url}/admin/get/lawn/categories`, {
-      withCredentials: true,
-    });
-    return response.data;
-  } catch (error: any) {
-    const message =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "Something went wrong";
-
-    throw { message, status: error.response?.status || 500 };
-  }
-};
-export const createLawnCategory = async (data: any) => {
+export const createLawnCategory = async (data: any): Promise<any> => {
   try {
     const response = await axios.post(
-      `${base_url}/admin/create/lawn/category`,
+      `${base_url}/lawn/create/lawn/category`,
       data,
       {
         withCredentials: true,
@@ -570,10 +684,10 @@ export const createLawnCategory = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const updateLawnCategory = async (data: any) => {
+export const updateLawnCategory = async (data: any): Promise<any> => {
   try {
     const response = await axios.patch(
-      `${base_url}/admin/update/lawn/category`,
+      `${base_url}/lawn/update/lawn/category`,
       data,
       {
         withCredentials: true,
@@ -590,10 +704,10 @@ export const updateLawnCategory = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const deleteLawnCategory = async (catID: any) => {
+export const deleteLawnCategory = async (catID: any): Promise<any> => {
   try {
     const response = await axios.delete(
-      `${base_url}/admin/delete/lawn/category?catID=${catID}`,
+      `${base_url}/lawn/delete/lawn/category?catID=${catID}`,
       {
         withCredentials: true,
       }
@@ -610,9 +724,9 @@ export const deleteLawnCategory = async (catID: any) => {
   }
 };
 
-export const createLawn = async (data: any) => {
+export const createLawn = async (data: any): Promise<any> => {
   try {
-    const response = await axios.post(`${base_url}/admin/create/lawn`, data, {
+    const response = await axios.post(`${base_url}/lawn/create/lawn`, data, {
       withCredentials: true,
     });
     return response;
@@ -626,11 +740,14 @@ export const createLawn = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getAvailableLawns = async (catId: any) => {
+export const getAvailableLawns = async (catId: any): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/lawns/available?catId=${catId}`, {
-      withCredentials: true,
-    });
+    const response = await axios.get(
+      `${base_url}/lawn/get/lawns/available?catId=${catId}`,
+      {
+        withCredentials: true,
+      }
+    );
     return response;
   } catch (error: any) {
     const message =
@@ -642,9 +759,9 @@ export const getAvailableLawns = async (catId: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getLawns = async () => {
+export const getLawns = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/lawns`, {
+    const response = await axios.get(`${base_url}/lawn/get/lawns`, {
       withCredentials: true,
     });
     return response.data;
@@ -658,9 +775,9 @@ export const getLawns = async () => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const updateLawn = async (data: any) => {
+export const updateLawn = async (data: any): Promise<any> => {
   try {
-    const response = await axios.patch(`${base_url}/admin/update/lawn`, data, {
+    const response = await axios.patch(`${base_url}/lawn/update/lawn`, data, {
       withCredentials: true,
     });
     return response;
@@ -674,13 +791,31 @@ export const updateLawn = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const deleteLawn = async () => {};
+export const deleteLawn = async (id: string): Promise<any> => {
+  try {
+    const response = await axios.delete(
+      `${base_url}/lawn/delete/lawn?id=${id}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
 
 // photoshoot
-export const createPhotoshoot = async (data: any) => {
+export const createPhotoshoot = async (data: any): Promise<any> => {
   try {
     const response = await axios.post(
-      `${base_url}/admin/create/photoShoot`,
+      `${base_url}/photoShoot/create/photoShoot`,
       data,
       {
         withCredentials: true,
@@ -697,9 +832,28 @@ export const createPhotoshoot = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getPhotoshootsAvail = async () => {
+export const getPhotoshootsAvail = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/photoShoots/available`, {
+    const response = await axios.get(
+      `${base_url}/photoShoot/get/photoShoots/available`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+export const getPhotoshoots = async (): Promise<any> => {
+  try {
+    const response = await axios.get(`${base_url}/photoShoot/get/photoShoots`, {
       withCredentials: true,
     });
     return response.data;
@@ -713,26 +867,10 @@ export const getPhotoshootsAvail = async () => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getPhotoshoots = async () => {
-  try {
-    const response = await axios.get(`${base_url}/admin/get/photoShoots`, {
-      withCredentials: true,
-    });
-    return response.data;
-  } catch (error: any) {
-    const message =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "Something went wrong";
-
-    throw { message, status: error.response?.status || 500 };
-  }
-};
-export const updatePhotoshoot = async (data: any) => {
+export const updatePhotoshoot = async (data: any): Promise<any> => {
   try {
     const response = await axios.patch(
-      `${base_url}/admin/update/photoShoot`,
+      `${base_url}/photoShoot/update/photoShoot`,
       data,
       {
         withCredentials: true,
@@ -749,12 +887,30 @@ export const updatePhotoshoot = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const deletePhotoshoot = async () => {};
+export const deletePhotoshoot = async (id: any): Promise<any> => {
+  try {
+    const response = await axios.delete(
+      `${base_url}/photoShoot/delete/photoshoot?id=${id}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
 
 // sports
-export const createSport = async (data: any) => {
+export const createSport = async (data: any): Promise<any> => {
   try {
-    const response = await axios.post(`${base_url}/admin/create/sport`, data, {
+    const response = await axios.post(`${base_url}/sport/create/sport`, data, {
       withCredentials: true,
     });
     return response;
@@ -768,9 +924,9 @@ export const createSport = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getSportsTypes = async () => {
+export const getSportsTypes = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/sports/names`, {
+    const response = await axios.get(`${base_url}/sport/get/sports/names`, {
       withCredentials: true,
     });
     return response.data;
@@ -784,9 +940,9 @@ export const getSportsTypes = async () => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getSportCharges = async () => {
+export const getSportCharges = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/sports/names`, {
+    const response = await axios.get(`${base_url}/sport/get/sports/names`, {
       withCredentials: true,
     });
     return response.data;
@@ -800,9 +956,9 @@ export const getSportCharges = async () => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const getSports = async () => {
+export const getSports = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${base_url}/admin/get/sports`, {
+    const response = await axios.get(`${base_url}/sport/get/sports`, {
       withCredentials: true,
     });
     return response.data;
@@ -817,9 +973,9 @@ export const getSports = async () => {
   }
 };
 
-export const updateSport = async (data: any) => {
+export const updateSport = async (data: any): Promise<any> => {
   try {
-    const response = await axios.patch(`${base_url}/admin/update/sport`, data, {
+    const response = await axios.patch(`${base_url}/sport/update/sport`, data, {
       withCredentials: true,
     });
     return response;
@@ -833,4 +989,22 @@ export const updateSport = async (data: any) => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const deleteSport = async () => {};
+export const deleteSport = async (id: string): Promise<any> => {
+  try {
+    const response = await axios.delete(
+      `${base_url}/sport/delete/sport?id=${id}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};

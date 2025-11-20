@@ -9,6 +9,7 @@ import {
 import { BookingDto } from './dtos/booking.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
+  BookingType,
   PaymentMode,
   PaymentStatus,
   Prisma,
@@ -40,6 +41,29 @@ export class BookingService {
   }
 
   // room booking
+  async gBookingsRoom() {
+    return await this.prismaService.roomBooking.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        room: {
+          select: {
+            id: true,
+            roomNumber: true,
+            roomType: {
+              select: { type: true, id: true },
+            },
+          },
+        },
+        member: {
+          select: {
+            Membership_No: true,
+            Name: true,
+            Balance: true,
+          },
+        },
+      },
+    });
+  }
 
   async cBookingRoom(payload: BookingDto) {
     const {
@@ -52,36 +76,93 @@ export class BookingService {
       pricingType,
       paidAmount,
       paymentMode,
+      numberOfAdults = 1,
+      numberOfChildren = 0,
+      specialRequests = '',
     } = payload;
 
     // ── 1. VALIDATE DATES ─────────────────────────────────────
     const checkInDate = new Date(checkIn!);
     const checkOutDate = new Date(checkOut!);
+
+    // Normalize dates to start of day for comparison
+    const normalizedCheckIn = new Date(checkInDate);
+    normalizedCheckIn.setHours(0, 0, 0, 0);
+
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
 
     if (!checkIn || !checkOut || checkInDate >= checkOutDate)
       throw new ConflictException('Check-in must be before check-out');
 
-    // ── 2. VALIDATE ROOM ───────────────────────────────────────
+    if (normalizedCheckIn < now)
+      throw new ConflictException('Check-in date cannot be in the past');
+
+    // ── 2. VALIDATE GUEST COUNT ───────────────────────────────
+    if (numberOfAdults < 1) {
+      throw new ConflictException('At least one adult is required');
+    }
+    if (numberOfAdults + numberOfChildren > 6) {
+      throw new ConflictException(
+        'Maximum room capacity exceeded (6 guests total)',
+      );
+    }
+
+    // ── 3. VALIDATE ROOM ───────────────────────────────────────
     const room = await this.prismaService.room.findFirst({
       where: { id: Number(entityId) },
-      select: {
-        id: true,
-        isOutOfOrder: true,
-        outOfOrderTo: true,
+      include: {
+        reservations: {
+          where: {
+            OR: [
+              {
+                reservedFrom: { lt: checkOutDate },
+                reservedTo: { gt: checkInDate },
+              },
+            ],
+          },
+        },
       },
     });
-    if (!room) throw new NotFoundException('Room not found');
-    if (room.isOutOfOrder)
-      throw new ConflictException(
-        `Room out-of-order until ${room.outOfOrderTo}`,
-      );
 
-    // ── 3. CHECK DATE AVAILABILITY ─────────────────────────────
-    const overlapping = await this.prismaService.roomBooking.findFirst({
+    if (!room) throw new NotFoundException('Room not found');
+
+    // Check if room is active
+    if (!room.isActive) {
+      throw new ConflictException('Room is not active');
+    }
+
+    // Check if room is currently out of order
+    if (room.isOutOfOrder) {
+      throw new ConflictException(
+        `Room is currently out of order${room.outOfOrderTo ? ` until ${room.outOfOrderTo.toLocaleDateString()}` : ''}`,
+      );
+    }
+
+    // Check if room is scheduled to be out of order during booking period
+    if (room.outOfOrderFrom && room.outOfOrderTo) {
+      const outOfOrderOverlap =
+        checkInDate < room.outOfOrderTo && checkOutDate > room.outOfOrderFrom;
+
+      if (outOfOrderOverlap) {
+        throw new ConflictException(
+          `Room is scheduled for maintenance from ${room.outOfOrderFrom.toLocaleDateString()} to ${room.outOfOrderTo.toLocaleDateString()}`,
+        );
+      }
+    }
+
+    // ── 4. CHECK FOR EXISTING RESERVATIONS ─────────────────────
+    if (room.reservations.length > 0) {
+      const reservation = room.reservations[0];
+      throw new ConflictException(
+        `Room has existing reservation from ${reservation.reservedFrom.toLocaleDateString()} to ${reservation.reservedTo.toLocaleDateString()}`,
+      );
+    }
+
+    // ── 5. CHECK FOR BOOKING CONFLICTS ─────────────────────────
+    const overlappingBooking = await this.prismaService.roomBooking.findFirst({
       where: {
         roomId: room.id,
-        // overlap if any part of the range intersects
         AND: [
           { checkIn: { lt: checkOutDate } },
           { checkOut: { gt: checkInDate } },
@@ -89,23 +170,38 @@ export class BookingService {
       },
     });
 
-    if (overlapping)
-      throw new ConflictException('Room is already booked for those dates');
+    if (overlappingBooking) {
+      throw new ConflictException(
+        'Room is already booked for the selected dates',
+      );
+    }
 
-    // ── 4. DETERMINE PAID / OWED AMOUNTS ───────────────────────
+    // ── 6. DETERMINE PAID / OWED AMOUNTS ───────────────────────
     const total = Number(totalPrice);
     let paid = 0;
     let owed = total;
 
     if (paymentStatus === (PaymentStatus.PAID as unknown)) {
       paid = total;
+      owed = 0;
     } else if (paymentStatus === (PaymentStatus.HALF_PAID as unknown)) {
       paid = Number(paidAmount) || 0;
-      if (paid > total)
-        throw new ConflictException('Paid amount cannot exceed total');
+      if (paid <= 0)
+        throw new ConflictException(
+          'Paid amount must be greater than 0 for half-paid status',
+        );
+      if (paid >= total)
+        throw new ConflictException(
+          'Paid amount must be less than total for half-paid status',
+        );
+      owed = total - paid;
+    } else {
+      // UNPAID
+      paid = 0;
+      owed = total;
     }
 
-    // ── 5. CREATE BOOKING ──────────────────────────────────────
+    // ── 7. CREATE BOOKING ──────────────────────────────────────
     const booking = await this.prismaService.roomBooking.create({
       data: {
         Membership_No: membershipNo,
@@ -116,11 +212,14 @@ export class BookingService {
         paymentStatus: paymentStatus as unknown as PaymentStatus,
         pricingType,
         paidAmount: paid,
-        pendingAmount: total - paid,
+        pendingAmount: owed,
+        numberOfAdults,
+        numberOfChildren,
+        specialRequests,
       },
     });
 
-    // ── 6. MARK ROOM AS BOOKED ONLY IF CHECK-IN STARTS NOW ─────
+    // ── 8. MARK ROOM AS BOOKED ONLY IF CHECK-IN STARTS NOW ─────
     if (checkInDate <= now && checkOutDate > now) {
       await this.prismaService.room.update({
         where: { id: room.id },
@@ -128,7 +227,7 @@ export class BookingService {
       });
     }
 
-    // ── 7. UPDATE MEMBER LEDGER ────────────────────────────────
+    // ── 9. UPDATE MEMBER LEDGER ────────────────────────────────
     await this.prismaService.member.update({
       where: { Membership_No: membershipNo },
       data: {
@@ -140,7 +239,7 @@ export class BookingService {
       },
     });
 
-    // ── 8. CREATE PAYMENT VOUCHER (only if cash received) ──────
+    // ── 10. CREATE PAYMENT VOUCHER (only if cash received) ─────
     if (paid > 0) {
       let voucherType: VoucherType | null = null;
       if (paymentStatus === (PaymentStatus.PAID as unknown))
@@ -158,7 +257,7 @@ export class BookingService {
           voucher_type: voucherType!,
           status: VoucherStatus.CONFIRMED,
           issued_by: 'admin',
-          remarks: `Room #${room.id} | ${checkInDate.toLocaleDateString()} → ${checkOutDate.toLocaleDateString()}`,
+          remarks: `Room #${room.roomNumber} | ${checkInDate.toLocaleDateString()} → ${checkOutDate.toLocaleDateString()} | Adults: ${numberOfAdults}, Children: ${numberOfChildren}${specialRequests ? ` | Requests: ${specialRequests}` : ''}`,
         },
       });
     }
@@ -178,64 +277,127 @@ export class BookingService {
       pricingType,
       paidAmount,
       paymentMode,
+      numberOfAdults,
+      numberOfChildren,
+      specialRequests,
     } = payload;
 
     // ── 1. FETCH EXISTING BOOKING ─────────────────────────────
     const booking = await this.prismaService.roomBooking.findUnique({
       where: { id: Number(id) },
-      select: {
-        id: true,
-        roomId: true,
-        Membership_No: true,
-        checkIn: true,
-        checkOut: true,
-        totalPrice: true,
-        paidAmount: true,
-        pendingAmount: true,
+      include: {
+        room: {
+          include: {
+            reservations: true,
+          },
+        },
       },
     });
+
     if (!booking) throw new UnprocessableEntityException('Booking not found');
 
     // ── 2. VALIDATE DATES ─────────────────────────────────────
     const newCheckIn = checkIn ? new Date(checkIn) : booking.checkIn;
     const newCheckOut = checkOut ? new Date(checkOut) : booking.checkOut;
+
+    // Normalize dates to start of day for comparison
+    const normalizedCheckIn = new Date(newCheckIn);
+    normalizedCheckIn.setHours(0, 0, 0, 0);
+
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
 
     if (newCheckIn >= newCheckOut)
       throw new ConflictException('Check-in must be before check-out');
 
+    if (normalizedCheckIn < now)
+      throw new ConflictException('Check-in date cannot be in the past');
+
+    // ── 3. VALIDATE GUEST COUNT ───────────────────────────────
+    const newNumberOfAdults = numberOfAdults ?? booking.numberOfAdults;
+    const newNumberOfChildren = numberOfChildren ?? booking.numberOfChildren;
+
+    if (newNumberOfAdults < 1) {
+      throw new ConflictException('At least one adult is required');
+    }
+    if (newNumberOfAdults + newNumberOfChildren > 6) {
+      throw new ConflictException(
+        'Maximum room capacity exceeded (6 guests total)',
+      );
+    }
+
     const newRoomId = entityId ? Number(entityId) : booking.roomId;
 
-    // ── 3. VALIDATE ROOM ──────────────────────────────────────
-    const room = await this.prismaService.room.findUnique({
+    // ── 4. VALIDATE ROOM ───────────────────────────────────────
+    const room = await this.prismaService.room.findFirst({
       where: { id: newRoomId },
-      select: {
-        id: true,
-        isOutOfOrder: true,
-        outOfOrderTo: true,
+      include: {
+        reservations: {
+          where: {
+            OR: [
+              {
+                reservedFrom: { lt: newCheckOut },
+                reservedTo: { gt: newCheckIn },
+              },
+            ],
+          },
+        },
       },
     });
-    if (!room) throw new NotFoundException('Room not found');
-    if (room.isOutOfOrder)
-      throw new ConflictException(
-        `Room out-of-order until ${room.outOfOrderTo}`,
-      );
 
-    // ── 4. CHECK DATE AVAILABILITY ─────────────────────────────
-    const overlapping = await this.prismaService.roomBooking.findFirst({
+    if (!room) throw new NotFoundException('Room not found');
+
+    // Check if room is active
+    if (!room.isActive) {
+      throw new ConflictException('Room is not active');
+    }
+
+    // Check if room is currently out of order
+    if (room.isOutOfOrder) {
+      throw new ConflictException(
+        `Room is currently out of order${room.outOfOrderTo ? ` until ${room.outOfOrderTo.toLocaleDateString()}` : ''}`,
+      );
+    }
+
+    // Check if room is scheduled to be out of order during booking period
+    if (room.outOfOrderFrom && room.outOfOrderTo) {
+      const outOfOrderOverlap =
+        newCheckIn < room.outOfOrderTo && newCheckOut > room.outOfOrderFrom;
+
+      if (outOfOrderOverlap) {
+        throw new ConflictException(
+          `Room is scheduled for maintenance from ${room.outOfOrderFrom.toLocaleDateString()} to ${room.outOfOrderTo.toLocaleDateString()}`,
+        );
+      }
+    }
+
+    // ── 5. CHECK FOR EXISTING RESERVATIONS ─────────────────────
+    if (room.reservations.length > 0) {
+      const reservation = room.reservations[0];
+      throw new ConflictException(
+        `Room has existing reservation from ${reservation.reservedFrom.toLocaleDateString()} to ${reservation.reservedTo.toLocaleDateString()}`,
+      );
+    }
+
+    // ── 6. CHECK FOR BOOKING CONFLICTS (excluding current booking) ──
+    const overlappingBooking = await this.prismaService.roomBooking.findFirst({
       where: {
         roomId: newRoomId,
-        id: { not: booking.id },
+        id: { not: booking.id }, // Exclude current booking
         AND: [
           { checkIn: { lt: newCheckOut } },
           { checkOut: { gt: newCheckIn } },
         ],
       },
     });
-    if (overlapping)
-      throw new ConflictException('Room is already booked for those dates');
 
-    // ── 5. DETERMINE NEW PAID / OWED ───────────────────────────
+    if (overlappingBooking) {
+      throw new ConflictException(
+        'Room is already booked for the selected dates',
+      );
+    }
+
+    // ── 7. DETERMINE PAID / OWED AMOUNTS ───────────────────────
     const newTotal =
       totalPrice !== undefined
         ? Number(totalPrice)
@@ -246,22 +408,35 @@ export class BookingService {
 
     if (paymentStatus === (PaymentStatus.PAID as unknown)) {
       newPaid = newTotal;
+      newOwed = 0;
     } else if (paymentStatus === (PaymentStatus.HALF_PAID as unknown)) {
       newPaid =
         paidAmount !== undefined
           ? Number(paidAmount)
           : Number(booking.paidAmount);
-      if (newPaid > newTotal)
-        throw new ConflictException('Paid amount cannot exceed total');
+
+      if (newPaid <= 0)
+        throw new ConflictException(
+          'Paid amount must be greater than 0 for half-paid status',
+        );
+      if (newPaid >= newTotal)
+        throw new ConflictException(
+          'Paid amount must be less than total for half-paid status',
+        );
+      newOwed = newTotal - newPaid;
+    } else {
+      // UNPAID
+      newPaid = 0;
+      newOwed = newTotal;
     }
 
     const oldPaid = Number(booking.paidAmount);
-    const oldOwed = Number(booking.totalPrice);
+    const oldOwed = Number(booking.pendingAmount);
 
     const paidDiff = newPaid - oldPaid;
     const owedDiff = newOwed - oldOwed;
 
-    // ── 6. UPDATE BOOKING RECORD ──────────────────────────────
+    // ── 8. UPDATE BOOKING RECORD ──────────────────────────────
     const updated = await this.prismaService.roomBooking.update({
       where: { id: booking.id },
       data: {
@@ -270,17 +445,21 @@ export class BookingService {
         checkIn: newCheckIn,
         checkOut: newCheckOut,
         totalPrice: newTotal,
-        paymentStatus: paymentStatus as unknown as PaymentStatus,
-        pricingType,
+        paymentStatus:
+          (paymentStatus as unknown as PaymentStatus) ?? booking.paymentStatus,
+        pricingType: pricingType ?? booking.pricingType,
         paidAmount: newPaid,
-        pendingAmount: newTotal - newPaid,
+        pendingAmount: newOwed,
+        numberOfAdults: newNumberOfAdults,
+        numberOfChildren: newNumberOfChildren,
+        specialRequests: specialRequests ?? booking.specialRequests,
       },
     });
 
-    // ── 7. UPDATE ROOM BOOKING STATE (dynamic by date) ─────────
+    // ── 9. UPDATE ROOM BOOKING STATE ──────────────────────────
     const roomUpdates: Promise<any>[] = [];
 
-    // If this booking’s check-in is today or active, mark as booked
+    // Mark new room as booked only if check-in starts now
     if (newCheckIn <= now && newCheckOut > now) {
       roomUpdates.push(
         this.prismaService.room.update({
@@ -289,7 +468,6 @@ export class BookingService {
         }),
       );
     } else {
-      // future or past — keep available
       roomUpdates.push(
         this.prismaService.room.update({
           where: { id: newRoomId },
@@ -310,10 +488,10 @@ export class BookingService {
 
     await Promise.all(roomUpdates);
 
-    // ── 8. UPDATE MEMBER LEDGER ────────────────────────────────
+    // ── 10. UPDATE MEMBER LEDGER ──────────────────────────────
     if (paidDiff !== 0 || owedDiff !== 0) {
       await this.prismaService.member.update({
-        where: { Membership_No: booking.Membership_No },
+        where: { Membership_No: membershipNo ?? booking.Membership_No },
         data: {
           drAmount: { increment: paidDiff },
           crAmount: { increment: owedDiff },
@@ -323,46 +501,45 @@ export class BookingService {
       });
     }
 
-    // ── 9. OPTIONAL: UPDATE VOUCHER IF CASH PAID ───────────────
+    // ── 11. CREATE PAYMENT VOUCHER FOR ADDITIONAL PAYMENTS ────
     if (paidDiff > 0) {
       let voucherType: VoucherType | null = null;
-      if (paymentStatus === (PaymentStatus.PAID as unknown))
-        voucherType = VoucherType.FULL_PAYMENT;
-      else if (paymentStatus === (PaymentStatus.HALF_PAID as unknown))
-        voucherType = VoucherType.HALF_PAYMENT;
+      let voucherAmount = paidDiff;
 
-      await this.prismaService.paymentVoucher.create({
-        data: {
-          booking_type: 'ROOM',
-          booking_id: updated.id,
-          membership_no: membershipNo ?? booking.Membership_No,
-          amount: paidDiff,
-          payment_mode: paymentMode as unknown as PaymentMode,
-          voucher_type: voucherType!,
-          status: VoucherStatus.CONFIRMED,
-          issued_by: 'admin',
-          remarks: `Room #${newRoomId} | Updated booking | ${newCheckIn.toLocaleDateString()} → ${newCheckOut.toLocaleDateString()}`,
-        },
-      });
+      // Check if this is a final payment that completes the booking
+      const remainingPaymentBeforeUpdate = Number(booking.pendingAmount);
+
+      if (
+        paymentStatus === (PaymentStatus.PAID as unknown) &&
+        remainingPaymentBeforeUpdate > 0
+      ) {
+        // This is the final payment - use the actual remaining amount instead of paidDiff
+        voucherAmount = remainingPaymentBeforeUpdate;
+        voucherType = VoucherType.FULL_PAYMENT;
+      } else if (paymentStatus === (PaymentStatus.HALF_PAID as unknown)) {
+        voucherType = VoucherType.HALF_PAYMENT;
+      }
+
+      // Only create voucher if we have a valid type
+      if (voucherType) {
+        await this.prismaService.paymentVoucher.create({
+          data: {
+            booking_type: 'ROOM',
+            booking_id: updated.id,
+            membership_no: membershipNo ?? booking.Membership_No,
+            amount: voucherAmount,
+            payment_mode:
+              (paymentMode as unknown as PaymentMode) ?? PaymentMode.CASH,
+            voucher_type: voucherType,
+            status: VoucherStatus.CONFIRMED,
+            issued_by: 'admin',
+            remarks: `Room #${room.roomNumber} | ${paymentStatus === (PaymentStatus.PAID as unknown) && remainingPaymentBeforeUpdate > 0 ? 'Final payment' : 'Updated booking'} | ${newCheckIn.toLocaleDateString()} → ${newCheckOut.toLocaleDateString()} | Adults: ${newNumberOfAdults}, Children: ${newNumberOfChildren}${specialRequests ? ` | Requests: ${specialRequests}` : ''}`,
+          },
+        });
+      }
     }
 
     return { ...updated, prevRoomId: booking.roomId };
-  }
-
-  async gBookingsRoom() {
-    return await this.prismaService.roomBooking.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        room: {
-          select: {
-            roomNumber: true,
-            roomType: {
-              select: { type: true, id: true },
-            },
-          },
-        },
-      },
-    });
   }
   async dBookingRoom(bookingId: number) {
     // delete booking
@@ -380,7 +557,26 @@ export class BookingService {
     return deleted;
   }
 
-  //  hall bookings
+  // hall bookings
+  async gBookingsHall() {
+    return await this.prismaService.hallBooking.findMany({
+      orderBy: {
+        bookingDate: 'desc',
+      },
+      include: {
+        hall: { select: { name: true } },
+        member: {
+          select: {
+            Sno: true,
+            Membership_No: true,
+            Name: true,
+            Balance: true,
+          },
+        },
+      },
+    });
+  }
+
   async cBookingHall(payload: BookingDto) {
     const {
       membershipNo,
@@ -409,17 +605,37 @@ export class BookingService {
       where: { id: Number(entityId) },
     });
     if (!hall) throw new BadRequestException('Hall must be specified');
-    if (hall.isBooked)
-      throw new ConflictException(`Hall '${hall.name}' is already booked`);
+
+    // ── CHECK FOR EXISTING BOOKINGS AT SAME DATE AND TIME ─────────────
+    const normalizedEventTime = eventTime?.toUpperCase() as
+      | 'MORNING'
+      | 'EVENING'
+      | 'NIGHT';
+
+    const existingBooking = await this.prismaService.hallBooking.findFirst({
+      where: {
+        hallId: hall.id,
+        bookingDate: booking,
+        bookingTime: normalizedEventTime,
+        // Optionally exclude cancelled bookings if you have a status field
+        // status: { not: 'CANCELLED' }
+      },
+    });
+
+    if (existingBooking) {
+      throw new ConflictException(
+        `Hall '${hall.name}' is already booked for ${booking.toLocaleDateString()} during ${normalizedEventTime.toLowerCase()} time slot`,
+      );
+    }
 
     // ── PAYMENT CALCULATIONS ─────────────────────────────
     const total = Number(totalPrice);
     let paid = 0;
     let owed = total;
 
-    if (paymentStatus === ('PAID' as unknown)) {
+    if (paymentStatus === ('PAID' as any)) {
       paid = total;
-    } else if (paymentStatus === ('HALF_PAID' as unknown)) {
+    } else if (paymentStatus === ('HALF_PAID' as any)) {
       paid = Number(paidAmount) || 0;
       if (paid > total)
         throw new ConflictException('Paid amount cannot exceed total');
@@ -437,16 +653,11 @@ export class BookingService {
         paidAmount: paid,
         pendingAmount: total - paid,
         eventType: eventType!,
-        bookingTime:
-          eventTime?.toUpperCase() === 'MORNING'
-            ? 'MORNING'
-            : eventTime?.toUpperCase() === 'EVENING'
-              ? 'EVENING'
-              : 'NIGHT',
+        bookingTime: normalizedEventTime,
       },
     });
 
-    // ── MARK HALL AS BOOKED ──────────────────────────────
+    // ── MARK HALL AS BOOKED (only if booking is for today) ────────────
     const sameDay =
       booking.getFullYear() === today.getFullYear() &&
       booking.getMonth() === today.getMonth() &&
@@ -458,6 +669,7 @@ export class BookingService {
         data: { isBooked: true },
       });
     }
+
     // ── UPDATE MEMBER LEDGER ─────────────────────────────
     await this.prismaService.member.update({
       where: { Membership_No: membershipNo },
@@ -473,9 +685,9 @@ export class BookingService {
     // ── CREATE PAYMENT VOUCHER (IF PAID) ─────────────────
     if (paid > 0) {
       let voucherType: VoucherType | null = null;
-      if (paymentStatus === ('PAID' as unknown))
+      if (paymentStatus === ('PAID' as any))
         voucherType = VoucherType.FULL_PAYMENT;
-      else if (paymentStatus === ('HALF_PAID' as unknown))
+      else if (paymentStatus === ('HALF_PAID' as any))
         voucherType = VoucherType.HALF_PAYMENT;
 
       await this.prismaService.paymentVoucher.create({
@@ -488,7 +700,7 @@ export class BookingService {
           voucher_type: voucherType!,
           status: VoucherStatus.CONFIRMED,
           issued_by: 'admin',
-          remarks: `${hall.name} | ${booking.toLocaleDateString()} (${eventType})`,
+          remarks: `${hall.name} | ${booking.toLocaleDateString()} (${eventType}) - ${normalizedEventTime}`,
         },
       });
     }
@@ -496,17 +708,9 @@ export class BookingService {
     return booked;
   }
 
-  async gBookingsHall() {
-    return await this.prismaService.hallBooking.findMany({
-      orderBy: {
-        bookingDate: 'desc',
-      },
-      include: { hall: { select: { name: true } } },
-    });
-  }
-  async uBookingHall(payload: BookingDto) {
+  async uBookingHall(payload: Partial<BookingDto>) {
     const {
-      id, // booking ID
+      id,
       membershipNo,
       entityId,
       bookingDate,
@@ -519,51 +723,77 @@ export class BookingService {
       eventTime,
     } = payload;
 
+    // ── VALIDATE REQUIRED FIELDS ─────────────────────────
     if (!id) throw new BadRequestException('Booking ID is required');
+    if (!membershipNo)
+      throw new BadRequestException('Membership number is required');
+    if (!entityId) throw new BadRequestException('Hall ID is required');
+    if (!bookingDate) throw new BadRequestException('Booking date is required');
+    if (!totalPrice) throw new BadRequestException('Total price is required');
+    if (!eventType) throw new BadRequestException('Event type is required');
+    if (!eventTime) throw new BadRequestException('Event time is required');
+    if (!pricingType) throw new BadRequestException('Pricing type is required');
+
+    // ── VALIDATE BOOKING DATE ────────────────────────────
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+
+    const booking = new Date(bookingDate);
+    booking.setHours(0, 0, 0, 0); // Reset time for fair comparison
+
+    if (booking < today) {
+      throw new UnprocessableEntityException(
+        'Booking date cannot be in the past',
+      );
+    }
 
     // ── FETCH EXISTING BOOKING ───────────────────────────
     const existing = await this.prismaService.hallBooking.findUnique({
       where: { id: Number(id) },
+      include: { member: true, hall: true },
     });
     if (!existing) throw new NotFoundException('Booking not found');
-
-    const today = new Date();
-    const booking = new Date(bookingDate!);
-    if (!bookingDate || booking < today)
-      throw new UnprocessableEntityException('Booking date is not valid');
 
     // ── VALIDATE MEMBER ─────────────────────────────────
     const member = await this.prismaService.member.findFirst({
       where: { Membership_No: membershipNo },
     });
-    if (!member) throw new BadRequestException('Member must be selected');
+    if (!member) throw new BadRequestException('Member not found');
 
     // ── VALIDATE HALL ───────────────────────────────────
     const hall = await this.prismaService.hall.findFirst({
       where: { id: Number(entityId) },
     });
-    if (!hall) throw new BadRequestException('Hall must be specified');
+    if (!hall) throw new BadRequestException('Hall not found');
 
-    // If hall changed → unlock old hall and lock new one
-    if (existing.hallId !== hall.id) {
-      await this.prismaService.hall.update({
-        where: { id: existing.hallId },
-        data: { isBooked: false },
-      });
+    // ── NORMALIZE EVENT TIME ────────────────────────────
+    const normalizedEventTime = eventTime.toUpperCase() as
+      | 'MORNING'
+      | 'EVENING'
+      | 'NIGHT';
 
-      if (hall.isBooked)
-        throw new ConflictException(`Hall '${hall.name}' is already booked`);
+    // ── CHECK HALL AVAILABILITY (excluding current booking) ──
+    // Check if hall, date, or time slot has changed
+    if (
+      existing.hallId !== Number(entityId) ||
+      existing.bookingDate.getTime() !== booking.getTime() ||
+      existing.bookingTime !== normalizedEventTime
+    ) {
+      const conflictingBooking = await this.prismaService.hallBooking.findFirst(
+        {
+          where: {
+            hallId: Number(entityId),
+            bookingDate: booking,
+            bookingTime: normalizedEventTime,
+            id: { not: Number(id) }, // Exclude current booking
+          },
+        },
+      );
 
-      const sameDay =
-        booking.getFullYear() === today.getFullYear() &&
-        booking.getMonth() === today.getMonth() &&
-        booking.getDate() === today.getDate();
-
-      if (sameDay) {
-        await this.prismaService.hall.update({
-          where: { id: hall.id },
-          data: { isBooked: true },
-        });
+      if (conflictingBooking) {
+        throw new ConflictException(
+          `Hall '${hall.name}' is already booked for ${booking.toLocaleDateString()} during ${normalizedEventTime.toLowerCase()} time slot`,
+        );
       }
     }
 
@@ -572,13 +802,32 @@ export class BookingService {
     let paid = 0;
     let owed = total;
 
-    if (paymentStatus === ('PAID' as unknown)) {
+    if (paymentStatus === ('PAID' as any)) {
       paid = total;
-    } else if (paymentStatus === ('HALF_PAID' as unknown)) {
+      owed = 0;
+    } else if (paymentStatus === ('HALF_PAID' as any)) {
       paid = Number(paidAmount) || 0;
-      if (paid > total)
-        throw new ConflictException('Paid amount cannot exceed total');
+      if (paid <= 0)
+        throw new ConflictException(
+          'Paid amount must be greater than 0 for half-paid status',
+        );
+      if (paid >= total)
+        throw new ConflictException(
+          'Paid amount must be less than total price for half-paid status',
+        );
+      owed = total - paid;
+    } else if (paymentStatus === ('UNPAID' as any)) {
+      paid = 0;
+      owed = total;
     }
+
+    // ── CALCULATE PAYMENT DIFFERENCES FOR LEDGER ─────────
+    const prevPaid = Number(existing.paidAmount);
+    const prevTotal = Number(existing.totalPrice);
+    const prevOwed = prevTotal - prevPaid;
+
+    const paidDiff = paid - prevPaid;
+    const owedDiff = owed - prevOwed;
 
     // ── UPDATE HALL BOOKING ──────────────────────────────
     const updated = await this.prismaService.hallBooking.update({
@@ -591,41 +840,47 @@ export class BookingService {
         paymentStatus: paymentStatus as any,
         pricingType,
         paidAmount: paid,
-        pendingAmount: total - paid,
-        eventType: eventType!,
-        bookingTime:
-          eventTime?.toUpperCase() === 'MORNING'
-            ? 'MORNING'
-            : eventTime?.toUpperCase() === 'EVENING'
-              ? 'EVENING'
-              : 'NIGHT',
+        pendingAmount: owed,
+        eventType: eventType,
+        bookingTime: normalizedEventTime,
       },
     });
 
     // ── UPDATE MEMBER LEDGER ─────────────────────────────
-    const prevPaid = existing.paidAmount;
-    const prevOwed = Number(existing.totalPrice) - Number(prevPaid);
+    if (paidDiff !== 0 || owedDiff !== 0) {
+      await this.prismaService.member.update({
+        where: { Membership_No: membershipNo },
+        data: {
+          drAmount: { increment: paidDiff },
+          crAmount: { increment: owedDiff },
+          Balance: { increment: paidDiff - owedDiff },
+          lastBookingDate: new Date(),
+        },
+      });
+    }
 
-    const paidDiff = paid - Number(prevPaid);
-    const owedDiff = owed - prevOwed;
-
-    await this.prismaService.member.update({
-      where: { Membership_No: membershipNo },
-      data: {
-        drAmount: { increment: paidDiff },
-        crAmount: { increment: owedDiff },
-        Balance: { increment: paidDiff - owedDiff },
-        lastBookingDate: new Date(),
-      },
-    });
-
-    // ── UPDATE / CREATE PAYMENT VOUCHER (if any paid) ─────
+    // ── FIXED: UPDATE / CREATE PAYMENT VOUCHER LOGIC ─────
     if (paid > 0) {
-      let voucherType: VoucherType | null = null;
-      if (paymentStatus === ('PAID' as unknown))
+      let voucherType: VoucherType;
+      let voucherAmount = paid;
+
+      // Calculate remaining payment before update
+      const remainingPaymentBeforeUpdate = Number(existing.pendingAmount);
+
+      // Check if this is a final payment that completes the booking
+      if (
+        paymentStatus === ('PAID' as any) &&
+        remainingPaymentBeforeUpdate > 0
+      ) {
+        // This is the final payment - use the actual remaining amount instead of total paid
+        voucherAmount = remainingPaymentBeforeUpdate;
+      }
+
+      if (paymentStatus === ('PAID' as any)) {
         voucherType = VoucherType.FULL_PAYMENT;
-      else if (paymentStatus === ('HALF_PAID' as unknown))
+      } else {
         voucherType = VoucherType.HALF_PAYMENT;
+      }
 
       const existingVoucher = await this.prismaService.paymentVoucher.findFirst(
         {
@@ -636,14 +891,19 @@ export class BookingService {
         },
       );
 
+      // Determine remarks based on payment type
+      const isFinalPayment =
+        paymentStatus === ('PAID' as any) && remainingPaymentBeforeUpdate > 0;
+      const remarks = `${hall.name} | ${isFinalPayment ? 'Final payment' : 'Booking'} | ${booking.toLocaleDateString()} (${eventType}) - ${normalizedEventTime}`;
+
       if (existingVoucher) {
         await this.prismaService.paymentVoucher.update({
           where: { id: existingVoucher.id },
           data: {
-            amount: paid,
+            amount: voucherAmount,
             payment_mode: paymentMode as any,
-            voucher_type: voucherType!,
-            remarks: `${hall.name} | ${booking.toLocaleDateString()} (${eventType})`,
+            voucher_type: voucherType,
+            remarks: remarks,
           },
         });
       } else {
@@ -652,21 +912,33 @@ export class BookingService {
             booking_type: 'HALL',
             booking_id: updated.id,
             membership_no: membershipNo,
-            amount: paid,
+            amount: voucherAmount,
             payment_mode: paymentMode as any,
-            voucher_type: voucherType!,
+            voucher_type: voucherType,
             status: VoucherStatus.CONFIRMED,
             issued_by: 'admin',
-            remarks: `${hall.name} | ${booking.toLocaleDateString()} (${eventType})`,
+            remarks: remarks,
           },
         });
       }
+    } else {
+      // Delete voucher if payment is now unpaid
+      await this.prismaService.paymentVoucher.deleteMany({
+        where: {
+          booking_type: 'HALL',
+          booking_id: Number(id),
+        },
+      });
     }
 
     return updated;
   }
 
-  async dBookingHall(bookingId) {}
+  async dBookingHall(bookingId: number) {
+    return await this.prismaService.hallBooking.delete({
+      where: { id: bookingId },
+    });
+  }
 
   // lawn booking
   async cBookingLawn(payload: BookingDto) {
@@ -932,7 +1204,19 @@ export class BookingService {
 
   // photoshoot booking
   async cBookingPhotoshoot(payload: BookingDto) {}
-  async uBookingPhotoshoot(payload: BookingDto) {}
+  async uBookingPhotoshoot(payload: Partial<BookingDto>) {}
   async gBookingPhotoshoot() {}
   async dBookingPhotoshoot(bookingId) {}
+
+  // vouchers
+  async getVouchersByBooking(bookingType: string, bookingId: number) {
+    return await this.prismaService.paymentVoucher.findMany({
+      where: {
+        booking_type: bookingType as BookingType,
+        booking_id: bookingId,
+      },
+
+      orderBy: { issued_at: 'desc' },
+    });
+  }
 }

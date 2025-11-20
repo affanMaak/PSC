@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -8,90 +8,75 @@ export class SchedularService {
 
   constructor(private prismaService: PrismaService) {}
 
-  @Cron('0 0 * * * *')
-  async updateRoomActivity() {
-    const updated = await this.prismaService.room.updateMany({
-      where: {
-        isOutOfOrder: true,
-        outOfOrderTo: { lt: new Date() },
-      },
-      data: {
-        isOutOfOrder: false,
-        isActive: true,
-        outOfOrderFrom: null,
-        outOfOrderTo: null,
-        outOfOrderReason: '',
-      },
-    });
-    this.logger.log(`Reactivated ${updated.count} rooms.`);
-  }
-
-  @Cron('0 0 * * * *')
-  async lock() {
+  @Cron(CronExpression.EVERY_10_SECONDS) 
+  async checkScheduledOutOfOrder() {
     const now = new Date();
 
-    // ─── ROOM LOCKING / UNLOCKING ────────────────────────────────
-    const activeRoomBookings = await this.prismaService.roomBooking.findMany({
+    // Set rooms to out-of-order when their scheduled date arrives
+    const setToOutOfOrder = await this.prismaService.room.updateMany({
       where: {
-        checkIn: { lte: now },
-        checkOut: { gte: now },
+        isOutOfOrder: false,
+        outOfOrderFrom: { lte: now },
+        outOfOrderTo: { gte: now },
       },
-      select: { roomId: true },
-    });
-
-    const expiredRoomBookings = await this.prismaService.roomBooking.findMany({
-      where: {
-        checkOut: { lt: now },
+      data: {
+        isOutOfOrder: true,
+        isActive: false,
       },
-      select: { roomId: true },
     });
 
-    const roomsToBeLocked = activeRoomBookings.map((b) => b.roomId);
-    const roomsToBeUnlocked = expiredRoomBookings.map((b) => b.roomId);
+    if (setToOutOfOrder.count > 0) {
+      this.logger.log(
+        `Set ${setToOutOfOrder.count} rooms to out-of-order based on schedule.`,
+      );
+    }
+  }
 
-    await this.prismaService.room.updateMany({
-      where: { id: { in: roomsToBeLocked }, isBooked: false },
-      data: { isBooked: true },
-    });
+  @Cron(CronExpression.EVERY_10_SECONDS)
+  async updateRoomReservationStatus() {
+    this.logger.log(`Updating Room Reservation Status`);
 
-    await this.prismaService.room.updateMany({
-      where: { id: { in: roomsToBeUnlocked }, isBooked: true },
-      data: { isBooked: false },
-    });
+    try {
+      // Get current date at start of day for fair comparison
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // ─── HALL LOCKING / UNLOCKING ────────────────────────────────
-    const activeHallBookings = await this.prismaService.hallBooking.findMany({
-      where: {
-        bookingDate: { gte: now },
-      },
-      select: { hallId: true },
-    });
+      // Find all active reservations (reservations that include today)
+      // A reservation is active if: reservedFrom <= today AND reservedTo >= today
+      const activeReservations =
+        await this.prismaService.roomReservation.findMany({
+          where: {
+            reservedFrom: { lt: tomorrow }, // Starts before tomorrow (includes today)
+            reservedTo: { gte: today }, // Ends on or after today
+          },
+          select: {
+            roomId: true,
+          },
+        });
 
-    const expiredHallBookings = await this.prismaService.hallBooking.findMany({
-      where: {
-        bookingDate: { lt: now },
-      },
-      select: { hallId: true },
-    });
+      const activeRoomIds = [
+        ...new Set(activeReservations.map((r) => r.roomId)),
+      ];
 
-    const hallsToBeLocked = activeHallBookings.map((b) => b.hallId);
-    const hallsToBeUnlocked = expiredHallBookings.map((b) => b.hallId);
+      // Update all rooms in one go
+      await this.prismaService.$transaction([
+        // Set isReserved = true for rooms with active reservations
+        this.prismaService.room.updateMany({
+          where: { id: { in: activeRoomIds } },
+          data: { isReserved: true },
+        }),
+        // Set isReserved = false for rooms without active reservations
+        this.prismaService.room.updateMany({
+          where: { id: { notIn: activeRoomIds }, isReserved: true },
+          data: { isReserved: false },
+        }),
+      ]);
 
-    await this.prismaService.hall.updateMany({
-      where: { id: { in: hallsToBeLocked }, isBooked: false },
-      data: { isBooked: true },
-    });
-
-    await this.prismaService.hall.updateMany({
-      where: { id: { in: hallsToBeUnlocked }, isBooked: true },
-      data: { isBooked: false },
-    });
-
-    return {
-      lockedRooms: roomsToBeLocked.length,
-      unlockedRooms: roomsToBeUnlocked.length,
-      lockedHalls: hallsToBeLocked.length,
-      unlockedHalls: hallsToBeUnlocked.length,
-    };
+      this.logger.log(`Updated ${activeRoomIds.length} rooms as reserved`);
+    } catch (error) {
+      this.logger.error('Error updating room reservation status:', error);
+    }
   }
 }

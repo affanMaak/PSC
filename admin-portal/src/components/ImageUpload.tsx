@@ -1,14 +1,21 @@
+// components/ImageUpload.tsx
 import { useState, useRef } from "react";
 import { Upload, X } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface ImageUploadProps {
   images: string[];
-  onChange: (images: string[]) => void;
+  onChange: (files: File[]) => void;
   maxImages?: number;
+  onRemove?: (index: number) => void;
 }
 
-export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProps) {
+export function ImageUpload({
+  images = [],
+  onChange,
+  maxImages = 5,
+  onRemove,
+}: ImageUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -26,56 +33,49 @@ export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProp
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer.files?.length) {
       handleFiles(e.dataTransfer.files);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.length) {
       handleFiles(e.target.files);
     }
   };
 
-  const handleFiles = (files: FileList) => {
-    const newImages: string[] = [];
-    const remainingSlots = maxImages - images.length;
-    const filesToProcess = Math.min(files.length, remainingSlots);
+  const handleFiles = (fileList: FileList) => {
+    const remaining = maxImages - images.length;
+    const filesToAdd = Array.from(fileList).slice(0, remaining);
+    const valid = filesToAdd.filter((f) => f.type.startsWith("image/"));
 
-    for (let i = 0; i < filesToProcess; i++) {
-      const file = files[i];
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            newImages.push(e.target.result as string);
-            if (newImages.length === filesToProcess) {
-              onChange([...images, ...newImages]);
-            }
-          }
-        };
-        reader.readAsDataURL(file);
-      }
+    if (valid.length > 0) {
+      onChange(valid); // This triggers parent update
     }
   };
 
   const removeImage = (index: number) => {
-    onChange(images.filter((_, i) => i !== index));
+    onRemove?.(index);
   };
 
   return (
     <div className="space-y-4">
+      {/* Upload Zone */}
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center ${
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
           dragActive ? "border-primary bg-primary/10" : "border-border"
         } ${images.length >= maxImages ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        onClick={() => images.length < maxImages && inputRef.current?.click()}
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent dialog close
+          if (images.length < maxImages) {
+            inputRef.current?.click();
+          }
+        }}
       >
         <input
           ref={inputRef}
@@ -88,28 +88,30 @@ export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProp
         />
         <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
         <p className="text-sm text-muted-foreground">
-          {images.length >= maxImages 
+          {images.length >= maxImages
             ? `Maximum ${maxImages} images reached`
-            : `Drag & drop images here or click to select (${images.length}/${maxImages})`
-          }
+            : `Drag & drop or click (${images.length}/${maxImages})`}
         </p>
       </div>
 
+      {/* Preview */}
       {images.length > 0 && (
         <div className="grid grid-cols-5 gap-4">
-          {images.map((image, index) => (
-            <div key={index} className="relative group">
+          {images.map((src: any, i) => (
+            <div key={i} className="relative group">
               <img
-                src={image}
-                alt={`Upload ${index + 1}`}
-                className="w-full h-24 object-cover rounded-lg"
+                src={src}
+                alt={`Preview ${i + 1}`}
+                className="w-full h-24 object-cover rounded-lg border"
               />
               <Button
-                type="button"
                 variant="destructive"
                 size="icon"
                 className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => removeImage(index)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeImage(i);
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>

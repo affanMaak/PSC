@@ -79,6 +79,11 @@ model RoomBooking {
   paidAmount    Decimal       @db.Decimal(30,2) @default(0.00)
   pendingAmount Decimal       @db.Decimal(30,2) @default(0.00)
 
+  numberOfAdults Int @default(1)
+  numberOfChildren Int @default(0)
+
+  specialRequests String? @db.Text
+
   member Member @relation(fields: [Membership_No], references: [Membership_No])
   room   Room   @relation(fields: [roomId], references: [id])
 
@@ -185,6 +190,8 @@ model PaymentVoucher {
   voucher_type   VoucherType
   status         VoucherStatus @default(PENDING)
 
+
+
   issued_at      DateTime @default(now())
   issued_by      String?
 
@@ -218,18 +225,32 @@ enum VoucherStatus {
   CANCELLED
 }
 
-
 // rooms types
 model RoomType {
   id          Int      @id @unique() @default(autoincrement())
   type        String   @db.VarChar(50)
   priceMember Decimal  @default(0.00) @db.Decimal(30, 2)
   priceGuest  Decimal  @default(0.00) @db.Decimal(30, 2)
+
+  images Json @default("[]")
+
   rooms       Room[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
+model RoomReservation {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  room      Room     @relation(fields: [roomId], references: [id])
+  reservedFrom DateTime
+  reservedTo   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId])
+  @@index([reservedFrom, reservedTo])
+}
 // rooms
 model Room {
   id         Int      @id @unique @default(autoincrement())
@@ -244,9 +265,10 @@ model Room {
   outOfOrderFrom   DateTime?
   outOfOrderTo     DateTime?
   outOfOrderReason String?   @db.VarChar(300)
-
+  isReserved      Boolean   @default(false)
   isBooked Boolean       @default(false)
   bookings RoomBooking[]
+  reservations RoomReservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -256,7 +278,7 @@ model Room {
 model Hall {
   id          Int    @id @unique() @default(autoincrement())
   name        String @db.VarChar(50)
-  description String @db.VarChar(200)
+  description String @db.Text
 
   capacity       Int
   chargesMembers Decimal @default(0.00) @db.Decimal(30, 2)
@@ -268,6 +290,8 @@ model Hall {
   outOfServiceFrom   DateTime?
   outOfServiceTo     DateTime?
 
+  images Json @default("{}")
+
   isBooked Boolean       @default(false)
   bookings HallBooking[]
 
@@ -276,22 +300,24 @@ model Hall {
 }
 
 model Lawn {
-  id          Int    @id @unique @default(autoincrement())
-  description String @db.VarChar(200)
-
-  lawnCategoryId Int
-  lawnCategory   LawnCategory @relation(fields: [lawnCategoryId], references: [id])
-  minGuests      Int?         @default(0)
-  maxGuests      Int          @default(0)
-
-  memberCharges Decimal @default(0.00) @db.Decimal(30, 2)
-  guestCharges  Decimal @default(0.00) @db.Decimal(30, 2)
-
-  isBooked Boolean       @default(false)
-  bookings LawnBooking[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               Int       @id @default(autoincrement())
+  description      String    @db.VarChar(200)
+  lawnCategoryId   Int
+  lawnCategory     LawnCategory @relation(fields: [lawnCategoryId], references: [id])
+  minGuests        Int?      @default(0)
+  maxGuests        Int       @default(0)
+  images           Json      @default("[]")  // ← Fixed: [] not {}
+  memberCharges    Decimal   @default(0.00) @db.Decimal(30, 2)
+  guestCharges     Decimal   @default(0.00) @db.Decimal(30, 2)
+  isActive         Boolean   @default(true)        // ← NEW
+  isOutOfService   Boolean   @default(false)       // ← Fixed default
+  outOfServiceReason String? @db.VarChar(300)
+  outOfServiceFrom   DateTime?
+  outOfServiceTo     DateTime?
+  isBooked         Boolean   @default(false)
+  bookings         LawnBooking[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model LawnCategory {

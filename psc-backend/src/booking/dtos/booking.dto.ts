@@ -54,5 +54,13 @@ export class BookingDto{
     paymentMode: PaymentMode
     @IsOptional()
     prevRoomId?:string|null
+    
+    
+    @IsOptional()
+    numberOfAdults?: number;
+    @IsOptional()
+    numberOfChildren?: number;
+    @IsOptional()
+    specialRequests?: string;
 
 }

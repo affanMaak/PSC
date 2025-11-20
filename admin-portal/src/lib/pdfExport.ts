@@ -31,14 +31,14 @@ export const exportRoomTypesReport = (roomTypes: any[]) => {
   
   doc.setFontSize(18);
   doc.text("Room Types Report", 105, 20, { align: "center" });
-  
+  console.log(roomTypes)
   autoTable(doc, {
     startY: 30,
     head: [["Type", "Member Price (PKR/Day)", "Guest Price (PKR/Day)"]],
     body: roomTypes.map(rt => [
       rt.type,
-      rt.pricePerDayMember.toLocaleString(),
-      rt.pricePerDayGuest.toLocaleString()
+      rt.priceMember,
+      rt.priceGuest
     ]),
   });
   

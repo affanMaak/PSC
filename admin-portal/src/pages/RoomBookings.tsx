@@ -1,60 +1,568 @@
-import { useState } from "react";
-import { mockRoomBookings, mockRoomTypes, mockRooms } from "@/lib/mockData";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, XCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  getBookings,
+  createBooking,
+  updateBooking,
+  deleteBooking,
+  getRoomTypes,
+  getAvailRooms,
+  getRooms,
+  searchMembers,
+  getVouchers,
+} from "../../config/apis";
+import { Plus, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Import reusable components
+import { BookingFormComponent } from "@/components/BookingForm";
+import { BookingsTable } from "@/components/BookingsTable";
+import { EditBookingDialog } from "@/components/EditBookingDialog";
+import { VouchersDialog } from "@/components/VouchersDialog";
+import { CancelBookingDialog } from "@/components/CancelBookingDialog";
+
+// Import types and utilities
+import { Booking, BookingForm, Room, Member, RoomType } from "@/types/room-booking.type";
+import {
+  initialFormState,
+  calculatePrice,
+  calculateAccountingValues,
+  getDateStatuses,
+} from "@/utils/bookingUtils";
+import { format } from "date-fns";
 
 export default function RoomBookings() {
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [editBooking, setEditBooking] = useState<any>(null);
-  const [cancelBooking, setCancelBooking] = useState<any>(null);
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
+  const [cancelBooking, setCancelBooking] = useState<Booking | null>(null);
+  const [viewVouchers, setViewVouchers] = useState<Booking | null>(null);
   const [paymentFilter, setPaymentFilter] = useState("ALL");
-  const [selectedRoomType, setSelectedRoomType] = useState("");
-  const [selectedRoom, setSelectedRoom] = useState("");
-  const [pricingType, setPricingType] = useState("member");
-  const [paymentStatus, setPaymentStatus] = useState("UNPAID");
-  const [paidAmount, setPaidAmount] = useState(0);
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [calculatedPrice, setCalculatedPrice] = useState(0);
-  const { toast } = useToast();
+  const [form, setForm] = useState<BookingForm>(initialFormState);
+  const [editForm, setEditForm] = useState<BookingForm>(initialFormState);
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [editAvailableRooms, setEditAvailableRooms] = useState<Room[]>([]);
 
-  // Calculate price when room type or dates change
-  const calculatePrice = (roomType: string, pricing: string, inDate: string, outDate: string) => {
-    if (!roomType || !inDate || !outDate) return 0;
-    const type = mockRoomTypes.find(t => t.type === roomType);
-    if (!type) return 0;
-    
-    const checkInDate = new Date(inDate);
-    const checkOutDate = new Date(outDate);
-    const days = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (days <= 0) return 0;
-    const pricePerDay = pricing === "member" ? type.pricePerDayMember : type.pricePerDayGuest;
-    return days * pricePerDay;
+  // Member search states for create dialog
+  const [memberSearch, setMemberSearch] = useState("");
+  const [showMemberResults, setShowMemberResults] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // API Queries
+  const { data: bookings = [], isLoading: isLoadingBookings } = useQuery<Booking[]>({
+    queryKey: ["bookings", "rooms"],
+    queryFn: async () => (await getBookings("rooms")) as Booking[],
+  });
+
+  const { data: roomTypes = [], isLoading: isLoadingRoomTypes } = useQuery<RoomType[]>({
+    queryKey: ["roomTypes"],
+    queryFn: async () => (await getRoomTypes()) as RoomType[],
+  });
+
+  const { data: allRooms = [] } = useQuery<Room[]>({
+    queryKey: ["allRooms"],
+    queryFn: async () => (await getRooms()) as Room[],
+  });
+
+  // Vouchers query - only enabled when viewing vouchers
+  const {
+    data: vouchers = [],
+    isLoading: isLoadingVouchers,
+  } = useQuery<any[]>({
+    queryKey: ["vouchers", viewVouchers?.id],
+    queryFn: () => (viewVouchers ? getVouchers("Room", viewVouchers.id) : []),
+    enabled: !!viewVouchers,
+  });
+
+  // Member search query with throttling for create dialog
+  const {
+    data: searchResults = [],
+    isLoading: isSearching,
+    refetch: searchMembersFn,
+  } = useQuery<Member[]>({
+    queryKey: ["memberSearch", memberSearch],
+    queryFn: async () => (await searchMembers(memberSearch)) as Member[],
+    enabled: false,
+  });
+
+  // Date statuses for the create/edit dialogs
+  const createDateStatuses = useMemo(
+    () => getDateStatuses(form.roomId, bookings, allRooms),
+    [form.roomId, bookings, allRooms]
+  );
+
+  const editDateStatuses = useMemo(
+    () =>
+      editBooking
+        ? getDateStatuses(editForm.roomId, bookings, allRooms)
+        : [],
+    [editBooking, editForm.roomId, bookings, allRooms]
+  );
+
+  // Stable search handler with proper cleanup
+  const handleMemberSearch = useCallback(
+    (searchTerm: string) => {
+      setMemberSearch(searchTerm);
+
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      searchTimeoutRef.current = setTimeout(() => {
+        if (searchTerm.trim().length >= 2) {
+          searchMembersFn();
+          setShowMemberResults(true);
+        } else {
+          setShowMemberResults(false);
+        }
+      }, 300);
+    },
+    [searchMembersFn]
+  );
+
+  // Stable focus handler
+  const handleSearchFocus = useCallback(() => {
+    if (memberSearch.length >= 2 && searchResults.length > 0) {
+      setShowMemberResults(true);
+    }
+  }, [memberSearch.length, searchResults.length]);
+
+  // Stable member selection handlers
+  const handleSelectMember = useCallback((member: Member) => {
+    setSelectedMember(member);
+    setForm((prev) => ({
+      ...prev,
+      membershipNo: member.Membership_No || member.membershipNumber || "",
+      memberName: member.Name,
+      memberId: member.id?.toString(),
+    }));
+    setMemberSearch("");
+    setShowMemberResults(false);
+  }, []);
+
+  const handleClearMember = useCallback(() => {
+    setSelectedMember(null);
+    setForm((prev) => ({
+      ...prev,
+      membershipNo: "",
+      memberName: "",
+      memberId: "",
+    }));
+    setMemberSearch("");
+    setShowMemberResults(false);
+  }, []);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Mutations
+  const createMutation = useMutation<any, Error, Record<string, any>>({
+    mutationFn: (payload) => createBooking(payload),
+    onSuccess: () => {
+      toast({ title: "Booking created successfully" });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      setIsAddOpen(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to create booking",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMutation = useMutation<any, Error, Record<string, any>>({
+    mutationFn: (payload) => updateBooking(payload),
+    onSuccess: () => {
+      toast({ title: "Booking updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      setEditBooking(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update booking",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation<any, Error, { bookingFor: string; bookID: string }>({
+    mutationFn: ({ bookingFor, bookID }) => deleteBooking(bookingFor, bookID),
+    onSuccess: () => {
+      toast({ title: "Booking cancelled successfully" });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      setCancelBooking(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to cancel booking",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Fetch available rooms when room type is selected for create dialog
+  useEffect(() => {
+    const fetchAvailableRooms = async () => {
+      if (form.roomTypeId) {
+        try {
+          const response = await getAvailRooms(form.roomTypeId);
+          const rooms = (response?.data ?? response ?? []) as Room[];
+          setAvailableRooms(rooms);
+        } catch (error) {
+          setAvailableRooms([]);
+          toast({
+            title: "Failed to fetch available rooms",
+            variant: "destructive",
+          });
+        }
+      } else {
+        setAvailableRooms([]);
+      }
+    };
+
+    fetchAvailableRooms();
+  }, [form.roomTypeId, toast]);
+
+  // Update edit form when editBooking changes
+  useEffect(() => {
+    if (editBooking) {
+      const roomTypeId = editBooking.roomTypeId || editBooking.room?.roomType?.id;
+      const roomId = editBooking.roomId;
+
+      // Helper function to convert backend date to datetime-local format
+      const convertToDateTimeLocal = (dateString: string): string => {
+        if (!dateString) return "";
+        const date = new Date(dateString.replace(' ', 'T'));
+        return format(date, "yyyy-MM-dd'T'HH:mm");
+      };
+
+      const newEditForm: BookingForm = {
+        membershipNo: editBooking.Membership_No || "",
+        memberName: editBooking.memberName || editBooking.member?.Name || "",
+        memberId: editBooking.member?.id?.toString() || "",
+        category: "Room",
+        roomTypeId: roomTypeId?.toString() || "",
+        roomId: roomId?.toString() || "",
+        pricingType: editBooking.pricingType || "member",
+        checkIn: editBooking.checkIn ? convertToDateTimeLocal(editBooking.checkIn) : "",
+        checkOut: editBooking.checkOut ? convertToDateTimeLocal(editBooking.checkOut) : "",
+        totalPrice: editBooking.totalPrice || 0,
+        paymentStatus: editBooking.paymentStatus || "UNPAID",
+        paidAmount: editBooking.paidAmount || 0,
+        pendingAmount: editBooking.pendingAmount || 0,
+        paymentMode: "CASH",
+        numberOfAdults: editBooking.numberOfAdults || 1,
+        numberOfChildren: editBooking.numberOfChildren || 0,
+        specialRequests: editBooking.specialRequest || "",
+      };
+
+      setEditForm(newEditForm);
+
+      // Fetch available rooms for the room type
+      if (roomTypeId) {
+        getAvailRooms(roomTypeId.toString())
+          .then((response) => {
+            const availableRoomsData = (response?.data ?? response ?? []) as Room[];
+            setEditAvailableRooms(availableRoomsData);
+
+            // If the current room is not in available rooms, add it to the list
+            if (roomId && !availableRoomsData.some((room: Room) => room.id === roomId)) {
+              const currentRoom: Room = {
+                id: roomId,
+                roomNumber: editBooking.roomNumber || editBooking.room?.roomNumber || `Room ${roomId}`,
+                roomType: editBooking.roomType || editBooking.room?.roomType?.type || "Unknown",
+                roomTypeId: roomTypeId,
+                isActive: true,
+              };
+              setEditAvailableRooms([currentRoom, ...availableRoomsData]);
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to fetch available rooms:", error);
+            // Create a fallback room entry if fetch fails
+            if (roomId && roomTypeId) {
+              const fallbackRoom: Room = {
+                id: roomId,
+                roomNumber: editBooking.roomNumber || editBooking.room?.roomNumber || `Room ${roomId}`,
+                roomType: editBooking.roomType || editBooking.room?.roomType?.type || "Unknown",
+                roomTypeId: roomTypeId,
+                isActive: true,
+              };
+              setEditAvailableRooms([fallbackRoom]);
+            } else {
+              setEditAvailableRooms([]);
+            }
+          });
+      }
+    }
+  }, [editBooking]);
+
+  // Calculate price function
+  const calculatePriceForForm = (
+    roomTypeId: string,
+    pricingType: string,
+    checkIn: string,
+    checkOut: string
+  ) => {
+    return calculatePrice(roomTypeId, pricingType, checkIn, checkOut, roomTypes);
   };
 
-  const availableRooms = selectedRoomType 
-    ? mockRooms.filter(r => r.roomType === selectedRoomType && r.isActive)
-    : [];
+  // Unified form change handler
+  const createFormChangeHandler = (isEdit: boolean) => {
+    return (field: keyof BookingForm, value: any) => {
+      const setFormFn = isEdit ? setEditForm : setForm;
+      const formState = isEdit ? editForm : form;
 
-  const filteredBookings = paymentFilter === "ALL" 
-    ? mockRoomBookings 
-    : mockRoomBookings.filter(b => b.paymentStatus === paymentFilter);
+      setFormFn((prev) => {
+        const newForm = { ...prev, [field]: value };
+
+        // Recalculate price when relevant fields change
+        if (["roomTypeId", "pricingType", "checkIn", "checkOut"].includes(field)) {
+          const newPrice = calculatePriceForForm(
+            field === "roomTypeId" ? value : newForm.roomTypeId,
+            field === "pricingType" ? value : newForm.pricingType,
+            field === "checkIn" ? value : newForm.checkIn,
+            field === "checkOut" ? value : newForm.checkOut
+          );
+          newForm.totalPrice = newPrice;
+
+          // Recalculate accounting values
+          const accounting = calculateAccountingValues(
+            newForm.paymentStatus,
+            newPrice,
+            newForm.paidAmount
+          );
+          newForm.paidAmount = accounting.paid;
+          newForm.pendingAmount = accounting.pendingAmount;
+        }
+
+        // Handle payment status changes
+        if (field === "paymentStatus") {
+          const accounting = calculateAccountingValues(
+            value,
+            newForm.totalPrice,
+            newForm.paidAmount
+          );
+          newForm.paidAmount = accounting.paid;
+          newForm.pendingAmount = accounting.pendingAmount;
+        }
+
+        // Handle paid amount changes for half-paid status
+        if (field === "paidAmount" && newForm.paymentStatus === "HALF_PAID") {
+          newForm.pendingAmount = newForm.totalPrice - value;
+        }
+
+        return newForm;
+      });
+    };
+  };
+
+  const handleFormChange = createFormChangeHandler(false);
+  const handleEditFormChange = createFormChangeHandler(true);
+
+  const handleCreate = () => {
+    if (!form.membershipNo || !form.roomTypeId || !form.roomId || !form.checkIn || !form.checkOut || !form.numberOfAdults) {
+      toast({
+        title: "Please fill all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate guest count
+    if (form.numberOfAdults < 1) {
+      toast({
+        title: "At least one adult is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (form.numberOfAdults + form.numberOfChildren > 6) {
+      toast({
+        title: "Maximum capacity exceeded",
+        description: "Maximum 6 guests total (adults + children)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate dates
+    const checkInDate = new Date(form.checkIn);
+    const checkOutDate = new Date(form.checkOut);
+
+    // Normalize dates to start of day for comparison
+    const normalizedCheckIn = new Date(checkInDate);
+    normalizedCheckIn.setHours(0, 0, 0, 0);
+
+    const normalizedCheckOut = new Date(checkOutDate);
+    normalizedCheckOut.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (checkInDate >= checkOutDate) {
+      toast({
+        title: "Invalid dates",
+        description: "Check-out must be after check-in",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (normalizedCheckIn < today) {
+      toast({
+        title: "Invalid check-in date",
+        description: "Check-in date cannot be in the past",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate paid amount for half-paid status
+    if (form.paymentStatus === "HALF_PAID") {
+      if (form.paidAmount <= 0) {
+        toast({
+          title: "Invalid paid amount",
+          description: "Please enter a valid paid amount for half-paid status",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (form.paidAmount >= form.totalPrice) {
+        toast({
+          title: "Invalid paid amount",
+          description: "Paid amount must be less than total price for half-paid status",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const payload = {
+      category: "Room",
+      membershipNo: form.membershipNo,
+      subCategoryId: form.roomTypeId,
+      entityId: form.roomId,
+      pricingType: form.pricingType,
+      checkIn: new Date(form.checkIn).toISOString(),
+      checkOut: new Date(form.checkOut).toISOString(),
+      totalPrice: form.totalPrice.toString(),
+      paymentStatus: form.paymentStatus,
+      paidAmount: form.paidAmount,
+      pendingAmount: form.pendingAmount,
+      paymentMode: "CASH",
+      numberOfAdults: form.numberOfAdults,
+      numberOfChildren: form.numberOfChildren,
+      specialRequests: form.specialRequests,
+    };
+
+    createMutation.mutate(payload);
+  };
+
+  const handleUpdate = () => {
+    if (!editForm.membershipNo || !editForm.roomTypeId || !editForm.roomId || !editForm.checkIn || !editForm.checkOut) {
+      toast({
+        title: "Please fill all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate paid amount for half-paid status
+    if (editForm.paymentStatus === "HALF_PAID") {
+      if (editForm.paidAmount <= 0) {
+        toast({
+          title: "Invalid paid amount",
+          description: "Please enter a valid paid amount for half-paid status",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (editForm.paidAmount >= editForm.totalPrice) {
+        toast({
+          title: "Invalid paid amount",
+          description: "Paid amount must be less than total price for half-paid status",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const payload = {
+      id: editBooking?.id?.toString(),
+      category: "Room",
+      membershipNo: editForm.membershipNo,
+      subCategoryId: editForm.roomTypeId,
+      entityId: editForm.roomId,
+      pricingType: editForm.pricingType,
+      checkIn: new Date(editForm.checkIn).toISOString(),
+      checkOut: new Date(editForm.checkOut).toISOString(),
+      totalPrice: editForm.totalPrice.toString(),
+      paymentStatus: editForm.paymentStatus,
+      paidAmount: editForm.paidAmount,
+      pendingAmount: editForm.pendingAmount,
+      paymentMode: "CASH",
+      prevRoomId: editBooking?.roomId?.toString(),
+    };
+
+    updateMutation.mutate(payload);
+  };
+
+  const handleDelete = () => {
+    if (cancelBooking) {
+      deleteMutation.mutate({
+        bookingFor: "rooms",
+        bookID: cancelBooking.id.toString(),
+      });
+    }
+  };
+
+  const handleViewVouchers = (booking: Booking) => {
+    setViewVouchers(booking);
+  };
+
+  const filteredBookings = paymentFilter === "ALL"
+    ? bookings
+    : bookings?.filter((b: any) => b.paymentStatus === paymentFilter);
 
   const getPaymentBadge = (status: string) => {
     switch (status) {
       case "PAID":
-        return <Badge className="bg-success text-success-foreground">Paid</Badge>;
+        return <Badge className="bg-green-600 text-white">Paid</Badge>;
       case "HALF_PAID":
-        return <Badge className="bg-warning text-warning-foreground">Half Paid</Badge>;
+        return <Badge className="bg-yellow-600 text-white">Half Paid</Badge>;
       case "UNPAID":
         return <Badge variant="destructive">Unpaid</Badge>;
       default:
@@ -62,11 +570,27 @@ export default function RoomBookings() {
     }
   };
 
+  const resetForm = () => {
+    setForm(initialFormState);
+    setAvailableRooms([]);
+    setMemberSearch("");
+    setSelectedMember(null);
+    setShowMemberResults(false);
+  };
+
+  const resetEditForm = () => {
+    setEditForm(initialFormState);
+    setEditAvailableRooms([]);
+    setEditBooking(null);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Room Bookings</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">
+            Room Bookings
+          </h2>
           <p className="text-muted-foreground">Manage room reservations</p>
         </div>
         <div className="flex gap-2">
@@ -81,7 +605,13 @@ export default function RoomBookings() {
               <SelectItem value="UNPAID">Unpaid</SelectItem>
             </SelectContent>
           </Select>
-          <Dialog open={isAddOpen} onOpenChange={(open) => { setIsAddOpen(open); if (!open) setSelectedRoomType(""); }}>
+          <Dialog
+            open={isAddOpen}
+            onOpenChange={(open) => {
+              setIsAddOpen(open);
+              if (!open) resetForm();
+            }}
+          >
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -92,292 +622,93 @@ export default function RoomBookings() {
               <DialogHeader>
                 <DialogTitle>Create Room Booking</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                <div>
-                  <Label>Member Name</Label>
-                  <Input placeholder="Member name" className="mt-2" />
-                </div>
-                <div>
-                  <Label>Room Type</Label>
-                  <Select value={selectedRoomType} onValueChange={(val) => {
-                    setSelectedRoomType(val);
-                    setSelectedRoom("");
-                    setCalculatedPrice(calculatePrice(val, pricingType, checkIn, checkOut));
-                  }}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select room type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockRoomTypes.map(type => (
-                        <SelectItem key={type.id} value={type.type}>{type.type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Room Number</Label>
-                  <Select value={selectedRoom} onValueChange={setSelectedRoom} disabled={!selectedRoomType}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder={selectedRoomType ? "Select room" : "Select type first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableRooms.map(room => (
-                        <SelectItem key={room.id} value={room.roomNumber}>{room.roomNumber}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Pricing Type</Label>
-                  <Select value={pricingType} onValueChange={(val) => {
-                    setPricingType(val);
-                    setCalculatedPrice(calculatePrice(selectedRoomType, val, checkIn, checkOut));
-                  }}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="guest">Guest</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Check-in</Label>
-                  <Input type="datetime-local" className="mt-2" value={checkIn} onChange={(e) => {
-                    setCheckIn(e.target.value);
-                    setCalculatedPrice(calculatePrice(selectedRoomType, pricingType, e.target.value, checkOut));
-                  }} />
-                </div>
-                <div>
-                  <Label>Check-out</Label>
-                  <Input type="datetime-local" className="mt-2" value={checkOut} onChange={(e) => {
-                    setCheckOut(e.target.value);
-                    setCalculatedPrice(calculatePrice(selectedRoomType, pricingType, checkIn, e.target.value));
-                  }} />
-                </div>
-                <div className="md:col-span-2">
-                  <Label>Total Price</Label>
-                  <Input type="text" className="mt-2 font-bold text-lg" value={`PKR ${calculatedPrice.toLocaleString()}`} disabled />
-                </div>
-                <div>
-                  <Label>Payment Status</Label>
-                  <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UNPAID">Unpaid</SelectItem>
-                      <SelectItem value="HALF_PAID">Half Paid</SelectItem>
-                      <SelectItem value="PAID">Paid</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {paymentStatus === "HALF_PAID" && (
-                  <>
-                    <div>
-                      <Label>Paid Amount (PKR)</Label>
-                      <Input 
-                        type="number" 
-                        value={paidAmount || ""} 
-                        onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
-                        className="mt-2"
-                        placeholder="Enter paid amount"
-                      />
-                    </div>
-                    <div>
-                      <Label>Remaining Amount (PKR)</Label>
-                      <Input 
-                        type="number" 
-                        value={calculatedPrice - paidAmount}
-                        className="mt-2"
-                        readOnly
-                        disabled
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
+
+              <BookingFormComponent
+                form={form}
+                onChange={handleFormChange}
+                roomTypes={roomTypes}
+                availableRooms={availableRooms}
+                isLoadingRoomTypes={isLoadingRoomTypes}
+                memberSearch={memberSearch}
+                onMemberSearchChange={handleMemberSearch}
+                showMemberResults={showMemberResults}
+                searchResults={searchResults}
+                isSearching={isSearching}
+                selectedMember={selectedMember}
+                onSelectMember={handleSelectMember}
+                onClearMember={handleClearMember}
+                onSearchFocus={handleSearchFocus}
+                dateStatuses={createDateStatuses}
+              />
+
               <DialogFooter>
-                <Button variant="outline" onClick={() => {
-                  setIsAddOpen(false);
-                  setSelectedRoomType("");
-                  setSelectedRoom("");
-                  setCheckIn("");
-                  setCheckOut("");
-                  setCalculatedPrice(0);
-                  setPaymentStatus("UNPAID");
-                  setPaidAmount(0);
-                }}>Cancel</Button>
-                <Button onClick={() => { 
-                  toast({ title: "Booking created", description: `Total: PKR ${calculatedPrice.toLocaleString()}` }); 
-                  setIsAddOpen(false);
-                  setSelectedRoomType("");
-                  setSelectedRoom("");
-                  setCheckIn("");
-                  setCheckOut("");
-                  setCalculatedPrice(0);
-                  setPaymentStatus("UNPAID");
-                  setPaidAmount(0);
-                }}>Create</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddOpen(false);
+                    resetForm();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreate}
+                  disabled={createMutation.isPending || !selectedMember}
+                >
+                  {createMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Booking"
+                  )}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Room</TableHead>
-                <TableHead>Check-in</TableHead>
-                <TableHead>Check-out</TableHead>
-                <TableHead>Total Price</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredBookings.map((booking) => (
-                <TableRow key={booking.id}>
-                  <TableCell className="font-medium">{booking.memberName}</TableCell>
-                  <TableCell>{booking.roomNumber}</TableCell>
-                  <TableCell>{booking.checkIn}</TableCell>
-                  <TableCell>{booking.checkOut}</TableCell>
-                  <TableCell>PKR {booking.totalPrice.toLocaleString()}</TableCell>
-                  <TableCell>{getPaymentBadge(booking.paymentStatus)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => setEditBooking(booking)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setCancelBooking(booking)}>
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Bookings Table */}
+      <BookingsTable
+        bookings={filteredBookings}
+        isLoading={isLoadingBookings}
+        onEdit={setEditBooking}
+        onViewVouchers={handleViewVouchers}
+        onCancel={setCancelBooking}
+        getPaymentBadge={getPaymentBadge}
+      />
 
       {/* Edit Dialog */}
-      <Dialog open={!!editBooking} onOpenChange={() => setEditBooking(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Booking</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            <div>
-              <Label>Member Name</Label>
-              <Input defaultValue={editBooking?.memberName} className="mt-2" />
-            </div>
-            <div>
-              <Label>Room Type</Label>
-              <Select defaultValue={editBooking?.roomType}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockRoomTypes.map(type => (
-                    <SelectItem key={type.id} value={type.type}>{type.type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Room Number</Label>
-              <Input defaultValue={editBooking?.roomNumber} className="mt-2" />
-            </div>
-            <div>
-              <Label>Pricing Type</Label>
-              <Select defaultValue={editBooking?.pricingType}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="guest">Guest</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Check-in</Label>
-              <Input type="datetime-local" defaultValue={editBooking?.checkIn} className="mt-2" />
-            </div>
-            <div>
-              <Label>Check-out</Label>
-              <Input type="datetime-local" defaultValue={editBooking?.checkOut} className="mt-2" />
-            </div>
-            <div>
-              <Label>Total Price (PKR)</Label>
-              <Input type="number" defaultValue={editBooking?.totalPrice} className="mt-2" />
-            </div>
-            <div>
-              <Label>Payment Status</Label>
-              <Select defaultValue={editBooking?.paymentStatus}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="UNPAID">Unpaid</SelectItem>
-                  <SelectItem value="HALF_PAID">Half Paid</SelectItem>
-                  <SelectItem value="PAID">Paid</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {editBooking?.paymentStatus === "HALF_PAID" && (
-              <>
-                <div>
-                  <Label>Paid Amount (PKR)</Label>
-                  <Input 
-                    type="number" 
-                    defaultValue={editBooking?.paidAmount || editBooking?.totalPrice / 2} 
-                    className="mt-2"
-                    onChange={(e) => {
-                      const paidAmount = parseFloat(e.target.value) || 0;
-                      const remaining = editBooking?.totalPrice - paidAmount;
-                      const remainingInput = document.querySelector('[data-remaining]') as HTMLInputElement;
-                      if (remainingInput) remainingInput.value = remaining.toString();
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label>Remaining Amount (PKR)</Label>
-                  <Input 
-                    type="number" 
-                    defaultValue={editBooking?.remainingAmount || editBooking?.totalPrice / 2}
-                    className="mt-2"
-                    data-remaining
-                    readOnly
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditBooking(null)}>Cancel</Button>
-            <Button onClick={() => { toast({ title: "Booking updated" }); setEditBooking(null); }}>Update</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditBookingDialog
+        editBooking={editBooking}
+        editForm={editForm}
+        onEditFormChange={handleEditFormChange}
+        roomTypes={roomTypes}
+        editAvailableRooms={editAvailableRooms}
+        isLoadingRoomTypes={isLoadingRoomTypes}
+        dateStatuses={editDateStatuses}
+        onUpdate={handleUpdate}
+        onClose={resetEditForm}
+        isUpdating={updateMutation.isPending}
+      />
 
-      {/* Delete Dialog */}
-      <Dialog open={!!cancelBooking} onOpenChange={() => setCancelBooking(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cancel Booking</DialogTitle>
-          </DialogHeader>
-          <p className="py-4">Are you sure you want to cancel this booking for <strong>{cancelBooking?.memberName}</strong>?</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCancelBooking(null)}>No</Button>
-            <Button variant="destructive" onClick={() => { toast({ title: "Booking cancelled" }); setCancelBooking(null); }}>Cancel Booking</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Vouchers Dialog */}
+      <VouchersDialog
+        viewVouchers={viewVouchers}
+        onClose={() => setViewVouchers(null)}
+        vouchers={vouchers}
+        isLoadingVouchers={isLoadingVouchers}
+      />
+
+      {/* Cancel Booking Dialog */}
+      <CancelBookingDialog
+        cancelBooking={cancelBooking}
+        onClose={() => setCancelBooking(null)}
+        onConfirm={handleDelete}
+        isDeleting={deleteMutation.isPending}
+      />
     </div>
   );
 }
