@@ -5,14 +5,6 @@ import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.use(cookieParser());
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
   app.enableCors({
     // origin: (origin, callback) => {
     //   const allowed = [
@@ -31,6 +23,15 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'Client-Type'],
     credentials: true,
   });
+  app.use(cookieParser());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
