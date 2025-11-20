@@ -14,7 +14,7 @@ async function bootstrap() {
     }),
   );
   app.enableCors({
-    origin: ['https://psc-mu.vercel.app/', 'http://localhost:5173'],
+    origin: ['https://psc-mu.vercel.app', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Client-Type'],
     credentials: true,
