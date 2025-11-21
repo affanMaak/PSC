@@ -18,7 +18,7 @@ async function bootstrap() {
     //     callback(new Error('Not allowed by CORS'));
     //   }
     // },
-    origin: ['https://distinguished-light-production-7e60.up.railway.app'],
+    origin: ['https://psc.up.railway.app/'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Client-Type'],
     credentials: true,
