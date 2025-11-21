@@ -1,6 +1,6 @@
 import axios from "axios";
-const base_url = "http://localhost:3000";
-// const base_url = "https://psc-production.up.railway.app";
+// const base_url = "http://localhost:3000";
+const base_url = "https://psc-production.up.railway.app";
 
 export const authAdmin = async (data: any): Promise<any> => {
   try {
