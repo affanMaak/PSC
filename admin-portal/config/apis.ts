@@ -8,6 +8,7 @@ export const authAdmin = async (data: any): Promise<any> => {
       withCredentials: true,
       headers: {
         "Client-Type": "web",
+        "Content-Type": "application/json",
       },
     });
     return response;
@@ -567,15 +568,19 @@ export const deleteRoom = async (id: string): Promise<any> => {
 };
 
 // member api
-export const checkAvailRooms = async (roomTypeId: any, dates: {from: string, to: string}): Promise<any> => {
+export const checkAvailRooms = async (
+  roomTypeId: any,
+  dates: { from: string; to: string }
+): Promise<any> => {
   try {
     const response = await axios.post(
-      `${base_url}/room/member/check/rooms/available?roomType=${roomTypeId}`, dates,
+      `${base_url}/room/member/check/rooms/available?roomType=${roomTypeId}`,
+      dates,
       {
         withCredentials: true,
       }
     );
-    console.log(response.data)
+    console.log(response.data);
     return response.data;
   } catch (error: any) {
     const message =
@@ -588,10 +593,14 @@ export const checkAvailRooms = async (roomTypeId: any, dates: {from: string, to:
   }
 };
 
-export const generateInvoice = async (roomTypeId: any, bookingDate: any): Promise<any> => {
+export const generateInvoice = async (
+  roomTypeId: any,
+  bookingDate: any
+): Promise<any> => {
   try {
     const response = await axios.post(
-      `${base_url}/payment/generate/invoice/room?roomType=${roomTypeId}`, bookingDate,
+      `${base_url}/payment/generate/invoice/room?roomType=${roomTypeId}`,
+      bookingDate,
       {
         withCredentials: true,
       }
