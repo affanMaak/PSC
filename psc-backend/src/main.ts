@@ -18,7 +18,7 @@ async function bootstrap() {
     //     callback(new Error('Not allowed by CORS'));
     //   }
     // },
-    origin: 'https://psc-mu.vercel.app',
+    origin: ['https://psc-mu.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Client-Type'],
     credentials: true,
