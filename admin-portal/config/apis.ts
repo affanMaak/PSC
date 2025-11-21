@@ -591,7 +591,7 @@ export const checkAvailRooms = async (roomTypeId: any, dates: {from: string, to:
 export const generateInvoice = async (roomTypeId: any, bookingDate: any): Promise<any> => {
   try {
     const response = await axios.post(
-      `${base_url}/booking/member/generate/invoice/room?roomType=${roomTypeId}`, bookingDate,
+      `${base_url}/payment/generate/invoice/room?roomType=${roomTypeId}`, bookingDate,
       {
         withCredentials: true,
       }

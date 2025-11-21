@@ -16,11 +16,12 @@ import { HallModule } from './hall/hall.module';
 import { LawnModule } from './lawn/lawn.module';
 import { PhotoshootModule } from './photoshoot/photoshoot.module';
 import { SportModule } from './sport/sport.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [AuthModule, AdminModule, MemberModule, BookingModule, NotificationModule, PrismaModule, ConfigModule.forRoot({
     isGlobal: true
-  }), MailerModule, SchedularModule, ScheduleModule.forRoot(), CloudinaryModule, RoomModule, HallModule, LawnModule, PhotoshootModule, SportModule],
+  }), MailerModule, SchedularModule, ScheduleModule.forRoot(), CloudinaryModule, RoomModule, HallModule, LawnModule, PhotoshootModule, SportModule, PaymentModule],
   controllers: [],
   providers: [MailerService],
 })

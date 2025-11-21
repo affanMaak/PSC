@@ -119,14 +119,5 @@ export class BookingController {
             return this.bookingService.dBookingPhotoshoot(Number(bookID.bookID));
     }
 
-    // generate invoice
 
-    @UseGuards(JwtAccGuard)
-    @Post('member/generate/invoice/room')
-    async generateInvoice(
-        @Query('roomType') roomType: string,
-        @Body() bookingData: any,
-    ) {
-        return await this.bookingService.genInvoiceRoom(Number(roomType), bookingData);
-    }
 }
