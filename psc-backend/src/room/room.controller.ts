@@ -90,8 +90,9 @@ export class RoomController {
     );
   }
 
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  @UseGuards(JwtAccGuard)
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN)
   @Get('get/roomTypes')
   async getRoomTypes() {
     return await this.room.getRoomTypes();

@@ -85,8 +85,11 @@ export class BookingService {
 
     // ── 1. VALIDATE DATES ─────────────────────────────────────
     // Parse dates as Pakistan Time
+    // console.log(checkIn, checkOut)
     const checkInDate = parsePakistanDate(checkIn!);
     const checkOutDate = parsePakistanDate(checkOut!);
+    // console.log(checkInDate)
+    // console.log(checkOutDate)
 
     // Normalize dates to start of day in PKT for comparison
     const normalizedCheckIn = new Date(checkInDate);
@@ -111,7 +114,6 @@ export class BookingService {
       );
     }
 
-
     // ── 3. VALIDATE ROOM ───────────────────────────────────────
     const room = await this.prismaService.room.findFirst({
       where: { id: Number(entityId) },
@@ -132,20 +134,20 @@ export class BookingService {
     if (!room) throw new NotFoundException('Room not found');
 
     // Check if room is active
-    if (!room.isActive) {
-      throw new ConflictException('Room is not active');
-    }
+    // if (!room.isActive) {
+    //   throw new ConflictException('Room is not active');
+    // }
     // room is on hold
     if (room.onHold) {
       throw new ConflictException('Room is on hold');
     }
 
     // Check if room is currently out of order
-    if (room.isOutOfOrder) {
-      throw new ConflictException(
-        `Room is currently out of order${room.outOfOrderTo ? ` until ${room.outOfOrderTo.toLocaleDateString()}` : ''}`,
-      );
-    }
+    // if (room.isOutOfOrder) {
+    //   throw new ConflictException(
+    //     `Room is currently out of order${room.outOfOrderTo ? ` until ${room.outOfOrderTo.toLocaleDateString()}` : ''}`,
+    //   );
+    // }
 
     // Check if room is scheduled to be out of order during booking period
     if (room.outOfOrderFrom && room.outOfOrderTo) {
@@ -280,50 +282,42 @@ export class BookingService {
       checkIn,
       checkOut,
       totalPrice,
-      paymentStatus,
+      paymentStatus = 'PAID',
       pricingType,
       paidAmount,
-      paymentMode,
+      paymentMode = 'ONLINE',
       numberOfAdults = 1,
       numberOfChildren = 0,
       specialRequests = '',
       selectedRoomIds,
     } = payload;
 
-    // ── 1. VALIDATE DATES ─────────────────────────────────────
-    // Parse dates as Pakistan Time
-    const checkInDate = parsePakistanDate(checkIn!);
-    const checkOutDate = parsePakistanDate(checkOut!);
+    // Validate dates
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
 
-    // Normalize dates to start of day in PKT for comparison
-    const normalizedCheckIn = new Date(checkInDate);
-    normalizedCheckIn.setHours(0, 0, 0, 0);
-
-    const now = getPakistanDate();
-    now.setHours(0, 0, 0, 0);
-
-    if (!checkIn || !checkOut || checkInDate >= checkOutDate)
+    if (!checkIn || !checkOut || checkInDate >= checkOutDate) {
       throw new ConflictException('Check-in must be before check-out');
+    }
 
-    if (normalizedCheckIn < now)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const checkInDateOnly = new Date(checkInDate);
+    checkInDateOnly.setHours(0, 0, 0, 0);
+
+    if (checkInDateOnly < today) {
       throw new ConflictException('Check-in date cannot be in the past');
+    }
 
-    // ── 2. VALIDATE GUEST COUNT ───────────────────────────────
+    // Validate guest count
     if (numberOfAdults < 1) {
       throw new ConflictException('At least one adult is required');
     }
 
-    const totalGuests = numberOfAdults + numberOfChildren;
-    const maxGuestsPerRoom = 6;
-    if (totalGuests > maxGuestsPerRoom * selectedRoomIds.length) {
-      throw new ConflictException(
-        `Maximum room capacity exceeded. ${selectedRoomIds.length} room(s) can accommodate maximum ${maxGuestsPerRoom * selectedRoomIds.length} guests total`,
-      );
-    }
-
-    // ── 3. VALIDATE MEMBER ────────────────────────────────────
+    // Validate member
     const member = await this.prismaService.member.findUnique({
-      where: { Membership_No: membershipNo },
+      where: { Membership_No: membershipNo.toString() },
     });
 
     if (!member) {
@@ -333,68 +327,33 @@ export class BookingService {
     // Use transaction for atomic operations
     return await this.prismaService.$transaction(async (prisma) => {
       const bookings: any = [];
-      const pricePerRoom = Number(totalPrice) / selectedRoomIds.length;
 
-      // ── 4. VALIDATE AND PROCESS EACH ROOM ────────────────────
+      // Get room type for pricing
+      const roomType = await prisma.roomType.findFirst({
+        where: { id: Number(entityId) },
+      });
+
+      if (!roomType) {
+        throw new NotFoundException('Room type not found');
+      }
+
+      const pricePerNight =
+        pricingType === 'member' ? roomType.priceMember : roomType.priceGuest;
+      const nights = Math.ceil(
+        (checkOutDate.getTime() - checkInDate.getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
+      const pricePerRoom = Number(pricePerNight) * nights;
+
+      // Process each room
       for (const roomId of selectedRoomIds) {
         const room = await prisma.room.findFirst({
           where: { id: Number(roomId) },
-          include: {
-            reservations: {
-              where: {
-                OR: [
-                  {
-                    reservedFrom: { lt: checkOutDate },
-                    reservedTo: { gt: checkInDate },
-                  },
-                ],
-              },
-            },
-            roomType: true,
-          },
         });
 
         if (!room) throw new NotFoundException(`Room ${roomId} not found`);
 
-        // Check if room is active
-        if (!room.isActive) {
-          throw new ConflictException(`Room ${room.roomNumber} is not active`);
-        }
-
-        // Check if room is on hold (FIXED: should check if onHold is true)
-        if (room.onHold) {
-          throw new ConflictException(`Room ${room.roomNumber} is on hold`);
-        }
-
-        // Check if room is currently out of order
-        if (room.isOutOfOrder) {
-          throw new ConflictException(
-            `Room ${room.roomNumber} is currently out of order${room.outOfOrderTo ? ` until ${room.outOfOrderTo.toLocaleDateString()}` : ''}`,
-          );
-        }
-
-        // Check if room is scheduled to be out of order during booking period
-        if (room.outOfOrderFrom && room.outOfOrderTo) {
-          const outOfOrderOverlap =
-            checkInDate < room.outOfOrderTo &&
-            checkOutDate > room.outOfOrderFrom;
-
-          if (outOfOrderOverlap) {
-            throw new ConflictException(
-              `Room ${room.roomNumber} is scheduled for maintenance from ${room.outOfOrderFrom.toLocaleDateString()} to ${room.outOfOrderTo.toLocaleDateString()}`,
-            );
-          }
-        }
-
-        // ── 5. CHECK FOR EXISTING RESERVATIONS ─────────────────
-        if (room.reservations.length > 0) {
-          const reservation = room.reservations[0];
-          throw new ConflictException(
-            `Room ${room.roomNumber} has existing reservation from ${reservation.reservedFrom.toLocaleDateString()} to ${reservation.reservedTo.toLocaleDateString()}`,
-          );
-        }
-
-        // ── 6. CHECK FOR BOOKING CONFLICTS ─────────────────────
+        // Check for booking conflicts
         const overlappingBooking = await prisma.roomBooking.findFirst({
           where: {
             roomId: room.id,
@@ -411,47 +370,33 @@ export class BookingService {
           );
         }
 
-        // ── 7. DETERMINE PAID / OWED AMOUNTS ───────────────────
+        // Calculate payment amounts
         const total = pricePerRoom;
         let paid = 0;
         let owed = total;
 
-        if (paymentStatus === (PaymentStatus.PAID as unknown)) {
+        if (paymentStatus === 'PAID') {
           paid = total;
           owed = 0;
-        } else if (paymentStatus === (PaymentStatus.HALF_PAID as unknown)) {
-          paid = Number(paidAmount) / selectedRoomIds.length || 0;
-          if (paid <= 0)
-            throw new ConflictException(
-              'Paid amount must be greater than 0 for half-paid status',
-            );
-          if (paid >= total)
-            throw new ConflictException(
-              'Paid amount must be less than total for half-paid status',
-            );
+        } else if (paymentStatus === 'HALF_PAID') {
+          paid = Number(paidAmount) || 0;
           owed = total - paid;
-        } else {
-          // UNPAID
-          paid = 0;
-          owed = total;
         }
 
-        // ── 8. CREATE BOOKING FOR EACH ROOM ────────────────────
+        // Create booking
         const booking = await prisma.roomBooking.create({
           data: {
-            Membership_No: membershipNo,
+            Membership_No: membershipNo.toString(),
             roomId: room.id,
             checkIn: checkInDate,
             checkOut: checkOutDate,
             totalPrice: total,
-            paymentStatus: paymentStatus as unknown as PaymentStatus,
+            paymentStatus: paymentStatus as any,
             pricingType,
             paidAmount: paid,
             pendingAmount: owed,
-            numberOfAdults: Math.ceil(numberOfAdults / selectedRoomIds.length), // Distribute adults evenly
-            numberOfChildren: Math.ceil(
-              numberOfChildren / selectedRoomIds.length,
-            ), // Distribute children evenly
+            numberOfAdults: numberOfAdults,
+            numberOfChildren: numberOfChildren,
             specialRequests,
           },
           include: {
@@ -470,34 +415,33 @@ export class BookingService {
 
         bookings.push(booking);
 
-        // ── 9. MARK ROOM AS BOOKED ONLY IF CHECK-IN STARTS NOW ─
-        if (checkInDate <= now && checkOutDate > now) {
-          await prisma.room.update({
-            where: { id: room.id },
-            data: { isBooked: true },
-          });
-        }
+        // Update room status
+        await prisma.room.update({
+          where: { id: room.id },
+          data: {
+            onHold: false,
+            holdExpiry: null,
+            holdBy: null,
+            isBooked: true,
+          },
+        });
       }
 
-      // ── 10. UPDATE MEMBER LEDGER ─────────────────────────────
+      // Update member ledger
       const totalPaid = Number(paidAmount) || Number(totalPrice);
       const totalOwed =
-        paymentStatus === (PaymentStatus.PAID as unknown)
-          ? 0
-          : Number(totalPrice) - totalPaid;
+        paymentStatus === 'PAID' ? 0 : Number(totalPrice) - totalPaid;
 
       await prisma.member.update({
-        where: { Membership_No: membershipNo },
+        where: { Membership_No: membershipNo.toString() },
         data: {
           totalBookings: { increment: selectedRoomIds.length },
-          lastBookingDate: now,
+          lastBookingDate: new Date(),
           drAmount: { increment: totalPaid },
           crAmount: { increment: totalOwed },
           Balance: { increment: totalPaid - totalOwed },
         },
       });
-
-      // ── 11. CREATE PAYMENT VOUCHER (only if cash received) ──
       if (totalPaid > 0) {
         let voucherType: VoucherType | null = null;
         if (paymentStatus === (PaymentStatus.PAID as unknown))
@@ -505,20 +449,21 @@ export class BookingService {
         else if (paymentStatus === (PaymentStatus.HALF_PAID as unknown))
           voucherType = VoucherType.HALF_PAYMENT;
 
-        // Create one voucher for the entire booking
-        await prisma.paymentVoucher.create({
-          data: {
-            booking_type: 'ROOM',
-            booking_id: bookings[0]?.id, // Reference first booking
-            membership_no: membershipNo,
-            amount: totalPaid,
-            payment_mode: paymentMode as unknown as PaymentMode,
-            voucher_type: voucherType!,
-            status: VoucherStatus.CONFIRMED,
-            issued_by: 'system',
-            remarks: `Booked ${selectedRoomIds.length} room(s) | ${checkInDate.toLocaleDateString()} → ${checkOutDate.toLocaleDateString()} | Adults: ${numberOfAdults}, Children: ${numberOfChildren}${specialRequests ? ` | Requests: ${specialRequests}` : ''}`,
-          },
-        });
+        for (const booking of bookings) {
+          await this.prismaService.paymentVoucher.create({
+            data: {
+              booking_type: 'ROOM',
+              booking_id: booking.id,
+              membership_no: membershipNo.toString(),
+              amount: totalPaid,
+              payment_mode: paymentMode as unknown as PaymentMode,
+              voucher_type: voucherType!,
+              status: VoucherStatus.CONFIRMED,
+              issued_by: 'admin',
+              remarks: `Room #${booking.room.roomNumber} | ${checkInDate.toLocaleDateString()} → ${checkOutDate.toLocaleDateString()} | Adults: ${numberOfAdults}, Children: ${numberOfChildren}${specialRequests ? ` | Requests: ${specialRequests}` : ''}`,
+            },
+          });
+        }
       }
 
       return {
@@ -564,9 +509,7 @@ export class BookingService {
     if (!booking) throw new UnprocessableEntityException('Booking not found');
 
     // ── 2. VALIDATE DATES ─────────────────────────────────────
-    const newCheckIn = checkIn
-      ? parsePakistanDate(checkIn)
-      : booking.checkIn;
+    const newCheckIn = checkIn ? parsePakistanDate(checkIn) : booking.checkIn;
     const newCheckOut = checkOut
       ? parsePakistanDate(checkOut)
       : booking.checkOut;
@@ -619,9 +562,9 @@ export class BookingService {
     if (!room) throw new NotFoundException('Room not found');
 
     // Check if room is active
-    if (!room.isActive) {
-      throw new ConflictException('Room is not active');
-    }
+    // if (!room.isActive) {
+    //   throw new ConflictException('Room is not active');
+    // }
 
     // room is on hold
     if (room.onHold) {
@@ -629,11 +572,11 @@ export class BookingService {
     }
 
     // Check if room is currently out of order
-    if (room.isOutOfOrder) {
-      throw new ConflictException(
-        `Room is currently out of order${room.outOfOrderTo ? ` until ${room.outOfOrderTo.toLocaleDateString()}` : ''}`,
-      );
-    }
+    // if (room.isOutOfOrder) {
+    //   throw new ConflictException(
+    //     `Room is currently out of order${room.outOfOrderTo ? ` until ${room.outOfOrderTo.toLocaleDateString()}` : ''}`,
+    //   );
+    // }
 
     // Check if room is scheduled to be out of order during booking period
     if (room.outOfOrderFrom && room.outOfOrderTo) {

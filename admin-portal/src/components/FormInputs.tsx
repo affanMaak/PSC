@@ -112,11 +112,11 @@ export const DatePickerInput = React.memo(({
   }, [value]);
 
   const handleSelect = (nextDate: Date | undefined) => {
-    console.log("Date selected:", nextDate);
     setSelectedDate(nextDate);
 
     if (nextDate) {
       const formattedDate = format(nextDate, "yyyy-MM-dd'T'HH:mm");
+      console.log(":::::::::",formattedDate)
       onChange(formattedDate);
     } else {
       onChange("");
@@ -124,22 +124,19 @@ export const DatePickerInput = React.memo(({
   };
 
   const calculatedDateStatuses = useMemo(() => {
-    console.log('=== CALCULATING DATE STATUSES ===');
-
     // Prefer rooms-based calculation when room data is provided
     if (rooms && rooms.length > 0) {
-      console.log('Calculating from rooms:', rooms);
       const statusMap = new Map();
 
       rooms.forEach(room => {
-        console.log(`Processing room ${room.roomNumber}:`, {
-          id: room.id,
-          isOutOfOrder: room.isOutOfOrder,
-          outOfOrderFrom: room.outOfOrderFrom,
-          outOfOrderTo: room.outOfOrderTo,
-          reservations: room.reservations,
-          bookings: room.bookings
-        });
+        // console.log(`Processing room ${room.roomNumber}:`, {
+        //   id: room.id,
+        //   isOutOfOrder: room.isOutOfOrder,
+        //   outOfOrderFrom: room.outOfOrderFrom,
+        //   outOfOrderTo: room.outOfOrderTo,
+        //   reservations: room.reservations,
+        //   bookings: room.bookings
+        // });
 
         // Check out-of-order dates
         if (room.isOutOfOrder && room.outOfOrderFrom && room.outOfOrderTo) {
@@ -218,18 +215,18 @@ export const DatePickerInput = React.memo(({
       });
 
       const result = Array.from(statusMap.values());
-      console.log('Final calculated statuses (from rooms):', result);
+      // console.log('Final calculated statuses (from rooms):', result);
       return result;
     }
 
     // Fallback: if explicit dateStatuses are provided, use them
     if (dateStatuses && dateStatuses.length > 0) {
-      console.log('Using provided dateStatuses:', dateStatuses);
+      // console.log('Using provided dateStatuses:', dateStatuses);
       // Filter out AVAILABLE statuses since we don't need to mark available dates
       return dateStatuses.filter((ds) => ds.status !== "AVAILABLE");
     }
 
-    console.log('No rooms or dateStatuses provided');
+    // console.log('No rooms or dateStatuses provided');
     return [];
   }, [rooms, dateStatuses]);
 

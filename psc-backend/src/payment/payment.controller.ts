@@ -17,7 +17,9 @@ export class PaymentController {
         @Body() bookingData: any,
         @Req() req: {user: {id: string}}
     ) {
-        return await this.payment.genInvoiceRoom(Number(roomType), {...bookingData, membership_no: Number(req.user?.id)});
+        // Prefer membership number coming from the frontend payload; fall back to JWT user id
+        const membership_no = bookingData.membership_no ?? req.user?.id;
+        return await this.payment.genInvoiceRoom(Number(roomType), { ...bookingData, membership_no });
     }
 
 }

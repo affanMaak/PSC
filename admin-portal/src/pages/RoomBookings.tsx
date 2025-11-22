@@ -421,6 +421,7 @@ export default function RoomBookings() {
 
     // Validate dates
     const checkInDate = new Date(form.checkIn);
+    console.log(checkInDate)
     const checkOutDate = new Date(form.checkOut);
 
     // Normalize dates to start of day for comparison
@@ -477,8 +478,8 @@ export default function RoomBookings() {
       subCategoryId: form.roomTypeId,
       entityId: form.roomId,
       pricingType: form.pricingType,
-      checkIn: new Date(form.checkIn).toISOString(),
-      checkOut: new Date(form.checkOut).toISOString(),
+      checkIn: form.checkIn.split("T")[0],
+      checkOut: form.checkOut.split("T")[0],
       totalPrice: form.totalPrice.toString(),
       paymentStatus: form.paymentStatus,
       paidAmount: form.paidAmount,
@@ -488,6 +489,8 @@ export default function RoomBookings() {
       numberOfChildren: form.numberOfChildren,
       specialRequests: form.specialRequests,
     };
+
+    console.log(payload)
 
     createMutation.mutate(payload);
   };

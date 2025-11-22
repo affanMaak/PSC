@@ -94,6 +94,7 @@ export class SchedularService {
       data: {
         onHold: false,
         holdExpiry: null,
+        holdBy: null
       },
     });
     if (expiredHolds.count > 0) {

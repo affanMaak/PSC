@@ -12,8 +12,10 @@ import { RoomDto } from './dtos/room.dto';
 import {
   formatPakistanDate,
   getPakistanDate,
+  normalizeDate,
   parsePakistanDate,
 } from 'src/utils/time';
+import { normalize } from 'path';
 
 @Injectable()
 export class RoomService {
@@ -293,7 +295,7 @@ export class RoomService {
           select: { type: true, priceMember: true, priceGuest: true },
         },
         reservations: true,
-        bookings: true
+        bookings: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -607,45 +609,50 @@ export class RoomService {
     if (!typeExists) return new NotFoundException(`room type not found`);
 
     // Parse dates as Pakistan Time
-    const from = parsePakistanDate(fromDate + 'T00:00:00+05:00');
-    const to = parsePakistanDate(toDate + 'T00:00:00+05:00');
-
-    console.log('Searching for rooms from:', from, 'to:', to);
+    // console.log('Searching for rooms from:', fromDate, 'to:', toDate);
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    // console.log('Parsed dates:', from, to);
 
     return await this.prismaService.room.findMany({
       where: {
         roomTypeId: roomType,
-        isActive: true,
         onHold: false,
 
-        // Out-of-order logic
+        // Exclude rooms that are out of order during the requested period
         OR: [
           { isOutOfOrder: false },
           {
+            // Room is out of order but NOT during our requested dates
             AND: [
-              { outOfOrderFrom: { gt: to } },
-              { outOfOrderTo: { lt: from } },
+              { isOutOfOrder: true },
+              {
+                OR: [
+                  { outOfOrderFrom: { gt: to } }, // Out of order starts after our period ends
+                  { outOfOrderTo: { lt: from } }, // Out of order ends before our period starts
+                ],
+              },
             ],
-          },
-          {
-            outOfOrderFrom: null,
-            outOfOrderTo: null,
           },
         ],
 
-        // No overlapping reservations
+        // No reservations overlapping with our dates (exclusive end date for reservations)
         reservations: {
           none: {
-            reservedFrom: { lt: to },
-            reservedTo: { gt: from },
+            AND: [
+              { reservedFrom: { lt: to } }, // Reservation starts before our period ends
+              { reservedTo: { gt: from } }, // Reservation ends after our period starts
+            ],
           },
         },
 
-        // No overlapping bookings
+        // No bookings overlapping with our dates (exclusive end date for bookings)
         bookings: {
           none: {
-            checkIn: { lt: to },
-            checkOut: { gt: from },
+            AND: [
+              { checkIn: { lt: to } }, // Booking starts before our period ends
+              { checkOut: { gt: from } }, // Booking ends after our period starts
+            ],
           },
         },
       },

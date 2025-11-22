@@ -131,50 +131,27 @@ export default function RoomTypeDatePicker() {
 
         setCheckingAvailability(true);
         try {
-            
             const res = await checkAvailRooms(selectedRoomType, {
                 from: format(fromDate, 'yyyy-MM-dd'),
-                to:  format(toDate, 'yyyy-MM-dd'),
+                to: format(toDate, 'yyyy-MM-dd'),
             });
 
-            // Filter out rooms that are reserved or booked
-            const trulyAvailableRooms = (res || []).filter(room =>
-                !room.isReserved && !room.isBooked && room.isActive && !room.isOutOfOrder
-            );
+            // Simply check if the array has any items, don't filter anything
+            const hasAvailableRooms = (res || []).length > 0;
 
-            setAvailableRooms(trulyAvailableRooms);
-            setIsAvailable(trulyAvailableRooms.length > 0);
+            setAvailableRooms(res || []);
+            setIsAvailable(hasAvailableRooms);
 
-            if (trulyAvailableRooms.length > 0) {
+            if (hasAvailableRooms) {
                 toast({
                     title: "Rooms Available!",
-                    description: `Found ${trulyAvailableRooms.length} available room(s)`,
+                    description: `Found ${(res || []).length} room(s)`,
                     variant: "default",
                 });
             } else {
-                const totalRooms = res?.length || 0;
-                const reservedRooms = (res || []).filter(room => room.isReserved).length;
-                const bookedRooms = (res || []).filter(room => room.isBooked).length;
-                const inactiveRooms = (res || []).filter(room => !room.isActive).length;
-                const outOfOrderRooms = (res || []).filter(room => room.isOutOfOrder).length;
-
-                let description = "No available rooms for selected dates";
-                if (reservedRooms > 0) {
-                    description += ` (${reservedRooms} reserved)`;
-                }
-                if (bookedRooms > 0) {
-                    description += ` (${bookedRooms} booked)`;
-                }
-                if (inactiveRooms > 0) {
-                    description += ` (${inactiveRooms} inactive)`;
-                }
-                if (outOfOrderRooms > 0) {
-                    description += ` (${outOfOrderRooms} out of order)`;
-                }
-
                 toast({
                     title: "No Rooms Available",
-                    description,
+                    description: "No rooms found for selected dates",
                     variant: "destructive",
                 });
             }

@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Patch,
   Post,
   Query,
@@ -121,27 +123,80 @@ export class BookingController {
   }
 
   // members bookings
+  // @Post('member/booking/room')
+  // async memberBookingRoom(@Body() payload: any) {
+  //   const {membership_no} = payload.consumerInfo;
+  //   const {checkIn, checkOut, numberOfRooms, numberOfAdults, numberOfChildren, pricingType, specialRequest, totalPrice, selectedRoomIds} = payload.bookingData;
+  //   if(!payload.consumerInfo.membership_no) return new NotFoundException("membership number must be provided")
+  //   const data = {
+  //     membershipNo: membership_no,
+  //     entityId: payload.bookingData.roomTypeId,
+  //     category: 'Room',
+  //     checkIn: payload.checkIn,
+  //     checkOut: payload.checkOut,
+  //     numberOfRooms: payload.numberOfRooms,
+  //     numberOfAdults: payload.numberOfAdults,
+  //     numberOfChildren: payload.numberOfChildren,
+  //     pricingType: payload.pricingType,
+  //     specialRequest: payload.specialRequest,
+  //     totalPrice: payload.totalPrice,
+  //     selectedRoomIds: payload.selectedRoomIds,
+  //     paymentStatus: 'PAID',
+  //     paidAmount: payload.totalPrice,
+  //     pendingAmount: 0,
+  //     paymentMode: 'ONLINE',
+  //   };
+  //   return await this.bookingService.cBookingRoomMember(data);
+
+  // }
   @Post('member/booking/room')
   async memberBookingRoom(@Body() payload: any) {
+    const { membership_no } = payload.consumerInfo;
+    const {
+      checkIn,
+      checkOut,
+      numberOfRooms,
+      numberOfAdults,
+      numberOfChildren,
+      pricingType,
+      specialRequest,
+      totalPrice,
+      selectedRoomIds,
+      roomTypeId,
+    } = payload.bookingData;
+
+    if (!membership_no) {
+      throw new NotFoundException('Membership number must be provided');
+    }
+
+    // Validate required fields
+    if (!roomTypeId || !selectedRoomIds || !selectedRoomIds.length) {
+      throw new BadRequestException(
+        'Room type and selected rooms are required',
+      );
+    }
+
     const data = {
-      membershipNo: payload.membership_no,
-      entityId: payload.roomTypeId,
+      membershipNo: membership_no,
+      entityId: roomTypeId, // This should be roomTypeId for member booking
       category: 'Room',
-      checkIn: payload.checkIn,
-      checkOut: payload.checkOut,
-      numberOfRooms: payload.numberOfRooms,
-      numberOfAdults: payload.numberOfAdults,
-      numberOfChildren: payload.numberOfChildren,
-      pricingType: payload.pricingType,
-      specialRequest: payload.specialRequest,
-      totalPrice: payload.totalPrice,
-      selectedRoomIds: payload.selectedRoomIds,
+      checkIn: checkIn,
+      checkOut: checkOut,
+      numberOfRooms: numberOfRooms,
+      numberOfAdults: numberOfAdults,
+      numberOfChildren: numberOfChildren,
+      pricingType: pricingType,
+      specialRequests: specialRequest || '',
+      totalPrice: totalPrice,
+      selectedRoomIds: selectedRoomIds,
       paymentStatus: 'PAID',
-      paidAmount: payload.totalPrice,
+      paidAmount: totalPrice,
       pendingAmount: 0,
       paymentMode: 'ONLINE',
     };
+
+    console.log('Processing member booking with data:', data);
+
     return await this.bookingService.cBookingRoomMember(data);
-    
   }
 }

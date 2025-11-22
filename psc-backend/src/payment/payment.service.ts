@@ -24,12 +24,12 @@ export class PaymentService {
     // return response.data;
 
     // the kuickpay api will call member booking api once payment is done
-    fetch('http://localhost:3000/booking/member/booking/room', {
+    await fetch('http://localhost:3000/booking/member/booking/room', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(paymentData.bookingData),
+      body: JSON.stringify(paymentData),
     });
 
     // Mock successful response
@@ -50,9 +50,9 @@ export class PaymentService {
     });
     if (!typeExists) throw new NotFoundException(`Room type not found`);
 
-    // Parse dates as Pakistan Time
-    const checkIn = parsePakistanDate(bookingData.from);
-    const checkOut = parsePakistanDate(bookingData.to);
+    // Parse dates
+    const checkIn = new Date(bookingData.from);
+    const checkOut = new Date(bookingData.to);
 
     // Validate dates
     if (checkIn >= checkOut) {
@@ -61,7 +61,7 @@ export class PaymentService {
       );
     }
 
-    const today = getPakistanDate();
+    const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const checkInDateOnly = new Date(checkIn);
@@ -88,9 +88,9 @@ export class PaymentService {
     const availableRooms = await this.prismaService.room.findMany({
       where: {
         roomTypeId: roomType,
-        isActive: true,
-        isOutOfOrder: false,
-        isBooked: false,
+        // isActive: true,
+        // isOutOfOrder: false,
+        // isBooked: false,
         OR: [
           // Rooms with no reservations or on hold (expired holds are considered available)
           {
@@ -145,14 +145,16 @@ export class PaymentService {
     // Filter out rooms that are currently reserved or on hold (not expired)
     const trulyAvailableRooms = availableRooms.filter(
       (room) =>
-        !room.isReserved &&
-        !room.isBooked &&
+        // !room.isReserved &&
+        // !room.isBooked &&
         (!room.onHold || room.holdExpiry! < new Date()),
     );
 
     // console.log(
     //   `Found ${trulyAvailableRooms.length} available rooms out of ${availableRooms.length} total rooms of this type`,
     // );
+    console.log(availableRooms)
+    console.log(trulyAvailableRooms)
 
     // Check if enough rooms are available
     if (trulyAvailableRooms.length < bookingData.numberOfRooms) {
@@ -235,6 +237,7 @@ export class PaymentService {
           data: {
             onHold: true,
             holdExpiry: holdExpiry,
+            holdBy: bookingData.membership_no?.toString(),
           },
         }),
       );
@@ -328,6 +331,7 @@ export class PaymentService {
           data: {
             onHold: false,
             holdExpiry: null,
+            holdBy: null,
           },
         });
 
