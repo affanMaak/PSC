@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAccGuard } from 'src/common/guards/jwt-access.guard';
 import { PaymentService } from './payment.service';
 
@@ -15,8 +15,9 @@ export class PaymentController {
     async generateInvoice(
         @Query('roomType') roomType: string,
         @Body() bookingData: any,
+        @Req() req: {user: {id: string}}
     ) {
-        return await this.payment.genInvoiceRoom(Number(roomType), bookingData);
+        return await this.payment.genInvoiceRoom(Number(roomType), {...bookingData, membership_no: Number(req.user?.id)});
     }
 
 }

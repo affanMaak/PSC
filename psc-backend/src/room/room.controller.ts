@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UploadedFiles,
   UseGuards,
@@ -144,6 +145,7 @@ export class RoomController {
   @Roles(RolesEnum.SUPER_ADMIN)
   @Patch('reserve/rooms')
   async reserveRooms(
+    @Req() req: {user: {id: string}},
     @Body()
     payload: {
       roomIds: string[];
@@ -155,6 +157,7 @@ export class RoomController {
     return await this.room.reserveRooms(
       payload.roomIds.map((id) => Number(id)),
       payload.reserve,
+      req.user?.id,
       payload.reserveFrom,
       payload.reserveTo,
     );

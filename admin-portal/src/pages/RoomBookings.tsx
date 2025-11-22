@@ -237,6 +237,7 @@ export default function RoomBookings() {
       if (form.roomTypeId) {
         try {
           const response = await getAvailRooms(form.roomTypeId);
+          console.log(response)
           const rooms = (response?.data ?? response ?? []) as Room[];
           setAvailableRooms(rooms);
         } catch (error) {

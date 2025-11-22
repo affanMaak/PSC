@@ -13,7 +13,25 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarIcon, Users, Baby, CheckCircle, XCircle, CreditCard, AlertCircle } from "lucide-react";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    CalendarIcon,
+    Users,
+    Baby,
+    CheckCircle,
+    XCircle,
+    CreditCard,
+    AlertCircle,
+    FileText,
+    Clock,
+    Copy
+} from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { checkAvailRooms, getRoomTypes, generateInvoice } from "../../../config/apis";
@@ -30,6 +48,12 @@ export default function RoomTypeDatePicker() {
     const [toDate, setToDate] = useState(null);
     const [availableRooms, setAvailableRooms] = useState([]);
     const [isAvailable, setIsAvailable] = useState(null);
+    const [invoiceData, setInvoiceData] = useState(null);
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+    const [paymentInputs, setPaymentInputs] = useState({
+        invoiceNumber: "",
+        totalPayment: ""
+    });
     const [formData, setFormData] = useState({
         pricingType: "member",
         numberOfAdults: 1,
@@ -107,9 +131,10 @@ export default function RoomTypeDatePicker() {
 
         setCheckingAvailability(true);
         try {
+            
             const res = await checkAvailRooms(selectedRoomType, {
-                from: fromDate.toISOString().split("T")[0],
-                to: toDate.toISOString().split("T")[0],
+                from: format(fromDate, 'yyyy-MM-dd'),
+                to:  format(toDate, 'yyyy-MM-dd'),
             });
 
             // Filter out rooms that are reserved or booked
@@ -212,11 +237,9 @@ export default function RoomTypeDatePicker() {
 
         setGeneratingInvoice(true);
         try {
-
             const bookingData = {
                 from: fromDate.toISOString().split("T")[0],
                 to: toDate.toISOString().split("T")[0],
-                // Include additional booking details that might be needed
                 numberOfRooms: formData.numberOfRooms,
                 numberOfAdults: formData.numberOfAdults,
                 numberOfChildren: formData.numberOfChildren,
@@ -225,16 +248,20 @@ export default function RoomTypeDatePicker() {
             };
 
             const invoiceResponse = await generateInvoice(selectedRoomType, bookingData);
+            setInvoiceData(invoiceResponse.data);
+            // setShowInvoiceModal(true);
+
+            // Pre-fill the payment inputs with invoice data
+            setPaymentInputs({
+                invoiceNumber: invoiceResponse.data.InvoiceNumber || "",
+                totalPayment: invoiceResponse.data.Amount || ""
+            });
 
             toast({
                 title: "Invoice Generated!",
-                description: "Proceeding to checkout...",
+                description: "Please complete your payment to confirm booking",
                 variant: "default",
             });
-
-            console.log("Invoice:", invoiceResponse.data);
-
-            // Handle checkout redirection or payment modal here
 
         } catch (error) {
             toast({
@@ -257,6 +284,12 @@ export default function RoomTypeDatePicker() {
         setToDate(null);
         setAvailableRooms([]);
         setIsAvailable(null);
+        setInvoiceData(null);
+        setShowInvoiceModal(false);
+        setPaymentInputs({
+            invoiceNumber: "",
+            totalPayment: ""
+        });
         setFormData({
             pricingType: "member",
             numberOfAdults: 1,
@@ -264,6 +297,44 @@ export default function RoomTypeDatePicker() {
             numberOfRooms: 1,
             specialRequest: "",
         });
+    };
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        toast({
+            title: "Copied!",
+            description: "Text copied to clipboard",
+            variant: "default",
+        });
+    };
+
+    const handlePaymentInputChange = (field, value) => {
+        setPaymentInputs(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handlePaymentSubmit = () => {
+        // Validate payment inputs
+        if (!paymentInputs.invoiceNumber || !paymentInputs.totalPayment) {
+            toast({
+                title: "Missing information",
+                description: "Please fill in both invoice number and total payment",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Here you would typically integrate with your payment gateway
+        toast({
+            title: "Payment Processing",
+            description: "Redirecting to payment gateway...",
+            variant: "default",
+        });
+
+        // Simulate payment processing
+        console.log("Payment details:", paymentInputs);
     };
 
     const selectedRoomTypeData = roomTypes.find(room => room.id.toString() === selectedRoomType);
@@ -580,6 +651,193 @@ export default function RoomTypeDatePicker() {
                     </div>
                 </div>
             )}
+
+            {/* Invoice Modal */}
+            <Dialog open={showInvoiceModal} onOpenChange={setShowInvoiceModal}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            Invoice Generated Successfully
+                        </DialogTitle>
+                        <DialogDescription>
+                            Please complete your payment within 3 minutes to confirm your booking
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {invoiceData && (
+                        <div className="space-y-6">
+                            {/* Invoice Header */}
+                            <Card>
+                                <CardContent className="p-4">
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span className="font-medium">Invoice Number:</span>
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-semibold">{invoiceData.InvoiceNumber}</span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 w-6 p-0"
+                                                    onClick={() => copyToClipboard(invoiceData.InvoiceNumber)}
+                                                >
+                                                    <Copy className="h-3 w-3" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Due Date:</span>
+                                            <p className="font-semibold">
+                                                {invoiceData.DueDate}
+                                                {/* {format(new Date(invoiceData.DueDate), "PPP 'at' p")} */}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Consumer Number:</span>
+                                            <p className="font-semibold">{invoiceData.ConsumerNumber}</p>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Total Amount:</span>
+                                            <p className="font-semibold text-lg">PKR {parseInt(invoiceData.Amount).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Booking Summary */}
+                            <Card>
+                                <CardContent className="p-4">
+                                    <h4 className="font-semibold mb-3">Booking Summary</h4>
+                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                            <span className="text-muted-foreground">Room Type:</span>
+                                            <p className="font-medium">{invoiceData.BookingSummary?.RoomType}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground">Check-in:</span>
+                                            <p className="font-medium">
+                                                {invoiceData.BookingSummary?.CheckIn}
+                                                {/* {format(new Date(invoiceData.BookingSummary?.CheckIn), "PPP")} */}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground">Check-out:</span>
+                                            <p className="font-medium">
+                                                {invoiceData.BookingSummary?.CheckOut}
+                                                {/* {format(new Date(invoiceData.BookingSummary?.CheckOut), "PPP")} */}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground">Nights:</span>
+                                            <p className="font-medium">{invoiceData.BookingSummary?.Nights}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground">Rooms:</span>
+                                            <p className="font-medium">{invoiceData.BookingSummary?.Rooms}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground">Guests:</span>
+                                            <p className="font-medium">
+                                                {invoiceData.BookingSummary?.Adults} Adult(s), {invoiceData.BookingSummary?.Children} Child(ren)
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground">Price per Night:</span>
+                                            <p className="font-medium">PKR {parseInt(invoiceData.BookingSummary?.PricePerNight).toLocaleString()}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground">Total Amount:</span>
+                                            <p className="font-medium">PKR {parseInt(invoiceData.BookingSummary?.TotalAmount).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Payment Channels */}
+                            <Card>
+                                <CardContent className="p-4">
+                                    <h4 className="font-semibold mb-3">Available Payment Channels</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {invoiceData.PaymentChannels?.map((channel, index) => (
+                                            <span
+                                                key={index}
+                                                className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                                            >
+                                                {channel}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Instructions */}
+                            <Card className="bg-amber-50 border-amber-200">
+                                <CardContent className="p-4">
+                                    <div className="flex items-start gap-3">
+                                        <Clock className="h-5 w-5 text-amber-600 mt-0.5" />
+                                        <div>
+                                            <h4 className="font-semibold text-amber-800">Important Instructions</h4>
+                                            <p className="text-amber-700 text-sm mt-1">
+                                                {invoiceData.Instructions}
+                                            </p>
+                                            <p className="text-amber-700 text-sm mt-2">
+                                                Hold expires at: {invoiceData.BookingSummary?.HoldExpiresAt}
+                                                {/* Hold expires at: {format(new Date(invoiceData.BookingSummary?.HoldExpiresAt), "PPP 'at' p")} */}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Payment Input Fields */}
+                            <Card>
+                                <CardContent className="p-4">
+                                    <h4 className="font-semibold mb-3">Payment Details</h4>
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="invoiceNumber">Invoice Number *</Label>
+                                            <Input
+                                                id="invoiceNumber"
+                                                value={paymentInputs.invoiceNumber}
+                                                onChange={(e) => handlePaymentInputChange("invoiceNumber", e.target.value)}
+                                                placeholder="Enter invoice number"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="totalPayment">Total Payment (PKR) *</Label>
+                                            <Input
+                                                id="totalPayment"
+                                                type="number"
+                                                value={paymentInputs.totalPayment}
+                                                onChange={(e) => handlePaymentInputChange("totalPayment", e.target.value)}
+                                                placeholder="Enter total payment amount"
+                                            />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3 pt-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowInvoiceModal(false)}
+                                    className="flex-1"
+                                >
+                                    Close
+                                </Button>
+                                <Button
+                                    onClick={handlePaymentSubmit}
+                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                >
+                                    <CreditCard className="mr-2 h-4 w-4" />
+                                    Proceed to Payment
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

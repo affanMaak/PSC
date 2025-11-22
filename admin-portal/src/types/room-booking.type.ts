@@ -100,4 +100,5 @@ export interface DateStatus {
   date: Date;
   status: "BOOKED" | "OUT_OF_ORDER" | "RESERVED" | "AVAILABLE";
   bookingId?: number;
+  reservationId?: number | string
 }

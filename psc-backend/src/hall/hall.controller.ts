@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Res, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post, Query, Res, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { HallDto } from './dtos/hall.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -60,5 +60,15 @@ export class HallController {
             });
 
         return this.hall.updateHall(payload, files);
+    }
+
+    @UseGuards(JwtAccGuard, RolesGuard)
+    @Roles(RolesEnum.SUPER_ADMIN)
+    @UseInterceptors(FilesInterceptor('files'))
+    @Delete('delete/hall')
+    async deleteHall(
+        @Query('hallId') hallId: string
+    ) {
+        return this.hall.deleteHall(Number(hallId));
     }
 }

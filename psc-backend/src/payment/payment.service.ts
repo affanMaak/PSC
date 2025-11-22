@@ -1,22 +1,36 @@
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { getPakistanDate, parsePakistanDate } from 'src/utils/time';
 
 @Injectable()
 export class PaymentService {
+  constructor(private prismaService: PrismaService) {}
 
-    constructor(private prismaService: PrismaService){}
-
-    
   // kuick pay
   // Mock payment gateway call - replace with actual integration
   private async callPaymentGateway(paymentData: any) {
     // Simulate API call to payment gateway
-    console.log('Calling payment gateway with:', paymentData);
+    // console.log('Calling payment gateway with:', paymentData);
 
     // This would be your actual payment gateway integration
     // For example:
     // const response = await axios.post('https://payment-gateway.com/invoice', paymentData);
     // return response.data;
+
+    // the kuickpay api will call member booking api once payment is done
+    fetch('http://localhost:3000/booking/member/booking/room', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(paymentData.bookingData),
+    });
 
     // Mock successful response
     return {
@@ -28,7 +42,7 @@ export class PaymentService {
 
   // generateInvoice
   async genInvoiceRoom(roomType: number, bookingData: any) {
-    console.log('Booking data received:', bookingData);
+    // console.log('Booking data received:', bookingData);
 
     // Validate room type exists
     const typeExists = await this.prismaService.roomType.findFirst({
@@ -36,9 +50,9 @@ export class PaymentService {
     });
     if (!typeExists) throw new NotFoundException(`Room type not found`);
 
-    // Parse dates
-    const checkIn = new Date(bookingData.from);
-    const checkOut = new Date(bookingData.to);
+    // Parse dates as Pakistan Time
+    const checkIn = parsePakistanDate(bookingData.from);
+    const checkOut = parsePakistanDate(bookingData.to);
 
     // Validate dates
     if (checkIn >= checkOut) {
@@ -47,7 +61,13 @@ export class PaymentService {
       );
     }
 
-    if (checkIn < new Date()) {
+    const today = getPakistanDate();
+    today.setHours(0, 0, 0, 0);
+
+    const checkInDateOnly = new Date(checkIn);
+    checkInDateOnly.setHours(0, 0, 0, 0);
+
+    if (checkInDateOnly < today) {
       throw new BadRequestException('Check-in date cannot be in the past');
     }
 
@@ -61,7 +81,8 @@ export class PaymentService {
       bookingData.pricingType === 'member'
         ? typeExists.priceMember
         : typeExists.priceGuest;
-    const totalPrice = Number(pricePerNight) * nights * bookingData.numberOfRooms;
+    const totalPrice =
+      Number(pricePerNight) * nights * bookingData.numberOfRooms;
 
     // Check for available rooms
     const availableRooms = await this.prismaService.room.findMany({
@@ -129,9 +150,9 @@ export class PaymentService {
         (!room.onHold || room.holdExpiry! < new Date()),
     );
 
-    console.log(
-      `Found ${trulyAvailableRooms.length} available rooms out of ${availableRooms.length} total rooms of this type`,
-    );
+    // console.log(
+    //   `Found ${trulyAvailableRooms.length} available rooms out of ${availableRooms.length} total rooms of this type`,
+    // );
 
     // Check if enough rooms are available
     if (trulyAvailableRooms.length < bookingData.numberOfRooms) {
@@ -191,9 +212,9 @@ export class PaymentService {
     });
 
     if (outOfOrderRooms.length > 0) {
-      console.log(
-        `Warning: ${outOfOrderRooms.length} room(s) are out of order during selected period`,
-      );
+      // console.log(
+      //   `Warning: ${outOfOrderRooms.length} room(s) are out of order during selected period`,
+      // );
     }
 
     // Select specific rooms for booking (first X available rooms)
@@ -206,7 +227,7 @@ export class PaymentService {
     const holdExpiry = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes in milliseconds
     const invoiceDueDate = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes in milliseconds
 
-    // Put rooms on hold with 3-minute expiry
+    // Put rooms on hold with 3-minute expiry (NO temporary reservations)
     try {
       const holdPromises = selectedRooms.map((room) =>
         this.prismaService.room.update({
@@ -219,54 +240,11 @@ export class PaymentService {
       );
 
       await Promise.all(holdPromises);
-      console.log(
-        `Put ${selectedRooms.length} rooms on hold until ${holdExpiry}`,
-      );
+      // console.log(
+      //   `Put ${selectedRooms.length} rooms on hold until ${holdExpiry}`,
+      // );
     } catch (holdError) {
       console.error('Failed to put rooms on hold:', holdError);
-      throw new InternalServerErrorException(
-        'Failed to reserve rooms temporarily',
-      );
-    }
-
-    // Create temporary reservations to hold the rooms
-    try {
-      const reservationPromises = selectedRooms.map((room) =>
-        this.prismaService.roomReservation.create({
-          data: {
-            roomId: room.id,
-            reservedFrom: checkIn,
-            reservedTo: checkOut,
-          },
-        }),
-      );
-
-      await Promise.all(reservationPromises);
-      console.log(
-        `Created temporary reservations for ${selectedRooms.length} rooms`,
-      );
-    } catch (reservationError) {
-      // Clean up room holds if reservation fails
-      try {
-        const cleanupPromises = selectedRooms.map((room) =>
-          this.prismaService.room.update({
-            where: { id: room.id },
-            data: {
-              onHold: false,
-              holdExpiry: null,
-            },
-          }),
-        );
-        await Promise.all(cleanupPromises);
-        console.log('Cleaned up room holds after reservation failure');
-      } catch (cleanupError) {
-        console.error('Failed to clean up room holds:', cleanupError);
-      }
-
-      console.error(
-        'Failed to create temporary reservations:',
-        reservationError,
-      );
       throw new InternalServerErrorException(
         'Failed to reserve rooms temporarily',
       );
@@ -286,13 +264,14 @@ export class PaymentService {
       selectedRoomIds: selectedRooms.map((room) => room.id),
     };
 
-    console.log('Booking record prepared:', bookingRecord);
+    // console.log('Booking record prepared:', bookingRecord);
 
     // Call payment gateway to generate invoice
     try {
       const invoiceResponse = await this.callPaymentGateway({
         amount: totalPrice,
         consumerInfo: {
+          membership_no: bookingData.membership_no,
           roomType: typeExists.type,
           nights: nights,
           rooms: bookingData.numberOfRooms,
@@ -335,24 +314,13 @@ export class PaymentService {
         },
         // Include temporary data for cleanup if payment fails
         TemporaryData: {
-          reservationIds: selectedRooms.map((room) => room.id),
-          holdExpiry: holdExpiry,
           roomIds: selectedRooms.map((room) => room.id),
+          holdExpiry: holdExpiry,
         },
       };
     } catch (paymentError) {
-      // Clean up temporary reservations and room holds if payment gateway fails
+      // Clean up room holds if payment gateway fails
       try {
-        // Remove reservations
-        await this.prismaService.roomReservation.deleteMany({
-          where: {
-            roomId: { in: selectedRooms.map((room) => room.id) },
-            reservedFrom: checkIn,
-            reservedTo: checkOut,
-          },
-        });
-
-        // Remove room holds
         await this.prismaService.room.updateMany({
           where: {
             id: { in: selectedRooms.map((room) => room.id) },
@@ -363,11 +331,9 @@ export class PaymentService {
           },
         });
 
-        console.log(
-          'Cleaned up temporary reservations and room holds after payment failure',
-        );
+        // console.log('Cleaned up room holds after payment failure');
       } catch (cleanupError) {
-        console.error('Failed to clean up temporary data:', cleanupError);
+        console.error('Failed to clean up room holds:', cleanupError);
       }
 
       throw new InternalServerErrorException(
@@ -375,6 +341,4 @@ export class PaymentService {
       );
     }
   }
-
-
 }

@@ -9,6 +9,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { capitalizeWords } from 'src/utils/CapitalizeFirst';
 import { RoomTypeDto } from './dtos/room-type.dto';
 import { RoomDto } from './dtos/room.dto';
+import {
+  formatPakistanDate,
+  getPakistanDate,
+  parsePakistanDate,
+} from 'src/utils/time';
 
 @Injectable()
 export class RoomService {
@@ -263,7 +268,13 @@ export class RoomService {
         roomType: {
           select: { type: true, priceMember: true, priceGuest: true },
         },
-        reservations: true,
+        reservations: {
+          include: {
+            admin: {
+              select: { name: true },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -281,6 +292,8 @@ export class RoomService {
         roomType: {
           select: { type: true, priceMember: true, priceGuest: true },
         },
+        reservations: true,
+        bookings: true
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -297,7 +310,7 @@ export class RoomService {
           payload.isOutOfOrder == 'true' || payload.isOutOfOrder === true,
         outOfOrderReason: payload.outOfOrderReason,
         outOfOrderTo: payload.outOfOrderTo,
-        outOfOrderFrom: new Date(),
+        outOfOrderFrom: payload.outOfOrderFrom,
         // Remove images field
       },
     });
@@ -421,17 +434,21 @@ export class RoomService {
   async reserveRooms(
     roomIds: number[],
     reserve: boolean,
+    adminId: string,
     reserveFrom?: string,
     reserveTo?: string,
   ) {
-
     const onhold = await this.prismaService.room.findFirst({
       where: {
         id: { in: roomIds },
         onHold: true,
       },
     });
-    if(onhold) return new HttpException('Room is currently on hold', HttpStatus.CONFLICT);
+    if (onhold)
+      return new HttpException(
+        'Room is currently on hold',
+        HttpStatus.CONFLICT,
+      );
 
     // Validate dates if reserving
     if (reserve) {
@@ -442,114 +459,38 @@ export class RoomService {
         );
       }
 
-      // Parse dates and set to start of day
-      const fromDate = new Date(reserveFrom);
-      fromDate.setHours(0, 0, 0, 0);
+      // Parse dates as Pakistan Time (UTC+5)
+      const fromDate = parsePakistanDate(reserveFrom);
+      const toDate = parsePakistanDate(reserveTo);
 
-      const toDate = new Date(reserveTo);
-      toDate.setHours(0, 0, 0, 0);
-
-      const today = new Date();
+      // Get current time in Pakistan
+      const today = getPakistanDate();
       today.setHours(0, 0, 0, 0);
 
-      if (fromDate >= toDate) {
+      // For date comparison, use date-only values in PKT
+      const fromDateOnly = new Date(fromDate);
+      fromDateOnly.setHours(0, 0, 0, 0);
+
+      const toDateOnly = new Date(toDate);
+      toDateOnly.setHours(0, 0, 0, 0);
+
+      if (fromDateOnly >= toDateOnly) {
         throw new HttpException(
           'Reservation end date must be after start date',
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      if (fromDate < today) {
+      if (fromDateOnly < today) {
         throw new HttpException(
           'Reservation start date cannot be in the past',
           HttpStatus.BAD_REQUEST,
         );
       }
-    }
-
-    if (reserve) {
-      // Parse and normalize dates to start of day
-      const fromDate = new Date(reserveFrom!);
-      fromDate.setHours(0, 0, 0, 0);
-
-      const toDate = new Date(reserveTo!);
-      toDate.setHours(0, 0, 0, 0);
-
-      // Check for booking conflicts
-      const conflictingBookings = await this.prismaService.roomBooking.findMany(
-        {
-          where: {
-            roomId: { in: roomIds },
-            OR: [
-              {
-                // Booking starts during reservation period
-                checkIn: { gte: fromDate, lt: toDate },
-              },
-              {
-                // Booking ends during reservation period
-                checkOut: { gt: fromDate, lte: toDate },
-              },
-              {
-                // Booking spans the entire reservation period
-                checkIn: { lte: fromDate },
-                checkOut: { gte: toDate },
-              },
-            
-            ],
-          },
-          include: { room: { select: { roomNumber: true } } },
-        },
-      );
-
-      if (conflictingBookings.length > 0) {
-        const conflicts = conflictingBookings.map(
-          (conflict) =>
-            `Room ${conflict.room.roomNumber} (${conflict.checkIn.toDateString()} - ${conflict.checkOut.toDateString()})`,
-        );
-        throw new HttpException(
-          `Booking conflicts: ${conflicts.join(', ')}`,
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      // Check for reservation conflicts
-      const conflictingReservations =
-        await this.prismaService.roomReservation.findMany({
-          where: {
-            roomId: { in: roomIds },
-            OR: [
-              {
-                // Reservation starts during new reservation period
-                reservedFrom: { gte: fromDate, lt: toDate },
-              },
-              {
-                // Reservation ends during new reservation period
-                reservedTo: { gt: fromDate, lte: toDate },
-              },
-              {
-                // Reservation spans the entire new reservation period
-                reservedFrom: { lte: fromDate },
-                reservedTo: { gte: toDate },
-              },
-            ],
-          },
-          include: { room: { select: { roomNumber: true } } },
-        });
-
-      if (conflictingReservations.length > 0) {
-        const conflicts = conflictingReservations.map(
-          (reservation) =>
-            `Room ${reservation.room.roomNumber} (${reservation.reservedFrom.toDateString()} - ${reservation.reservedTo.toDateString()})`,
-        );
-        throw new HttpException(
-          `Reservation conflicts: ${conflicts.join(', ')}`,
-          HttpStatus.CONFLICT,
-        );
-      }
 
       // Use transaction for atomic operations
       return await this.prismaService.$transaction(async (prisma) => {
-        // Remove existing reservations for these exact dates
+        // Remove existing reservations for these exact dates FIRST
         await prisma.roomReservation.deleteMany({
           where: {
             roomId: { in: roomIds },
@@ -558,11 +499,64 @@ export class RoomService {
           },
         });
 
+        // Now check for conflicts (excluding the ones we just deleted)
+        const conflictingBookings = await prisma.roomBooking.findMany({
+          where: {
+            roomId: { in: roomIds },
+            OR: [
+              {
+                // Booking starts during reservation period
+                checkIn: { lt: toDate }, // checkIn before reservation end
+                checkOut: { gt: fromDate }, // checkOut after reservation start
+              },
+            ],
+          },
+          include: { room: { select: { roomNumber: true } } },
+        });
+
+        if (conflictingBookings.length > 0) {
+          const conflicts = conflictingBookings.map(
+            (conflict) =>
+              `Room ${conflict.room.roomNumber} (${formatPakistanDate(conflict.checkIn)} - ${formatPakistanDate(conflict.checkOut)})`,
+          );
+          throw new HttpException(
+            `Booking conflicts: ${conflicts.join(', ')}`,
+            HttpStatus.CONFLICT,
+          );
+        }
+
+        // Check for other reservation conflicts (excluding the ones we just deleted)
+        const conflictingReservations = await prisma.roomReservation.findMany({
+          where: {
+            roomId: { in: roomIds },
+            OR: [
+              {
+                // Reservation overlaps with new reservation period
+                reservedFrom: { lt: toDate }, // existing reservation starts before new reservation ends
+                reservedTo: { gt: fromDate }, // existing reservation ends after new reservation starts
+              },
+            ],
+          },
+          include: { room: { select: { roomNumber: true } } },
+        });
+
+        if (conflictingReservations.length > 0) {
+          const conflicts = conflictingReservations.map(
+            (reservation) =>
+              `Room ${reservation.room.roomNumber} (${formatPakistanDate(reservation.reservedFrom)} - ${formatPakistanDate(reservation.reservedTo)})`,
+          );
+          throw new HttpException(
+            `Reservation conflicts: ${conflicts.join(', ')}`,
+            HttpStatus.CONFLICT,
+          );
+        }
+
         // Create new reservations
         const reservations = roomIds.map((roomId) => ({
           roomId,
           reservedFrom: fromDate,
           reservedTo: toDate,
+          reservedBy: Number(adminId),
         }));
 
         await prisma.roomReservation.createMany({ data: reservations });
@@ -575,11 +569,8 @@ export class RoomService {
     } else {
       // UNRESERVE LOGIC - only remove reservations for exact dates
       if (reserveFrom && reserveTo) {
-        const fromDate = new Date(reserveFrom);
-        fromDate.setHours(0, 0, 0, 0);
-
-        const toDate = new Date(reserveTo);
-        toDate.setHours(0, 0, 0, 0);
+        const fromDate = parsePakistanDate(reserveFrom);
+        const toDate = parsePakistanDate(reserveTo);
 
         // Only delete reservations that exactly match the provided dates
         const result = await this.prismaService.roomReservation.deleteMany({
@@ -610,64 +601,54 @@ export class RoomService {
     toDate: string,
     roomType: number,
   ) {
-    // check room type
     const typeExists = await this.prismaService.roomType.findFirst({
       where: { id: roomType },
     });
     if (!typeExists) return new NotFoundException(`room type not found`);
 
-    // return true if rooms are available for the given dates and roomtpye
+    // Parse dates as Pakistan Time
+    const from = parsePakistanDate(fromDate + 'T00:00:00+05:00');
+    const to = parsePakistanDate(toDate + 'T00:00:00+05:00');
+
+    console.log('Searching for rooms from:', from, 'to:', to);
 
     return await this.prismaService.room.findMany({
       where: {
         roomTypeId: roomType,
         isActive: true,
         onHold: false,
-        // Room must NOT be in out-of-order currently
+
+        // Out-of-order logic
         OR: [
+          { isOutOfOrder: false },
           {
-            isOutOfOrder: false,
-          },
-          {
-            // Out-of-order exists, but does NOT overlap with selected date range
             AND: [
-              {
-                outOfOrderFrom: { gt: new Date(toDate) },
-              },
-              {
-                outOfOrderTo: { lt: new Date(fromDate) },
-              },
+              { outOfOrderFrom: { gt: to } },
+              { outOfOrderTo: { lt: from } },
             ],
           },
           {
-            // Room has NO out-of-order schedule
             outOfOrderFrom: null,
             outOfOrderTo: null,
           },
         ],
 
-        // Conflict check: reservations must NOT overlap
+        // No overlapping reservations
         reservations: {
           none: {
-            AND: [
-              { reservedFrom: { lte: new Date(toDate) } },
-              { reservedTo: { gte: new Date(fromDate) } },
-            ],
+            reservedFrom: { lt: to },
+            reservedTo: { gt: from },
           },
         },
 
-        // Conflict check: roomBookings must NOT overlap
+        // No overlapping bookings
         bookings: {
           none: {
-            AND: [
-              { checkIn: { lte: new Date(toDate) } },
-              { checkOut: { gte: new Date(fromDate) } },
-            ],
+            checkIn: { lt: to },
+            checkOut: { gt: from },
           },
         },
       },
     });
   }
-
-  
 }

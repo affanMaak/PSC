@@ -22,6 +22,7 @@ model Admin {
   biometricsKey String? // public key
   role          Role     @default(ADMIN)
   permissions Json? 
+  roomReservations RoomReservation[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -258,6 +259,8 @@ model RoomReservation {
   room      Room     @relation(fields: [roomId], references: [id])
   reservedFrom DateTime
   reservedTo   DateTime
+  reservedBy Int 
+  admin Admin @relation(fields: [reservedBy], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

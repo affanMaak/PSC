@@ -24,6 +24,8 @@ export class BookingDto{
     @IsOptional()
     entityId?: string | null
     @IsOptional()
+    selectedRoomIds?: string[]
+    @IsOptional()
     checkIn?: string | null
     @IsOptional()
     checkOut?: string | null

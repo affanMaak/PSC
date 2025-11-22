@@ -1,6 +1,6 @@
 import axios from "axios";
-// const base_url = "http://localhost:3000";
-const base_url = "https://psc-production.up.railway.app:3000";
+const base_url = "http://localhost:3000";
+// const base_url = "https://psc-production.up.railway.app:3000";
 
 export const authAdmin = async (data: any): Promise<any> => {
   try {
@@ -617,6 +617,32 @@ export const generateInvoice = async (
   }
 };
 
+// checkout/generate voucher
+export const generateVoucher = async (
+  roomTypeId: any,
+  bookingDate: any
+): Promise<any> => {
+  try {
+    const response = await axios.post(
+      `${base_url}/payment/generate/invoice/room?roomType=${roomTypeId}`,
+      bookingDate,
+      {
+        withCredentials: true,
+      }
+    );
+    return response;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+
 // halls
 
 export const createHall = async (data: any): Promise<any> => {
@@ -684,7 +710,21 @@ export const updateHall = async (data: any): Promise<any> => {
     throw { message, status: error.response?.status || 500 };
   }
 };
-export const deleteHall = async (): Promise<any> => {};
+export const deleteHall = async (id: string): Promise<any> => {
+  try {
+    const response = await axios.delete(`${base_url}/hall/delete/hall?hallId=${id}`, {
+      withCredentials: true,
+    });
+    return response;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+    throw { message, status: error.response?.status || 500 };
+  }
+};
 
 // lawns
 

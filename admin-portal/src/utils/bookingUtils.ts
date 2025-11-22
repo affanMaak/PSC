@@ -1,5 +1,6 @@
 import { Booking, Room, DateStatus } from "@/types/room-booking.type";
 import { BookingForm } from "@/types/room-booking.type";
+import { getPakistanDate, getPakistanDateString, normalizeToPakistanDate } from "./pakDate";
 
 export const getBookedDatesForRoom = (bookings: Booking[], roomId: string) => {
   const bookedDates: { start: Date; end: Date; bookingId: number }[] = [];
@@ -35,36 +36,96 @@ export const getDateStatuses = (
 
   if (!roomId) return dateStatuses;
 
-  const room = rooms.find((r) => r.id.toString() === roomId);
+  const room: any = rooms.find((r) => r.id.toString() === roomId);
   if (!room) return dateStatuses;
 
-  // Mark booked dates
-  const bookedDates = getBookedDatesForRoom(bookings, roomId);
-  bookedDates.forEach((booking) => {
-    const currentDate = new Date(booking.start);
-    while (currentDate <= booking.end) {
-      dateStatuses.push({
-        date: new Date(currentDate),
-        status: "BOOKED",
-        bookingId: booking.bookingId,
-      });
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
+  console.log('=== getDateStatuses DEBUG ===');
+  console.log('Processing room:', {
+    id: room.id,
+    roomNumber: room.roomNumber,
+    isOutOfOrder: room.isOutOfOrder,
+    outOfOrderFrom: room.outOfOrderFrom,
+    outOfOrderTo: room.outOfOrderTo,
+    reservations: room.reservations,
+    bookings: room.bookings
   });
 
-  // Mark out-of-order dates
-  if (room.isOutOfOrder) {
-    const today = new Date();
-    const outOfOrderEnd =
-      room.outOfOrderTo || new Date(today.getFullYear() + 1, 0, 1); // Default to next year if no end date
+  // Mark booked dates from room.bookings
+  if (room.bookings && room.bookings.length > 0) {
+    console.log('Processing bookings:', room.bookings);
+    room.bookings.forEach((booking) => {
+      const start = normalizeToPakistanDate(new Date(booking.checkIn));
+      const end = normalizeToPakistanDate(new Date(booking.checkOut));
+      const currentDate = new Date(start);
+      
+      console.log(`Booking from ${start.toISOString()} to ${end.toISOString()} (PKT)`);
+      
+      while (currentDate < end) {
+        const dateKey = getPakistanDateString(currentDate);
+        if (!dateStatuses.some(ds => 
+          getPakistanDateString(ds.date) === dateKey
+        )) {
+          dateStatuses.push({
+            date: new Date(currentDate),
+            status: "BOOKED",
+            bookingId: booking.id?.toString(),
+          });
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+  }
 
-    const currentDate = new Date(today);
-    while (currentDate <= outOfOrderEnd) {
-      if (
-        !dateStatuses.some(
-          (ds) => ds.date.toDateString() === currentDate.toDateString()
-        )
-      ) {
+  // Mark reserved dates from room.reservations
+  if (room.reservations && room.reservations.length > 0) {
+    console.log('Processing reservations:', room.reservations);
+    room.reservations.forEach((reservation) => {
+      const start = normalizeToPakistanDate(new Date(reservation.reservedFrom));
+      const end = normalizeToPakistanDate(new Date(reservation.reservedTo));
+      const currentDate = new Date(start);
+      
+      console.log(`Reservation from ${start.toISOString()} to ${end.toISOString()} (PKT)`);
+      
+      while (currentDate < end) {
+        const dateKey = getPakistanDateString(currentDate);
+        // Only mark as reserved if not already booked
+        if (!dateStatuses.some(ds => 
+          getPakistanDateString(ds.date) === dateKey && ds.status === "BOOKED"
+        )) {
+          dateStatuses.push({
+            date: new Date(currentDate),
+            status: "RESERVED",
+            reservationId: reservation.id?.toString(),
+          });
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+  }
+
+  // Mark out-of-order dates
+  if (room.isOutOfOrder && room.outOfOrderFrom && room.outOfOrderTo) {
+    console.log('Processing out-of-order dates');
+    const start = normalizeToPakistanDate(new Date(room.outOfOrderFrom));
+    const end = normalizeToPakistanDate(new Date(room.outOfOrderTo));
+    const currentDate = new Date(start);
+    
+    console.log(`Out of order from ${start.toISOString()} to ${end.toISOString()} (PKT)`);
+    
+    while (currentDate <= end) {
+      const dateKey = getPakistanDateString(currentDate);
+      // Out of order takes highest priority - remove any existing status for this date
+      const existingIndex = dateStatuses.findIndex(ds => 
+        getPakistanDateString(ds.date) === dateKey
+      );
+      
+      if (existingIndex !== -1) {
+        // Replace existing status with OUT_OF_ORDER
+        dateStatuses[existingIndex] = {
+          date: new Date(currentDate),
+          status: "OUT_OF_ORDER",
+        };
+      } else {
         dateStatuses.push({
           date: new Date(currentDate),
           status: "OUT_OF_ORDER",
@@ -74,26 +135,10 @@ export const getDateStatuses = (
     }
   }
 
-  // Mark reserved dates
-  if (room.isReserved && room.reservedFrom && room.reservedTo) {
-    const currentDate = new Date(room.reservedFrom);
-    while (currentDate <= new Date(room.reservedTo)) {
-      if (
-        !dateStatuses.some(
-          (ds) => ds.date.toDateString() === currentDate.toDateString()
-        )
-      ) {
-        dateStatuses.push({
-          date: new Date(currentDate),
-          status: "RESERVED",
-        });
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-  }
 
   return dateStatuses;
 };
+
 
 export const isDateInRange = (date: Date, start: Date, end: Date) => {
   return date >= start && date <= end;

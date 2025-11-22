@@ -71,12 +71,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getPakistanDateString } from "@/utils/pakDate";
 
 interface RoomReservation {
   id: string;
   roomId: string;
   reservedFrom: string;
   reservedTo: string;
+  admin: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -109,8 +111,8 @@ export default function Rooms() {
   const [reserveDialog, setReserveDialog] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [reserveDates, setReserveDates] = useState({
-    from: "",
-    to: "",
+    from: getPakistanDateString(new Date()),
+    to: getPakistanDateString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
   });
 
   // Form state
@@ -284,6 +286,7 @@ export default function Rooms() {
     return room.reservations.some((reservation) => {
       const reservationFrom = new Date(reservation.reservedFrom).setHours(0, 0, 0, 0);
       const reservationTo = new Date(reservation.reservedTo).setHours(0, 0, 0, 0);
+      const reservedBy = reservation.admin.name;
 
       return reservationFrom === selectedFrom && reservationTo === selectedTo;
     });
@@ -363,14 +366,17 @@ export default function Rooms() {
       return;
     }
 
-    const fromDate = new Date(reserveDates.from);
-    fromDate.setHours(0, 0, 0, 0); // Normalize to start of day
-
-    const toDate = new Date(reserveDates.to);
-    toDate.setHours(0, 0, 0, 0); // Normalize to start of day
+    // Parse dates as Pakistan Time
+    const fromDate = new Date(reserveDates.from + 'T00:00:00+05:00');
+    const toDate = new Date(reserveDates.to + 'T00:00:00+05:00');
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize today to start of day
+    today.setHours(0, 0, 0, 0);
+
+    // Apply Pakistan timezone offset for comparison
+    const pktOffset = 5 * 60 * 60 * 1000;
+    const todayPKT = new Date(today.getTime() + pktOffset);
+    todayPKT.setHours(0, 0, 0, 0);
 
     if (fromDate >= toDate) {
       toast({
@@ -381,7 +387,7 @@ export default function Rooms() {
       return;
     }
 
-    if (fromDate < today) {
+    if (fromDate < todayPKT) {
       toast({
         title: "Invalid start date",
         description: "Start date cannot be in the past",
@@ -947,7 +953,8 @@ export default function Rooms() {
                             {upcomingReservations
                               .slice(0, 2)
                               .map((reservation) => (
-                                <div key={reservation.id} className="text-xs">
+                                <div key={reservation.id} className="text-xs flex flex-col">
+                                  <strong>{reservation.admin.name}</strong>
                                   {new Date(
                                     reservation.reservedFrom
                                   ).toLocaleDateString()}{" "}
@@ -1252,14 +1259,14 @@ export default function Rooms() {
                           <div
                             key={room.id}
                             className={`flex items-center space-x-3 p-3 border rounded-lg ${hasOverlap
-                                ? "bg-orange-50 border-orange-200"
-                                : isReservedForDates
-                                  ? "bg-blue-50 border-blue-200"
-                                  : isOutOfOrderForSelectedDates
-                                    ? "bg-red-50 border-red-200"
-                                    : !room.isActive
-                                      ? "bg-gray-50 border-gray-200"
-                                      : "bg-white border-gray-200"
+                              ? "bg-orange-50 border-orange-200"
+                              : isReservedForDates
+                                ? "bg-blue-50 border-blue-200"
+                                : isOutOfOrderForSelectedDates
+                                  ? "bg-red-50 border-red-200"
+                                  : !room.isActive
+                                    ? "bg-gray-50 border-gray-200"
+                                    : "bg-white border-gray-200"
                               }`}
                           >
                             <Checkbox
