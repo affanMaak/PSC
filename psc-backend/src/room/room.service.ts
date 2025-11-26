@@ -434,6 +434,9 @@ export class RoomService {
     return await this.prismaService.room.delete({ where: { id } });
   }
 
+
+  // reserve room(s)
+
   async reserveRooms(
     roomIds: number[],
     reserve: boolean,

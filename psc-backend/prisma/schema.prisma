@@ -49,7 +49,8 @@ model Member {
   lawnBookings        LawnBooking[]
   photoshootBookings  PhotoshootBooking[]
   sportsSubscriptions SportSubscription[]
-  RoomHolding      Room[]
+  RoomHolding         Room[]
+  hallHolding Hall[]
 
   totalBookings   Int       @default(0)
   drAmount        Decimal   @default(0.00) @db.Decimal(12, 2)
@@ -304,6 +305,7 @@ model HallReservation {
   reservedFrom DateTime
   reservedTo   DateTime
   reservedBy   Int
+  timeSlot     String   @default("MORNING") @db.VarChar(20) // MORNING, EVENING, NIGHT
   admin        Admin    @relation(fields: [reservedBy], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -314,9 +316,9 @@ model HallReservation {
 
 // halls
 model Hall {
-  id          Int    @id @unique() @default(autoincrement())
-  name        String @db.VarChar(50)
-  description String @db.Text
+  id          Int     @id @unique() @default(autoincrement())
+  name        String  @db.VarChar(50)
+  description String? @db.Text
 
   capacity       Int
   chargesMembers Decimal @default(0.00) @db.Decimal(30, 2)
@@ -330,11 +332,16 @@ model Hall {
 
   images Json @default("{}")
 
+  onHold     Boolean   @default(false)
+  holdExpiry DateTime?
+  holdBy     String?
+  holdMember Member?   @relation(fields: [holdBy], references: [Membership_No])
+
   isBooked Boolean       @default(false)
   bookings HallBooking[]
 
-  isReserved       Boolean           @default(false)
-  reservations     HallReservation[]
+  isReserved   Boolean           @default(false)
+  reservations HallReservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -83,7 +83,6 @@ export class HallController {
   }
 
   // reserve halls
-  // hall.controller.ts
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @Patch('reserve/halls')
@@ -93,6 +92,7 @@ export class HallController {
     payload: {
       hallIds: string[];
       reserve: boolean;
+      timeSlot: string;
       reserveFrom?: string;
       reserveTo?: string;
     },
@@ -101,6 +101,7 @@ export class HallController {
       payload.hallIds.map((id) => Number(id)),
       payload.reserve,
       req.user?.id,
+      payload.timeSlot,
       payload.reserveFrom,
       payload.reserveTo,
     );

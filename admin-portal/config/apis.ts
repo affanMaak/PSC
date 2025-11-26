@@ -648,11 +648,12 @@ export const generateVoucher = async (
 export const reserveHall = async (
   hallIds: string[],
   reserve: boolean,
+  timeSlot: string,
   reserveFrom?: string,
-  reserveTo?: string
+  reserveTo?: string,
 ): Promise<any> => {
   try {
-    const payload: any = { hallIds, reserve };
+    const payload: any = { hallIds, reserve, timeSlot };
 
     // Always include reserveFrom and reserveTo if they are provided
     // The backend needs them to identify which specific reservation to remove
@@ -690,9 +691,10 @@ export const createHall = async (data: any): Promise<any> => {
     const response = await axios.post(`${base_url}/hall/create/hall`, data, {
       withCredentials: true,
     });
-    console.log(response);
+    // console.log(response.data);
     return response;
   } catch (error: any) {
+    // console.log(error)
     const message =
       error.response?.data?.message ||
       error.response?.data?.error ||

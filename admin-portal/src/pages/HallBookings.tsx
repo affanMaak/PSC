@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,15 +45,19 @@ import {
   Hall,
   HallBooking,
   HallBookingForm,
+  HallBookingTime,
+  PaymentStatus,
+  PricingType,
 } from "@/types/hall-booking.type";
 import {
   hallInitialFormState,
   calculateHallPrice,
   calculateHallAccountingValues,
-  getHallDateStatuses,
+  getAvailableTimeSlots,
 } from "@/utils/hallBookingUtils";
 import { MemberSearchComponent } from "@/components/MemberSearch";
 import { DatePickerInput } from "@/components/FormInputs";
+import { HallDatePicker } from "@/components/HallDatePicker";
 
 // Payment section built for hall bookings
 const HallPaymentSection = React.memo(
@@ -64,7 +69,7 @@ const HallPaymentSection = React.memo(
     onChange: (field: keyof HallBookingForm, value: any) => void;
   }) => {
     const accounting = calculateHallAccountingValues(
-      form.paymentStatus,
+      form.paymentStatus as PaymentStatus,
       form.totalPrice,
       form.paidAmount
     );
@@ -157,17 +162,17 @@ const HallPaymentSection = React.memo(
 
         {(form.paymentStatus === "PAID" ||
           form.paymentStatus === "HALF_PAID") && (
-          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-            <div className="flex items-center">
-              <Receipt className="h-4 w-4 text-green-600 mr-2" />
-              <span className="text-sm font-medium text-green-800">
-                {form.paymentStatus === "PAID"
-                  ? "Full Payment Voucher will be generated automatically"
-                  : "Half Payment Voucher will be generated automatically"}
-              </span>
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+              <div className="flex items-center">
+                <Receipt className="h-4 w-4 text-green-600 mr-2" />
+                <span className="text-sm font-medium text-green-800">
+                  {form.paymentStatus === "PAID"
+                    ? "Full Payment Voucher will be generated automatically"
+                    : "Half Payment Voucher will be generated automatically"}
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     );
   }
@@ -204,6 +209,7 @@ export default function HallBookings() {
     queryKey: ["halls"],
     queryFn: async () => (await getHalls()) as Hall[],
   });
+  console.log(halls)
 
   // Member search query with throttling for create dialog
   const {
@@ -225,10 +231,32 @@ export default function HallBookings() {
     enabled: !!viewVouchers,
   });
 
-  const dateStatuses = useMemo(
-    () => getHallDateStatuses(form.hallId, bookings, halls),
-    [form.hallId, bookings, halls]
+  // Derive reservations from halls
+  const reservations = useMemo(() => {
+    return halls.flatMap((hall: any) => hall.reservations || []);
+  }, [halls]);
+
+  // Get available time slots for the selected date in create form
+  const availableCreateTimeSlots = useMemo(
+    () => getAvailableTimeSlots(form.hallId, form.bookingDate, bookings, halls, reservations),
+    [form.hallId, form.bookingDate, bookings, halls, reservations]
   );
+
+  // Get available time slots for the selected date in edit form
+  const availableEditTimeSlots = useMemo(() => {
+    if (!editForm.hallId || !editForm.bookingDate) return [];
+
+    // Filter out the current booking being edited so its own time slot isn't marked as unavailable
+    const otherBookings = bookings.filter(b => b.id !== editBooking?.id);
+
+    return getAvailableTimeSlots(
+      editForm.hallId,
+      editForm.bookingDate,
+      otherBookings,
+      halls,
+      reservations
+    );
+  }, [editForm.hallId, editForm.bookingDate, bookings, halls, editBooking, reservations]);
 
   // Stable search handler with proper cleanup
   const handleMemberSearch = useCallback(
@@ -294,8 +322,10 @@ export default function HallBookings() {
 
   // Filter available halls
   useEffect(() => {
+    // Show all active halls that are not out of service
+    // Don't filter by isBooked since a hall can have multiple time slots per day
     const filteredHalls = halls.filter(
-      (hall: Hall) => hall.isActive && !hall.isBooked
+      (hall: Hall) => hall.isActive && !hall.isOutOfService
     );
     setAvailableHalls(filteredHalls);
   }, [halls]);
@@ -369,7 +399,7 @@ export default function HallBookings() {
 
           // Recalculate accounting values
           const accounting = calculateHallAccountingValues(
-            newForm.paymentStatus,
+            newForm.paymentStatus as PaymentStatus,
             newPrice,
             newForm.paidAmount
           );
@@ -412,7 +442,8 @@ export default function HallBookings() {
       !form.membershipNo ||
       !form.hallId ||
       !form.bookingDate ||
-      !form.eventType
+      !form.eventType ||
+      !form.eventTime
     ) {
       toast({
         title: "Please fill all required fields",
@@ -547,8 +578,8 @@ export default function HallBookings() {
     paymentFilter === "ALL"
       ? bookings
       : bookings?.filter(
-          (booking: HallBooking) => booking.paymentStatus === paymentFilter
-        );
+        (booking: HallBooking) => booking.paymentStatus === paymentFilter
+      );
 
   const getPaymentBadge = (status: string) => {
     switch (status) {
@@ -618,12 +649,12 @@ export default function HallBookings() {
           ? new Date(editBooking.bookingDate).toISOString().split("T")[0]
           : "",
         eventType: editBooking.eventType || "",
-        eventTime: editBooking.bookingTime || "EVENING",
-        pricingType: editBooking.pricingType || "member",
-        totalPrice: editBooking.totalPrice || 0,
-        paymentStatus: editBooking.paymentStatus || "UNPAID",
-        paidAmount: editBooking.paidAmount || 0,
-        pendingAmount: editBooking.pendingAmount || 0,
+        eventTime: editBooking.bookingTime || "EVENING" as any as HallBookingTime,
+        pricingType: editBooking.pricingType || "member" as any as PricingType,
+        totalPrice: Number(editBooking.totalPrice) || 0,
+        paymentStatus: editBooking.paymentStatus || "UNPAID" as any as PaymentStatus,
+        paidAmount: Number(editBooking.paidAmount) || 0,
+        pendingAmount: Number(editBooking.pendingAmount) || 0,
         paymentMode: "CASH",
       };
       setEditForm(newEditForm);
@@ -714,11 +745,9 @@ export default function HallBookings() {
 
                 <div>
                   <Label>Booking Date *</Label>
-                  <DatePickerInput
-                    label=""
+                  <HallDatePicker
                     value={form.bookingDate}
                     onChange={(val) => handleFormChange("bookingDate", val)}
-                    dateStatuses={dateStatuses}
                     placeholder="Select booking date"
                   />
                 </div>
@@ -745,18 +774,33 @@ export default function HallBookings() {
                 </div>
 
                 <div>
-                  <Label>Booking Time</Label>
+                  <Label>Booking Time *</Label>
                   <Select
                     value={form.eventTime}
                     onValueChange={(val) => handleFormChange("eventTime", val)}
                   >
                     <SelectTrigger className="mt-2">
-                      <SelectValue />
+                      <SelectValue placeholder="Select time slot" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MORNING">Morning</SelectItem>
-                      <SelectItem value="EVENING">Evening</SelectItem>
-                      <SelectItem value="NIGHT">Night</SelectItem>
+                      <SelectItem
+                        value="MORNING"
+                        disabled={!availableCreateTimeSlots.includes('MORNING')}
+                      >
+                        Morning{!availableCreateTimeSlots.includes('MORNING') ? ' (Booked)' : ''}
+                      </SelectItem>
+                      <SelectItem
+                        value="EVENING"
+                        disabled={!availableCreateTimeSlots.includes('EVENING')}
+                      >
+                        Evening{!availableCreateTimeSlots.includes('EVENING') ? ' (Booked)' : ''}
+                      </SelectItem>
+                      <SelectItem
+                        value="NIGHT"
+                        disabled={!availableCreateTimeSlots.includes('NIGHT')}
+                      >
+                        Night{!availableCreateTimeSlots.includes('NIGHT') ? ' (Booked)' : ''}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -866,15 +910,15 @@ export default function HallBookings() {
                         </Button>
                         {(booking.paymentStatus === "PAID" ||
                           booking.paymentStatus === "HALF_PAID") && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleViewVouchers(booking)}
-                            title="View Vouchers"
-                          >
-                            <Receipt className="h-4 w-4" />
-                          </Button>
-                        )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewVouchers(booking)}
+                              title="View Vouchers"
+                            >
+                              <Receipt className="h-4 w-4" />
+                            </Button>
+                          )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -1021,18 +1065,33 @@ export default function HallBookings() {
             </div>
 
             <div>
-              <Label>Booking Time</Label>
+              <Label>Booking Time *</Label>
               <Select
                 value={editForm.eventTime}
                 onValueChange={(val) => handleEditFormChange("eventTime", val)}
               >
                 <SelectTrigger className="mt-2">
-                  <SelectValue />
+                  <SelectValue placeholder="Select time slot" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MORNING">Morning</SelectItem>
-                  <SelectItem value="EVENING">Evening</SelectItem>
-                  <SelectItem value="NIGHT">Night</SelectItem>
+                  <SelectItem
+                    value="MORNING"
+                    disabled={!availableEditTimeSlots.includes('MORNING') && editBooking?.bookingTime !== 'MORNING'}
+                  >
+                    Morning{!availableEditTimeSlots.includes('MORNING') && editBooking?.bookingTime !== 'MORNING' ? ' (Booked)' : ''}
+                  </SelectItem>
+                  <SelectItem
+                    value="EVENING"
+                    disabled={!availableEditTimeSlots.includes('EVENING') && editBooking?.bookingTime !== 'EVENING'}
+                  >
+                    Evening{!availableEditTimeSlots.includes('EVENING') && editBooking?.bookingTime !== 'EVENING' ? ' (Booked)' : ''}
+                  </SelectItem>
+                  <SelectItem
+                    value="NIGHT"
+                    disabled={!availableEditTimeSlots.includes('NIGHT') && editBooking?.bookingTime !== 'NIGHT'}
+                  >
+                    Night{!availableEditTimeSlots.includes('NIGHT') && editBooking?.bookingTime !== 'NIGHT' ? ' (Booked)' : ''}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

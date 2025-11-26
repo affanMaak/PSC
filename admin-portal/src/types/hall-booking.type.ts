@@ -4,54 +4,76 @@ export type HallBookingTime = "MORNING" | "EVENING" | "NIGHT";
 export type PricingType = "member" | "guest";
 export type PaymentStatus = "UNPAID" | "HALF_PAID" | "PAID";
 
+
+export interface HallBooking {
+  id: string;
+  memberId: string;
+  hallId: string;
+  bookingDate: string;
+  totalPrice: string; // API returns string
+  paymentStatus: string;
+  pricingType: string;
+  paidAmount: string; // API returns string
+  pendingAmount: string; // API returns string
+  eventType: string;
+  bookingTime: string;
+  createdAt: string;
+  updatedAt: string;
+  member?: {
+    id: string;
+    Name: string;
+    Membership_No: string;
+    Balance: number;
+    drAmount: number;
+    crAmount: number;
+  };
+  hall?: {
+    id: string;
+    name: string;
+    capacity: number;
+    chargesMembers: number;
+    chargesGuests: number;
+  };
+  // Add these for backward compatibility
+  Membership_No?: string;
+  memberName?: string;
+  hallName?: string;
+}
+
 export interface Hall {
-  id: number;
+  id: string;
   name: string;
   capacity: number;
   chargesMembers: number;
   chargesGuests: number;
+  description: string;
   isActive: boolean;
+  isOutOfService: boolean;
+  isReserved: boolean;
   isBooked: boolean;
-  isOutOfService?: boolean;
+  outOfServiceReason?: string;
   outOfServiceFrom?: string;
   outOfServiceTo?: string;
-  outOfServiceReason?: string;
-}
-
-export interface HallBooking {
-  id: number;
-  Membership_No: string;
-  memberName: string;
-  memberId: number;
-  hallId: number;
-  hallName?: string;
-  bookingDate: string;
-  eventType: string;
-  bookingTime: HallBookingTime;
-  totalPrice: number;
-  paymentStatus: PaymentStatus;
-  pricingType: PricingType;
-  paidAmount: number;
-  pendingAmount: number;
-  member?: Member;
-  hall?: Hall;
+  reservations: any[];
+  bookings: HallBooking[];
+  images: any[];
 }
 
 export interface HallBookingForm {
   membershipNo: string;
   memberName: string;
   memberId: string;
-  category: "Hall";
+  category: string;
   hallId: string;
   bookingDate: string;
   eventType: string;
-  eventTime: HallBookingTime;
-  pricingType: PricingType;
+  eventTime: string; // Use string instead of HallBookingTime
+  pricingType: string; // Use string instead of PricingType
   totalPrice: number;
-  paymentStatus: PaymentStatus;
+  paymentStatus: string; // Use string instead of PaymentStatus
   paidAmount: number;
   pendingAmount: number;
-  paymentMode: "CASH";
+  paymentMode: string;
 }
 
 export type HallVoucher = Voucher;
