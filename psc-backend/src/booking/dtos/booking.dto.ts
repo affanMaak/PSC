@@ -43,6 +43,15 @@ export class BookingDto{
     guestsCount?: string | null
     @IsOptional()
     numberOfGuests?: number
+
+    @IsOptional()
+    paidBy?: "GUEST" | "MEMBER"
+    @IsOptional()
+    guestName?: string
+    @IsOptional()
+    guestContact?: string
+    
+
     
     @IsNotEmpty({message: "Total Price must be specified"})
     totalPrice: string

@@ -24,7 +24,7 @@ import type { Response } from 'express';
 
 @Controller('room')
 export class RoomController {
-  constructor(private room: RoomService) {}
+  constructor(private room: RoomService) { }
 
   // room types //
 
@@ -118,7 +118,7 @@ export class RoomController {
     return await this.room.getRoomCategories();
   }
   @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  @Roles(RolesEnum.SUPER_ADMIN, RolesEnum.ADMIN)
   @Get('get/rooms/available')
   async getAvailRooms(@Query() roomTypeId: { roomTypeId: string }) {
     return await this.room.getAvailRooms(Number(roomTypeId.roomTypeId));
@@ -131,22 +131,35 @@ export class RoomController {
     @Body() payload: RoomDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { isActive, isOutOfOrder } = payload;
-
-    if (isActive === isOutOfOrder)
-      return res.status(400).send({
-        cause: 'room activity and out-of-order cannot be at the same time',
-      });
-
     return await this.room.createRoom(payload);
   }
 
-  // reserve room(s)
+  @UseGuards(JwtAccGuard, RolesGuard)
+  @Roles(RolesEnum.SUPER_ADMIN)
+  @Patch('update/room')
+  async updateRoom(
+    @Body() payload: RoomDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    payload.isActive = payload.isActive === 'true' || payload.isActive === true;
+    return await this.room.updateRoom(payload);
+  }
+
+  @UseGuards(JwtAccGuard, RolesGuard)
+  @Roles(RolesEnum.SUPER_ADMIN)
+  @Delete('delete/room')
+  async deleteRoom(@Query('id') id: string) {
+    return await this.room.deleteRoom(Number(id));
+  }
+
+
+
+   // reserve room(s)
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @Patch('reserve/rooms')
   async reserveRooms(
-    @Req() req: {user: {id: string}},
+    @Req() req: { user: { id: string } },
     @Body()
     payload: {
       roomIds: string[];
@@ -164,46 +177,18 @@ export class RoomController {
     );
   }
 
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
-  @Patch('update/room')
-  async updateRoom(
-    @Body() payload: RoomDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    payload.isActive = payload.isActive === 'true' || payload.isActive === true;
-    payload.isOutOfOrder =
-      payload.isOutOfOrder === 'true' || payload.isOutOfOrder === true;
-
-    if (payload.isActive && payload.isOutOfOrder) {
-      return res.status(400).send({
-        cause: 'room cannot be active and out-of-order at the same time',
-      });
-    }
-
-    return await this.room.updateRoom(payload);
-  }
-
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
-  @Delete('delete/room')
-  async deleteRoom(@Query('id') id: string) {
-    return await this.room.deleteRoom(Number(id));
-  }
-
-
   // member rooms //
   @UseGuards(JwtAccGuard)
   @Post('member/check/rooms/available')
-  async getMemberRoomsAvailable(@Query("roomType") roomType: string, @Body() dates: {to: string, from: string}) {
+  async getMemberRoomsAvailable(@Query("roomType") roomType: string, @Body() dates: { to: string, from: string }) {
     return await this.room.getMemberRoomsForDate(dates.from, dates.to, Number(roomType));
   }
-  
+
 
   // calendar
   @UseGuards(JwtAccGuard)
   @Get('calendar')
-  async roomCalendar(){
+  async roomCalendar() {
     return await this.room.roomCalendar();
   }
 

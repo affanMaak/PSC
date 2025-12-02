@@ -199,6 +199,9 @@ export const initialFormState: BookingForm = {
   roomTypeId: "",
   roomId: "",
   pricingType: "member",
+  paidBy: "MEMBER",
+  guestName: "",
+  guestContact: "",
   checkIn: "",
   checkOut: "",
   totalPrice: 0,
@@ -206,6 +209,7 @@ export const initialFormState: BookingForm = {
   paidAmount: 0,
   pendingAmount: 0,
   paymentMode: "CASH",
+
   numberOfAdults: 1,
   numberOfChildren: 0,
   specialRequests: "",

@@ -126,6 +126,14 @@ export class LawnController {
   async getLawns() {
     return this.lawn.getLawns();
   }
+
+  @UseGuards(JwtAccGuard, RolesGuard)
+  @Roles(RolesEnum.SUPER_ADMIN, RolesEnum.ADMIN)
+  @Get('get/lawns/calendar')
+  async getCalendarLawns() {
+    return this.lawn.getCalendarLawns();
+  }
+
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @Get('get/lawns/available')

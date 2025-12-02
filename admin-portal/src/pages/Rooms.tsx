@@ -73,6 +73,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getPakistanDateString } from "@/utils/pakDate";
 
+interface RoomOutOfOrder {
+  id?: string;
+  reason: string;
+  startDate: string;
+  endDate: string;
+}
+
 interface RoomReservation {
   id: string;
   roomId: string;
@@ -82,6 +89,7 @@ interface RoomReservation {
   createdAt: string;
   updatedAt: string;
 }
+
 interface RoomBooking {
   id: string;
   roomId: string;
@@ -102,15 +110,11 @@ interface Room {
   roomTypeId: string;
   description: string;
   isActive: boolean;
-  isOutOfOrder: boolean;
   isReserved: boolean;
-  outOfOrderReason?: string;
-  outOfOrderTo?: string;
-  outOfOrderFrom?: string;
+  outOfOrders: RoomOutOfOrder[];
   reservations: RoomReservation[];
   bookings: RoomBooking[];
 }
-
 
 export default function Rooms() {
   const { toast } = useToast();
@@ -129,16 +133,20 @@ export default function Rooms() {
     to: getPakistanDateString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
   });
 
-  // Form state
+  // Form state for room
   const [form, setForm] = useState({
     roomNumber: "",
     roomTypeId: "",
     description: "",
     isActive: true,
-    isOutOfOrder: false,
-    outOfOrderReason: "",
-    outOfOrderFrom: "",
-    outOfOrderTo: "",
+    outOfOrders: [] as RoomOutOfOrder[],
+  });
+
+  // Form state for new out-of-order period
+  const [newOutOfOrder, setNewOutOfOrder] = useState<RoomOutOfOrder>({
+    reason: "",
+    startDate: getPakistanDateString(new Date()),
+    endDate: getPakistanDateString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
   });
 
   // === FETCH DATA ===
@@ -241,10 +249,12 @@ export default function Rooms() {
       roomTypeId: "",
       description: "",
       isActive: true,
-      isOutOfOrder: false,
-      outOfOrderReason: "",
-      outOfOrderFrom: "",
-      outOfOrderTo: "",
+      outOfOrders: [],
+    });
+    setNewOutOfOrder({
+      reason: "",
+      startDate: getPakistanDateString(new Date()),
+      endDate: getPakistanDateString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
     });
   };
 
@@ -254,12 +264,49 @@ export default function Rooms() {
       roomTypeId: room.roomTypeId,
       description: room.description,
       isActive: room.isActive,
-      isOutOfOrder: room.isOutOfOrder,
-      outOfOrderReason: room.outOfOrderReason || "",
-      outOfOrderFrom: room.outOfOrderFrom || "",
-      outOfOrderTo: room.outOfOrderTo || "",
+      outOfOrders: room.outOfOrders || [],
     });
     setEditRoom(room);
+  };
+
+  const handleAddOutOfOrder = () => {
+    if (!newOutOfOrder.reason || !newOutOfOrder.startDate || !newOutOfOrder.endDate) {
+      toast({
+        title: "Missing required fields",
+        description: "Please fill in reason, start date, and end date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const startDate = new Date(newOutOfOrder.startDate);
+    const endDate = new Date(newOutOfOrder.endDate);
+
+    if (endDate < startDate) {
+      toast({
+        title: "Invalid date range",
+        description: "End date must be after start date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setForm({
+      ...form,
+      outOfOrders: [...form.outOfOrders, { ...newOutOfOrder }],
+    });
+
+    setNewOutOfOrder({
+      reason: "",
+      startDate: getPakistanDateString(new Date()),
+      endDate: getPakistanDateString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+    });
+  };
+
+  const handleRemoveOutOfOrder = (index: number) => {
+    const updatedOutOfOrders = [...form.outOfOrders];
+    updatedOutOfOrders.splice(index, 1);
+    setForm({ ...form, outOfOrders: updatedOutOfOrders });
   };
 
   const handleSubmit = () => {
@@ -277,10 +324,7 @@ export default function Rooms() {
       roomTypeId: form.roomTypeId,
       description: form.description,
       isActive: form.isActive,
-      isOutOfOrder: form.isOutOfOrder,
-      outOfOrderReason: form.isOutOfOrder ? form.outOfOrderReason : undefined,
-      outOfOrderFrom: form.isOutOfOrder ? form.outOfOrderFrom : undefined,
-      outOfOrderTo: form.isOutOfOrder ? form.outOfOrderTo : undefined,
+      outOfOrders: form.outOfOrders,
       ...(editRoom && { id: editRoom.id }),
     };
 
@@ -291,11 +335,36 @@ export default function Rooms() {
     }
   };
 
+  // Check if room has any out-of-order period during selected dates
+  const isRoomOutOfOrderForDates = (room: Room) => {
+    if (!reserveDates.from || !reserveDates.to) return false;
+
+    const selectedFrom = new Date(reserveDates.from);
+    const selectedTo = new Date(reserveDates.to);
+
+    return room.outOfOrders.some((oo) => {
+      const ooStart = new Date(oo.startDate);
+      const ooEnd = new Date(oo.endDate);
+      // console.log(oo)
+      // Check for overlap
+      return selectedFrom <= ooEnd && selectedTo >= ooStart;
+    });
+  };
+
+  // Check if room is currently out of order (any ongoing period)
+  const isRoomCurrentlyOutOfOrder = (room: Room) => {
+    const now = new Date();
+    return room.outOfOrders.some((oo) => {
+      const ooStart = new Date(oo.startDate);
+      const ooEnd = new Date(oo.endDate);
+      return ooStart <= now && ooEnd >= now;
+    });
+  };
+
   // Check if room has reservation for the exact selected dates
   const isRoomReservedForDates = (room: Room) => {
     if (!reserveDates.from || !reserveDates.to) return false;
 
-    // Convert selected dates to UTC strings for comparison
     const selectedFromUTC = new Date(reserveDates.from + 'T00:00:00Z').toISOString();
     const selectedToUTC = new Date(reserveDates.to + 'T00:00:00Z').toISOString();
 
@@ -305,11 +374,10 @@ export default function Rooms() {
     });
   };
 
-  // Check if room has overlapping reservations with selected dates (excluding exact matches)
+  // Check if room has overlapping reservations with selected dates
   const hasOverlappingReservations = (room: Room) => {
     if (!reserveDates.from || !reserveDates.to) return false;
 
-    // Convert selected dates to Date objects for comparison
     const selectedFrom = new Date(reserveDates.from + 'T00:00:00Z');
     const selectedTo = new Date(reserveDates.to + 'T00:00:00Z');
 
@@ -331,18 +399,10 @@ export default function Rooms() {
 
   // Handle room selection with reservation cancellation
   const handleRoomSelection = (roomId: string, checked: boolean) => {
-    const room = rooms.find((r: Room) => r.id === roomId);
-    const isCurrentlyReserved = room && isRoomReservedForDates(room);
-
     if (checked) {
-      // Add to selected rooms
       setSelectedRooms((prev) => [...prev, roomId]);
     } else {
-      // Remove from selected rooms - don't call API here, just update selection
       setSelectedRooms((prev) => prev.filter((id) => id !== roomId));
-
-      // We'll handle the actual reservation removal in handleBulkReserve
-      // This allows the admin to make multiple changes before saving
     }
   };
 
@@ -356,7 +416,6 @@ export default function Rooms() {
       return;
     }
 
-    // Simple date validation
     const fromDate = new Date(reserveDates.from);
     const toDate = new Date(reserveDates.to);
     const today = new Date();
@@ -401,10 +460,25 @@ export default function Rooms() {
       return room && hasOverlappingReservations(room);
     });
 
+    // Check for out-of-order conflicts
+    const roomsWithOutOfOrderConflicts = roomsToReserve.filter((roomId) => {
+      const room = rooms.find((r: Room) => r.id === roomId);
+      return room && isRoomOutOfOrderForDates(room);
+    });
+
     if (roomsWithOverlaps.length > 0) {
       toast({
         title: "Overlapping reservations detected",
         description: `${roomsWithOverlaps.length} room(s) have overlapping reservations that conflict with the selected dates`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (roomsWithOutOfOrderConflicts.length > 0) {
+      toast({
+        title: "Out-of-order conflicts detected",
+        description: `${roomsWithOutOfOrderConflicts.length} room(s) are scheduled for maintenance during the selected dates`,
         variant: "destructive",
       });
       return;
@@ -457,16 +531,26 @@ export default function Rooms() {
 
   // Filter rooms based on status and type
   const filteredRooms = rooms.filter((room: Room) => {
+    const isCurrentlyOutOfOrder = isRoomCurrentlyOutOfOrder(room);
+    const hasCurrentBooking = room.bookings?.some(booking => {
+      const checkIn = new Date(booking.checkIn);
+      const checkOut = new Date(booking.checkOut);
+      const now = new Date();
+      return now >= checkIn && now <= checkOut;
+    });
+
     // Status filter
     const statusMatch =
       statusFilter === "ALL" ||
       (statusFilter === "ACTIVE"
-        ? room.isActive && !room.isOutOfOrder && !room.isReserved
+        ? room.isActive && !isCurrentlyOutOfOrder && !room.isReserved && !hasCurrentBooking
         : statusFilter === "OUT_OF_ORDER"
-          ? room.isOutOfOrder
+          ? isCurrentlyOutOfOrder
           : statusFilter === "RESERVED"
             ? room.isReserved
-            : !room.isActive);
+            : statusFilter === "OCCUPIED"
+              ? hasCurrentBooking
+              : !room.isActive);
 
     // Type filter
     const typeMatch = typeFilter === "ALL" || room.roomType.type === typeFilter;
@@ -487,29 +571,31 @@ export default function Rooms() {
   // Get room status for display
   const getRoomStatus = (room: Room) => {
     const now = new Date();
-    const outOfOrderFrom = room.outOfOrderFrom ? new Date(room.outOfOrderFrom) : null;
-    const outOfOrderTo = room.outOfOrderTo ? new Date(room.outOfOrderTo) : null;
-
+    
     // Check if room is currently out of order
-    if (room.isOutOfOrder) {
-      if (outOfOrderTo && outOfOrderTo < now) {
-        return "Maintenance Completed";
-      }
+    if (isRoomCurrentlyOutOfOrder(room)) {
       return "Out of Order";
     }
 
-    // Check if room is scheduled to be out of order in the future
-    if (outOfOrderFrom && outOfOrderFrom > now) {
-      return "Scheduled Maintenance";
-    }
-
     // Check if room has current bookings
-    if (hasCurrentBooking(room)) {
+    if (room.bookings?.some(booking => {
+      const checkIn = new Date(booking.checkIn);
+      const checkOut = new Date(booking.checkOut);
+      return now >= checkIn && now <= checkOut;
+    })) {
       return "Currently Booked";
     }
 
     if (room.isReserved) return "Currently Reserved";
     if (!room.isActive) return "Inactive";
+
+    // Check for scheduled out-of-order periods
+    const hasScheduledOutOfOrder = room.outOfOrders?.some(oo => {
+      const ooStart = new Date(oo.startDate + 'T00:00:00Z');
+      return ooStart > now;
+    });
+
+    if (hasScheduledOutOfOrder) return "Scheduled Maintenance";
 
     // Check for future reservations
     const hasFutureReservations = room.reservations.some(
@@ -524,24 +610,30 @@ export default function Rooms() {
   // Get room status badge variant
   const getRoomStatusVariant = (room: Room) => {
     const now = new Date();
-    const outOfOrderFrom = room.outOfOrderFrom ? new Date(room.outOfOrderFrom) : null;
-    const outOfOrderTo = room.outOfOrderTo ? new Date(room.outOfOrderTo) : null;
-
-    if (room.isOutOfOrder) {
-      if (outOfOrderTo && outOfOrderTo < now) {
-        return "outline";
-      }
+    
+    if (isRoomCurrentlyOutOfOrder(room)) {
       return "destructive";
     }
 
-    // Check if scheduled for maintenance (future out-of-order)
-    if (outOfOrderFrom && outOfOrderFrom > now) return "outline";
-
     // Check for current bookings
-    if (hasCurrentBooking(room)) return "secondary";
+    if (room.bookings?.some(booking => {
+      const checkIn = new Date(booking.checkIn);
+      const checkOut = new Date(booking.checkOut);
+      return now >= checkIn && now <= checkOut;
+    })) {
+      return "secondary";
+    }
 
     if (room.isReserved) return "secondary";
     if (!room.isActive) return "secondary";
+
+    // Check for scheduled maintenance
+    const hasScheduledOutOfOrder = room.outOfOrders?.some(oo => {
+      const ooStart = new Date(oo.startDate + 'T00:00:00Z');
+      return ooStart > now;
+    });
+
+    if (hasScheduledOutOfOrder) return "outline";
 
     const hasFutureReservations = room.reservations.some(
       (reservation) => new Date(reservation.reservedFrom) > now
@@ -550,6 +642,14 @@ export default function Rooms() {
     if (hasFutureReservations) return "outline";
 
     return "default";
+  };
+
+  // Get upcoming out-of-order periods
+  const getUpcomingOutOfOrders = (room: Room) => {
+    const now = new Date();
+    return (room.outOfOrders || [])
+      .filter((oo) => new Date(oo.endDate) >= now)
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
   };
 
   // Get upcoming reservations for a room
@@ -563,7 +663,6 @@ export default function Rooms() {
           new Date(b.reservedFrom).getTime()
       );
   };
-
 
   // Get upcoming bookings for a room
   const getUpcomingBookings = (room: Room) => {
@@ -593,16 +692,6 @@ export default function Rooms() {
       default:
         return <Badge variant="outline" className="text-xs">{status}</Badge>;
     }
-  };
-
-  // Check if room has current booking
-  const hasCurrentBooking = (room: Room) => {
-    const now = new Date();
-    return room.bookings?.some(booking => {
-      const checkIn = new Date(booking.checkIn);
-      const checkOut = new Date(booking.checkOut);
-      return now >= checkIn && now <= checkOut;
-    });
   };
 
   // Clear all filters
@@ -656,6 +745,7 @@ export default function Rooms() {
                         <SelectItem value="ACTIVE">Active & Available</SelectItem>
                         <SelectItem value="OUT_OF_ORDER">Out of Order</SelectItem>
                         <SelectItem value="RESERVED">Currently Reserved</SelectItem>
+                        <SelectItem value="OCCUPIED">Currently Occupied</SelectItem>
                         <SelectItem value="INACTIVE">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
@@ -724,11 +814,11 @@ export default function Rooms() {
                 Add Room
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Room</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Room Number *</Label>
@@ -784,42 +874,29 @@ export default function Rooms() {
                   <Switch
                     checked={form.isActive}
                     onCheckedChange={(v) =>
-                      setForm({
-                        ...form,
-                        isActive: v,
-                        isOutOfOrder: v ? false : form.isOutOfOrder,
-                      })
+                      setForm({ ...form, isActive: v })
                     }
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <Label className="text-base">Out of Order</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Room is unavailable for maintenance or repairs
-                    </p>
+                {/* Out of Order Periods Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base">Out of Order Periods</Label>
+                    <span className="text-sm text-muted-foreground">
+                      Add multiple maintenance periods (e.g., Nov 9-10, Dec 9-10)
+                    </span>
                   </div>
-                  <Switch
-                    checked={form.isOutOfOrder}
-                    onCheckedChange={(v) =>
-                      setForm({
-                        ...form,
-                        isOutOfOrder: v,
-                        isActive: v ? false : form.isActive,
-                      })
-                    }
-                  />
-                </div>
 
-                {form.isOutOfOrder && (
-                  <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                  {/* Add new out-of-order period form */}
+                  <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                    <h4 className="font-medium">Add New Maintenance Period</h4>
                     <div>
-                      <Label>Out of Order Reason *</Label>
+                      <Label>Reason *</Label>
                       <Textarea
-                        value={form.outOfOrderReason}
+                        value={newOutOfOrder.reason}
                         onChange={(e) =>
-                          setForm({ ...form, outOfOrderReason: e.target.value })
+                          setNewOutOfOrder({ ...newOutOfOrder, reason: e.target.value })
                         }
                         placeholder="Describe the issue (maintenance, renovation, repair, etc.)"
                         className="mt-2"
@@ -827,32 +904,68 @@ export default function Rooms() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Out of Order From *</Label>
+                        <Label>Start Date *</Label>
                         <Input
                           type="date"
-                          value={form.outOfOrderFrom}
+                          value={newOutOfOrder.startDate}
                           onChange={(e) =>
-                            setForm({ ...form, outOfOrderFrom: e.target.value })
+                            setNewOutOfOrder({ ...newOutOfOrder, startDate: e.target.value })
                           }
                           className="mt-2"
                           min={new Date().toISOString().split("T")[0]}
                         />
                       </div>
                       <div>
-                        <Label>Expected Available From *</Label>
+                        <Label>End Date *</Label>
                         <Input
                           type="date"
-                          value={form.outOfOrderTo}
+                          value={newOutOfOrder.endDate}
                           onChange={(e) =>
-                            setForm({ ...form, outOfOrderTo: e.target.value })
+                            setNewOutOfOrder({ ...newOutOfOrder, endDate: e.target.value })
                           }
                           className="mt-2"
-                          min={form.outOfOrderFrom || new Date().toISOString().split("T")[0]}
+                          min={newOutOfOrder.startDate || new Date().toISOString().split("T")[0]}
                         />
                       </div>
                     </div>
+                    <Button
+                      type="button"
+                      onClick={handleAddOutOfOrder}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Maintenance Period
+                    </Button>
                   </div>
-                )}
+
+                  {/* List of added out-of-order periods */}
+                  {form.outOfOrders.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Added Maintenance Periods ({form.outOfOrders.length})</Label>
+                      {form.outOfOrders.map((oo, index) => (
+                        <div key={index} className="p-3 border rounded-lg flex justify-between items-center">
+                          <div>
+                            <div className="font-medium">
+                              {formatDate(oo.startDate)} - {formatDate(oo.endDate)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {oo.reason}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveOutOfOrder(index)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={closeAddDialog}>
@@ -882,7 +995,8 @@ export default function Rooms() {
             <Badge variant="secondary" className="gap-1">
               Status: {statusFilter === "ACTIVE" ? "Active & Available" :
                 statusFilter === "OUT_OF_ORDER" ? "Out of Order" :
-                  statusFilter === "RESERVED" ? "Currently Reserved" : "Inactive"}
+                  statusFilter === "RESERVED" ? "Currently Reserved" :
+                    statusFilter === "OCCUPIED" ? "Currently Occupied" : "Inactive"}
               <button
                 onClick={() => setStatusFilter("ALL")}
                 className="ml-1 hover:text-destructive"
@@ -945,6 +1059,7 @@ export default function Rooms() {
                   <TableHead>Room Number</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Maintenance Periods</TableHead>
                   <TableHead>Reservations</TableHead>
                   <TableHead>Bookings</TableHead>
                   <TableHead>Description</TableHead>
@@ -953,16 +1068,22 @@ export default function Rooms() {
               </TableHeader>
               <TableBody>
                 {filteredRooms?.map((room: Room) => {
+                  const upcomingOutOfOrders = getUpcomingOutOfOrders(room);
                   const upcomingReservations = getUpcomingReservations(room);
                   const upcomingBookings = getUpcomingBookings(room);
-                  const hasCurrent = hasCurrentBooking(room);
+                  const isCurrentlyOccupied = room.bookings?.some(booking => {
+                    const checkIn = new Date(booking.checkIn);
+                    const checkOut = new Date(booking.checkOut);
+                    const now = new Date();
+                    return now >= checkIn && now <= checkOut;
+                  });
 
                   return (
                     <TableRow key={room.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           {room.roomNumber}
-                          {hasCurrent && (
+                          {isCurrentlyOccupied && (
                             <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
                               Occupied
                             </Badge>
@@ -986,33 +1107,43 @@ export default function Rooms() {
                             {getRoomStatus(room)}
                           </Badge>
 
-                          {/* Show out-of-order information */}
-                          {(room.isOutOfOrder || (room.outOfOrderFrom && new Date(room.outOfOrderFrom) > new Date())) && (
-                            <div className="space-y-1">
-                              {/* Show maintenance dates */}
-                              {room.outOfOrderFrom && room.outOfOrderTo && (
-                                <div className="text-xs text-muted-foreground">
-                                  {formatDate(room.outOfOrderFrom)} - {formatDate(room.outOfOrderTo)}
-                                </div>
-                              )}
-
-                              {/* Show out-of-order reason */}
-                              {room.outOfOrderReason && (
-                                <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200">
-                                  <div className="font-medium">Maintenance:</div>
-                                  {room.outOfOrderReason.substring(0, 11).length > 11 ? `${room.outOfOrderReason.substring(0, 11)}...` : room.outOfOrderReason.substring(0, 11)}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Show current booking status */}
-                          {hasCurrent && (
-                            <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">
-                              Currently occupied by guest
+                          {/* Show current out-of-order status */}
+                          {isRoomCurrentlyOutOfOrder(room) && (
+                            <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200">
+                              Currently under maintenance
                             </div>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {upcomingOutOfOrders.length > 0 ? (
+                          <div className="space-y-2">
+                            {upcomingOutOfOrders
+                              .slice(0, 2)
+                              .map((oo, index) => (
+                                <div key={index} className="text-xs border-l-2 border-red-400 pl-2">
+                                  <div className="font-medium text-red-700">
+                                    Maintenance
+                                  </div>
+                                  <div className="text-muted-foreground">
+                                    {formatDate(oo.startDate)} - {formatDate(oo.endDate)}
+                                  </div>
+                                  <div className="text-red-600 truncate">
+                                    {oo.reason.length > 20 ? `${oo.reason.substring(0, 20)}...` : oo.reason}
+                                  </div>
+                                </div>
+                              ))}
+                            {upcomingOutOfOrders.length > 2 && (
+                              <div className="text-xs text-muted-foreground">
+                                +{upcomingOutOfOrders.length - 2} more
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            No scheduled maintenance
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {upcomingReservations.length > 0 ? (
@@ -1114,13 +1245,13 @@ export default function Rooms() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
+      {/* Edit Dialog - Similar to Add Dialog but with existing out-of-order periods */}
       <Dialog open={!!editRoom} onOpenChange={() => setEditRoom(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Room</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+          <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Room Number *</Label>
@@ -1172,74 +1303,98 @@ export default function Rooms() {
               <Switch
                 checked={form.isActive}
                 onCheckedChange={(v) =>
-                  setForm({
-                    ...form,
-                    isActive: v,
-                    isOutOfOrder: v ? false : form.isOutOfOrder,
-                  })
+                  setForm({ ...form, isActive: v })
                 }
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div>
-                <Label className="text-base">Out of Order</Label>
-                <p className="text-sm text-muted-foreground">
-                  Room is unavailable for maintenance or repairs
-                </p>
+            {/* Out of Order Periods Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base">Out of Order Periods</Label>
+                <span className="text-sm text-muted-foreground">
+                  Add multiple maintenance periods (e.g., Nov 9-10, Dec 9-10)
+                </span>
               </div>
-              <Switch
-                checked={form.isOutOfOrder}
-                onCheckedChange={(v) =>
-                  setForm({
-                    ...form,
-                    isOutOfOrder: v,
-                    isActive: v ? false : form.isActive,
-                  })
-                }
-              />
-            </div>
 
-            {form.isOutOfOrder && (
-              <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+              {/* Add new out-of-order period form */}
+              <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                <h4 className="font-medium">Add New Maintenance Period</h4>
                 <div>
-                  <Label>Out of Order Reason *</Label>
+                  <Label>Reason *</Label>
                   <Textarea
-                    value={form.outOfOrderReason}
+                    value={newOutOfOrder.reason}
                     onChange={(e) =>
-                      setForm({ ...form, outOfOrderReason: e.target.value })
+                      setNewOutOfOrder({ ...newOutOfOrder, reason: e.target.value })
                     }
+                    placeholder="Describe the issue (maintenance, renovation, repair, etc.)"
                     className="mt-2"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Out of Order From *</Label>
+                    <Label>Start Date *</Label>
                     <Input
                       type="date"
-                      value={form.outOfOrderFrom}
+                      value={newOutOfOrder.startDate}
                       onChange={(e) =>
-                        setForm({ ...form, outOfOrderFrom: e.target.value })
+                        setNewOutOfOrder({ ...newOutOfOrder, startDate: e.target.value })
                       }
                       className="mt-2"
                       min={new Date().toISOString().split("T")[0]}
                     />
                   </div>
                   <div>
-                    <Label>Expected Available From *</Label>
+                    <Label>End Date *</Label>
                     <Input
                       type="date"
-                      value={form.outOfOrderTo}
+                      value={newOutOfOrder.endDate}
                       onChange={(e) =>
-                        setForm({ ...form, outOfOrderTo: e.target.value })
+                        setNewOutOfOrder({ ...newOutOfOrder, endDate: e.target.value })
                       }
                       className="mt-2"
-                      min={form.outOfOrderFrom || new Date().toISOString().split("T")[0]}
+                      min={newOutOfOrder.startDate || new Date().toISOString().split("T")[0]}
                     />
                   </div>
                 </div>
+                <Button
+                  type="button"
+                  onClick={handleAddOutOfOrder}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Maintenance Period
+                </Button>
               </div>
-            )}
+
+              {/* List of added out-of-order periods */}
+              {form.outOfOrders.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Maintenance Periods ({form.outOfOrders.length})</Label>
+                  {form.outOfOrders.map((oo, index) => (
+                    <div key={index} className="p-3 border rounded-lg flex justify-between items-center">
+                      <div>
+                        <div className="font-medium">
+                          {formatDate(oo.startDate)} - {formatDate(oo.endDate)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {oo.reason}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveOutOfOrder(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditRoom(null)}>
@@ -1332,50 +1487,27 @@ export default function Rooms() {
                       {typeRooms.map((room: Room) => {
                         const isReservedForDates = isRoomReservedForDates(room);
                         const hasOverlap = hasOverlappingReservations(room);
+                        const isOutOfOrderForSelectedDates = isRoomOutOfOrderForDates(room);
 
-                        // Check if room is out of order during the selected dates
-                        const isOutOfOrderForSelectedDates = (() => {
-                          if (!reserveDates.from || !reserveDates.to) return false;
-
-                          const selectedFrom = new Date(reserveDates.from);
-                          const selectedTo = new Date(reserveDates.to);
-
-                          // If room has out-of-order dates, check if selected dates overlap
-                          if (room.outOfOrderFrom && room.outOfOrderTo) {
-                            const outOfOrderFrom = new Date(room.outOfOrderFrom);
-                            const outOfOrderTo = new Date(room.outOfOrderTo);
-
-                            // Check for overlap: selected dates should not overlap with out-of-order period
-                            const hasOverlap = selectedFrom < outOfOrderTo && selectedTo > outOfOrderFrom;
-
-                            return hasOverlap;
-                          }
-
-                          return false;
-                        })();
-
-                        const upcomingReservations = getUpcomingReservations(room);
-
-                        // FIX: Only disable checkbox if:
+                        // Disable checkbox if:
                         // 1. It has overlapping reservations (and not already reserved for these exact dates), OR
-                        // 2. Selected dates conflict with out-of-order period
-                        // BUT: Allow unchecking even if room is reserved for these exact dates (to remove reservation)
+                        // 2. Selected dates conflict with any out-of-order period
                         const isCheckboxDisabled =
-                          (hasOverlap && !isReservedForDates) || // Disable if overlapping but not exact match
-                          isOutOfOrderForSelectedDates; // Disable if out of order during selected dates
+                          (hasOverlap && !isReservedForDates) ||
+                          isOutOfOrderForSelectedDates;
 
                         return (
                           <div
                             key={room.id}
                             className={`flex items-center space-x-3 p-3 border rounded-lg ${hasOverlap && !isReservedForDates
-                              ? "bg-orange-50 border-orange-200"
-                              : isReservedForDates
-                                ? "bg-blue-50 border-blue-200"
-                                : isOutOfOrderForSelectedDates
-                                  ? "bg-red-50 border-red-200"
-                                  : !room.isActive
-                                    ? "bg-gray-50 border-gray-200"
-                                    : "bg-white border-gray-200"
+                                ? "bg-orange-50 border-orange-200"
+                                : isReservedForDates
+                                  ? "bg-blue-50 border-blue-200"
+                                  : isOutOfOrderForSelectedDates
+                                    ? "bg-red-50 border-red-200"
+                                    : !room.isActive
+                                      ? "bg-gray-50 border-gray-200"
+                                      : "bg-white border-gray-200"
                               }`}
                           >
                             <Checkbox
@@ -1410,12 +1542,7 @@ export default function Rooms() {
                               {isOutOfOrderForSelectedDates && (
                                 <div className="text-xs text-red-600 mt-1 flex items-center gap-1">
                                   <AlertCircle className="h-3 w-3" />
-                                  {room.isOutOfOrder ? 'Currently out of order' : 'Scheduled for maintenance'} during selected dates
-                                  {room.outOfOrderFrom && room.outOfOrderTo && (
-                                    <span>
-                                      ({new Date(room.outOfOrderFrom).toLocaleDateString()} - {new Date(room.outOfOrderTo).toLocaleDateString()})
-                                    </span>
-                                  )}
+                                  Scheduled for maintenance during selected dates
                                 </div>
                               )}
 
@@ -1426,42 +1553,10 @@ export default function Rooms() {
                                 </div>
                               )}
 
-                              {/* Show inactive but available status */}
-                              {!room.isActive && !isOutOfOrderForSelectedDates && !isCheckboxDisabled && (
-                                <div className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
-                                  <AlertCircle className="h-3 w-3" />
-                                  Inactive but available for selected dates
-                                </div>
-                              )}
-
-                              {/* Show current out-of-order status but available for selected dates */}
-                              {room.isOutOfOrder && !isOutOfOrderForSelectedDates && !isCheckboxDisabled && (
-                                <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                                  <CheckCircle className="h-3 w-3" />
-                                  Available for selected dates (currently out of order for other dates)
-                                </div>
-                              )}
-
-                              {/* Show scheduled maintenance but available for selected dates */}
-                              {!room.isOutOfOrder && room.outOfOrderFrom && new Date(room.outOfOrderFrom) > new Date() && !isOutOfOrderForSelectedDates && !isCheckboxDisabled && (
-                                <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                                  <CheckCircle className="h-3 w-3" />
-                                  Available for selected dates (scheduled maintenance for other dates)
-                                </div>
-                              )}
-
-                              {/* Show if room is fully available */}
-                              {room.isActive && !room.isOutOfOrder && !room.outOfOrderFrom && !isCheckboxDisabled && !isReservedForDates && (
-                                <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                                  <CheckCircle className="h-3 w-3" />
-                                  Available for reservation
-                                </div>
-                              )}
-
-                              {/* Upcoming Reservations */}
-                              {upcomingReservations.length > 0 && (
+                              {/* Show upcoming maintenance periods */}
+                              {room.outOfOrders && room.outOfOrders.length > 0 && (
                                 <div className="text-xs text-gray-500 mt-1">
-                                  {upcomingReservations.length} upcoming reservation(s)
+                                  {room.outOfOrders.length} maintenance period(s)
                                 </div>
                               )}
                             </div>
@@ -1469,8 +1564,8 @@ export default function Rooms() {
                               variant={
                                 isOutOfOrderForSelectedDates
                                   ? "destructive"
-                                  : room.isOutOfOrder
-                                    ? "secondary"
+                                  : isRoomCurrentlyOutOfOrder(room)
+                                    ? "destructive"
                                     : room.isReserved
                                       ? "secondary"
                                       : !room.isActive
@@ -1518,7 +1613,6 @@ export default function Rooms() {
                   variant="outline"
                   onClick={() => {
                     setReserveDialog(false);
-                    // Don't reset selectedRooms here to maintain state if dialog is reopened
                   }}
                 >
                   Cancel
@@ -1557,8 +1651,8 @@ export default function Rooms() {
             <AlertDialogDescription>
               Are you sure you want to delete room{" "}
               <strong>{deleteDialog?.roomNumber}</strong>? This action cannot be
-              undone and will remove all associated reservations and booking
-              history.
+              undone and will remove all associated reservations, bookings, and
+              maintenance records.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

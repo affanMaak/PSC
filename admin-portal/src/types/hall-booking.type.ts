@@ -20,6 +20,9 @@ export interface HallBooking {
   createdAt: string;
   updatedAt: string;
   numberOfGuests: number;
+  paidBy?: "MEMBER" | "GUEST";
+  guestName?: "",
+  guestContact?: ""
   member?: {
     id: string;
     Name: string;
@@ -55,6 +58,9 @@ export interface Hall {
   outOfServiceReason?: string;
   outOfServiceFrom?: string;
   outOfServiceTo?: string;
+  paidBy?: "MEMBER" | "GUEST";
+  guestName?: "",
+  guestContact?: ""
   reservations: any[];
   bookings: HallBooking[];
   images: any[];
@@ -76,6 +82,9 @@ export interface HallBookingForm {
   paidAmount: number;
   pendingAmount: number;
   paymentMode: string;
+  paidBy?: "MEMBER" | "GUEST";
+  guestName?: "",
+  guestContact?: ""
 }
 
 export type HallVoucher = Voucher;

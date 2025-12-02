@@ -335,7 +335,7 @@ export const getVouchers = async (
 ): Promise<any> => {
   try {
     const response = await axios.get(
-      `${base_url}/booking/voucher?bookingId=${bookingId}`,
+      `${base_url}/booking/voucher?bookingId=${bookingId}&bookingType=${bookingType}`,
       { withCredentials: true }
     );
     return response.data;
@@ -423,6 +423,23 @@ export const deleteRoomType = async (id: string | number): Promise<any> => {
     throw { message, status: error.response?.status || 500 };
   }
 };
+// export const checkAvailRooms = async (id: string | number): Promise<any> => {
+//   try {
+//     const response = await axios.delete(
+//       `${base_url}/room/delete/roomType?id=${id}`,
+//       { withCredentials: true }
+//     );
+//     return response.data;
+//   } catch (error: any) {
+//     const message =
+//       error.response?.data?.message ||
+//       error.response?.data?.error ||
+//       error.message ||
+//       "Something went wrong";
+
+//     throw { message, status: error.response?.status || 500 };
+//   }
+// };
 
 // reserve room
 export const reserveRoom = async (
@@ -537,25 +554,6 @@ export const updateRoom = async (data: any): Promise<any> => {
     const response = await axios.patch(`${base_url}/room/update/room`, data, {
       withCredentials: true,
     });
-    return response;
-  } catch (error: any) {
-    const message =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "Something went wrong";
-    console.log(error);
-    throw { message, status: error.response?.status || 500 };
-  }
-};
-export const deleteRoom = async (id: string): Promise<any> => {
-  try {
-    const response = await axios.delete(
-      `${base_url}/room/delete/room?id=${id}`,
-      {
-        withCredentials: true,
-      }
-    );
     return response.data;
   } catch (error: any) {
     const message =
@@ -563,24 +561,33 @@ export const deleteRoom = async (id: string): Promise<any> => {
       error.response?.data?.error ||
       error.message ||
       "Something went wrong";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+export const deleteRoom = async (roomId: string): Promise<any> => {
+  try {
+    const response = await axios.delete(`${base_url}/room/delete/room?id=${roomId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Something went wrong";
+
     throw { message, status: error.response?.status || 500 };
   }
 };
 
-// member api
-export const checkAvailRooms = async (
-  roomTypeId: any,
-  dates: { from: string; to: string }
-): Promise<any> => {
+// dashboard
+export const getDashboardStats = async (): Promise<any> => {
   try {
-    const response = await axios.post(
-      `${base_url}/room/member/check/rooms/available?roomType=${roomTypeId}`,
-      dates,
-      {
-        withCredentials: true,
-      }
-    );
-    console.log(response.data);
+    const response = await axios.get(`${base_url}/dashboard/stats`, {
+      withCredentials: true,
+    });
     return response.data;
   } catch (error: any) {
     const message =

@@ -17,6 +17,8 @@ import { getBookings, createBooking, updateBooking, deleteBooking as delBooking,
 import { MemberSearchComponent } from "@/components/MemberSearch";
 import { Member } from "@/types/room-booking.type";
 import { cn } from "@/lib/utils";
+import { FormInput } from "@/components/FormInputs";
+import { UnifiedDatePicker } from "@/components/UnifiedDatePicker";
 
 interface PhotoshootBooking {
   id: number;
@@ -31,6 +33,9 @@ interface PhotoshootBooking {
   paidAmount: string;
   pendingAmount: string;
   member: Member;
+  paidBy?: string;
+  guestName?: string;
+  guestContact?: string;
   photoshoot: {
     id: number;
     description: string;
@@ -61,101 +66,6 @@ interface Voucher {
   remarks?: string;
   transaction_id?: string;
 }
-
-// Time slots for the calendar picker
-const TIME_SLOTS = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
-  "18:00", "18:30", "19:00", "19:30", "20:00"
-];
-
-// Calendar Time Picker Component
-const CalendarTimePicker = ({
-  selectedDateTime,
-  onSelectDateTime
-}: {
-  selectedDateTime: Date | null;
-  onSelectDateTime: (date: Date | null) => void;
-}) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    selectedDateTime || undefined
-  );
-  const [selectedTime, setSelectedTime] = useState<string>(
-    selectedDateTime ? format(selectedDateTime, "HH:mm") : ""
-  );
-
-  useEffect(() => {
-    if (selectedDate && selectedTime) {
-      const [hours, minutes] = selectedTime.split(":").map(Number);
-      const newDateTime = new Date(selectedDate);
-      newDateTime.setHours(hours, minutes, 0, 0);
-      onSelectDateTime(newDateTime);
-    } else {
-      onSelectDateTime(null);
-    }
-  }, [selectedDate, selectedTime, onSelectDateTime]);
-
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-  };
-
-  const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-x-2">
-        <div className="">
-          <Label className="text-sm font-medium">Select Date</Label>
-          <div className="mt-2 h-full">
-            <CalendarComponent
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-              className="rounded-md border"
-            />
-          </div>
-        </div>
-
-        <div className="w-full">
-          <Label className="text-sm font-medium">Select Time</Label>
-          <div className="mt-2 grid grid-cols-3 gap-2 h-full overflow-y-auto">
-            {TIME_SLOTS.map((time) => (
-              <Button
-                key={time}
-                type="button"
-                variant={selectedTime === time ? "default" : "outline"}
-                className={cn(
-                  "h-10 text-xs",
-                  selectedTime === time && "bg-blue-600 text-white"
-                )}
-                onClick={() => handleTimeSelect(time)}
-              >
-                {time}
-              </Button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {selectedDateTime && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="flex items-center gap-2 text-sm text-blue-800">
-            <Calendar className="h-4 w-4" />
-            <span>Selected: {format(selectedDateTime, "PPP")}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-blue-800 mt-1">
-            <Clock className="h-4 w-4" />
-            <span>Time: {format(selectedDateTime, "hh:mm a")}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 const PhotoshootPaymentSection = React.memo(
   ({
@@ -300,6 +210,12 @@ export default function PhotoshootBookings() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [totalPrice, setTotalPrice] = useState(0);
 
+  const [guestSec, setGuestSec] = useState({
+    paidBy: "",
+    guestName: "",
+    guestContact: ""
+  })
+
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -331,7 +247,7 @@ export default function PhotoshootBookings() {
     isLoading: isLoadingVouchers,
   } = useQuery<Voucher[]>({
     queryKey: ["photoshoot-vouchers", viewVouchers?.id],
-    queryFn: () => (viewVouchers ? getVouchers("Photoshoot", viewVouchers.id) : []),
+    queryFn: () => (viewVouchers ? getVouchers("PHOTOSHOOT", viewVouchers.id) : []),
     enabled: !!viewVouchers,
   });
 
@@ -423,6 +339,11 @@ export default function PhotoshootBookings() {
     setTotalPrice(0);
     setMemberSearch("");
     setShowMemberResults(false);
+    setGuestSec({
+      paidBy: "",
+      guestName: "",
+      guestContact: ""
+    });
   };
 
   const handleCloseAddModal = () => {
@@ -445,13 +366,16 @@ export default function PhotoshootBookings() {
       category: "Photoshoot",
       membershipNo: selectedMember.Membership_No,
       entityId: selectedPhotoshootId,
-      checkIn: selectedDateTime.toISOString().split('T')[0], // Date part only
-      timeSlot: selectedDateTime.toISOString(), // Full datetime
+      checkIn: format(selectedDateTime, "yyyy-MM-dd"),
+      timeSlot: format(selectedDateTime, "yyyy-MM-dd'T'HH:mm:ss"),
       totalPrice: totalPrice.toString(),
       paymentStatus,
       pricingType,
       paidAmount: paymentStatus === "HALF_PAID" ? paidAmount : (paymentStatus === "PAID" ? totalPrice : 0),
       paymentMode: "CASH",
+      paidBy: guestSec.paidBy,
+      guestName: guestSec.guestName,
+      guestContact: guestSec.guestContact?.toString()
     };
 
     createMutation.mutate(payload);
@@ -465,13 +389,16 @@ export default function PhotoshootBookings() {
       id: editBooking.id,
       membershipNo: editBooking.member.Membership_No,
       entityId: selectedPhotoshootId || editBooking.photoshootId.toString(),
-      checkIn: selectedDateTime ? selectedDateTime.toISOString().split('T')[0] : new Date(editBooking.bookingDate).toISOString().split('T')[0],
-      timeSlot: selectedDateTime ? selectedDateTime.toISOString() : undefined,
+      checkIn: selectedDateTime ? format(selectedDateTime, "yyyy-MM-dd") : new Date(editBooking.bookingDate).toISOString().split('T')[0],
+      timeSlot: selectedDateTime ? format(selectedDateTime, "yyyy-MM-dd'T'HH:mm:ss") : undefined,
       totalPrice: totalPrice.toString(),
       paymentStatus,
       pricingType,
       paidAmount: paymentStatus === "HALF_PAID" ? paidAmount : (paymentStatus === "PAID" ? totalPrice : 0),
       paymentMode: "CASH",
+      paidBy: guestSec.paidBy,
+      guestName: guestSec.guestName,
+      guestContact: guestSec.guestContact?.toString()
     };
 
     updateMutation.mutate(payload);
@@ -480,12 +407,25 @@ export default function PhotoshootBookings() {
   // Populate edit form
   useEffect(() => {
     if (editBooking) {
+      setSelectedMember(editBooking.member);
       setSelectedPhotoshootId(editBooking.photoshootId.toString());
-      setSelectedDateTime(new Date(editBooking.bookingDate));
+      // Handle date parsing correctly
+      const date = new Date(editBooking.bookingDate);
+      // if (editBooking.startTime) {
+        const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        setSelectedDateTime(local);
+      // }
+      // setSelectedDateTime(date);
+
       setPricingType(editBooking.pricingType);
       setPaymentStatus(editBooking.paymentStatus);
       setPaidAmount(Number(editBooking.paidAmount));
       setTotalPrice(Number(editBooking.totalPrice));
+      setGuestSec({
+        paidBy: editBooking.paidBy || "",
+        guestName: editBooking.guestName || "",
+        guestContact: editBooking.guestContact || ""
+      });
     }
   }, [editBooking]);
 
@@ -527,13 +467,22 @@ export default function PhotoshootBookings() {
   };
 
   // Format time display
-  const formatTimeDisplay = (dateTimeString: string) => {
-    const date = new Date(dateTimeString);
+  const formatTimeDisplay = (timeString: string) => {
+    if (!timeString) return "";
+    // If it's a full date string
+    if (timeString.includes('T')) {
+      return format(new Date(timeString), "hh:mm a");
+    }
+    // If it's HH:mm:ss
+    const [hours, minutes] = timeString.split(':');
+    const date = new Date();
+    date.setHours(Number(hours), Number(minutes));
     return format(date, "hh:mm a");
   };
 
   // Format date display
   const formatDateDisplay = (dateString: string) => {
+    if (!dateString) return "";
     const date = new Date(dateString);
     return format(date, "PPP");
   };
@@ -603,9 +552,11 @@ export default function PhotoshootBookings() {
                 <div className="md:col-span-2">
                   <Label className="text-lg font-semibold">Select Date & Time</Label>
                   <div className="mt-2 border rounded-lg p-4">
-                    <CalendarTimePicker
-                      selectedDateTime={selectedDateTime}
-                      onSelectDateTime={setSelectedDateTime}
+                    <UnifiedDatePicker
+                      mode="datetime"
+                      value={selectedDateTime}
+                      onChange={setSelectedDateTime}
+                      label=""
                     />
                   </div>
                 </div>
@@ -623,11 +574,73 @@ export default function PhotoshootBookings() {
                   </Select>
                 </div>
 
+                {pricingType == "guest" && <div className="p-4 rounded-xl border bg-white shadow-sm col-span-full">
+
+                  <h3 className="text-lg font-semibold mb-4">Guest Information</h3>
+
+                  <div className="flex  flex-col">
+
+                    <div className="flex items-center justify-center gap-x-5">
+
+                      <div className="w-1/2">
+                        <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                          Guest Name *
+                        </Label>
+                        {/* {console.log(form)} */}
+
+                        <FormInput
+                          label=""
+                          type="text"
+                          value={guestSec.guestName}
+                          onChange={(val) => setGuestSec((prev) => ({ ...prev, guestName: val }))}
+                        />
+                      </div>
+
+                      <div className="w-1/2">
+                        <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                          Contact
+                        </Label>
+
+                        <FormInput
+                          label=""
+                          type="number"
+                          value={guestSec.guestContact}
+                          onChange={(val) => setGuestSec((prev) => ({ ...prev, guestContact: val }))}
+                          min="0"
+                        />
+                      </div>
+
+                    </div>
+
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <Label className="text-sm font-medium my-2 block whitespace-nowrap">
+                        Who will Pay?
+                      </Label>
+                      <Select
+                        value={guestSec.paidBy}
+                        onValueChange={(val) => setGuestSec((prev) => ({ ...prev, paidBy: val }))}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Who will pay?" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          <SelectItem value="MEMBER">Member</SelectItem>
+                          <SelectItem value="GUEST">Guest</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+
+                    </div>
+
+                  </div>
+                </div>}
+
                 {/* Accounting Summary Section */}
-                <div className="md:col-span-2">
+                {/* <div className="md:col-span-2">
                   <Label>Total Price</Label>
                   <Input type="text" className="mt-2 font-bold text-lg" value={`PKR ${totalPrice.toLocaleString()}`} disabled />
-                </div>
+                </div> */}
 
                 <PhotoshootPaymentSection
                   form={{
@@ -745,28 +758,28 @@ export default function PhotoshootBookings() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => setEditBooking(booking)} 
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditBooking(booking)}
                           title="Edit Booking"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         {(booking.paymentStatus === "PAID" || booking.paymentStatus === "HALF_PAID") && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleViewVouchers(booking)} 
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleViewVouchers(booking)}
                             title="View Vouchers"
                           >
                             <Receipt className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => setDeleteBooking(booking)} 
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteBooking(booking)}
                           title="Delete Booking"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
@@ -851,9 +864,11 @@ export default function PhotoshootBookings() {
             <div className="md:col-span-2">
               <Label className="text-lg font-semibold">Select New Date & Time</Label>
               <div className="mt-2 border rounded-lg p-4">
-                <CalendarTimePicker
-                  selectedDateTime={selectedDateTime}
-                  onSelectDateTime={setSelectedDateTime}
+                <UnifiedDatePicker
+                  mode="datetime"
+                  value={selectedDateTime}
+                  onChange={setSelectedDateTime}
+                  label=""
                 />
               </div>
             </div>
@@ -870,6 +885,69 @@ export default function PhotoshootBookings() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div></div>
+            {pricingType == "guest" && <div className="p-4 rounded-xl border bg-white shadow-sm col-span-full">
+
+              <h3 className="text-lg font-semibold mb-4">Guest Information</h3>
+
+              <div className="flex  flex-col">
+
+                <div className="flex items-center justify-center gap-x-5">
+
+                  <div className="w-1/2">
+                    <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                      Guest Name *
+                    </Label>
+                    {/* {console.log(form)} */}
+
+                    <FormInput
+                      label=""
+                      type="text"
+                      value={guestSec.guestName}
+                      onChange={(val) => setGuestSec((prev) => ({ ...prev, guestName: val }))}
+                    />
+                  </div>
+
+                  <div className="w-1/2">
+                    <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                      Contact
+                    </Label>
+
+                    <FormInput
+                      label=""
+                      type="number"
+                      value={guestSec.guestContact}
+                      onChange={(val) => setGuestSec((prev) => ({ ...prev, guestContact: val }))}
+                      min="0"
+                    />
+                  </div>
+
+                </div>
+
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <Label className="text-sm font-medium my-2 block whitespace-nowrap">
+                    Who will Pay?
+                  </Label>
+                  <Select
+                    value={guestSec.paidBy}
+                    onValueChange={(val) => setGuestSec((prev) => ({ ...prev, paidBy: val }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Who will pay?" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="MEMBER">Member</SelectItem>
+                      <SelectItem value="GUEST">Guest</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+
+                </div>
+
+              </div>
+            </div>}
 
             {/* Accounting Summary Section for Edit */}
             <PhotoshootPaymentSection

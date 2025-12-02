@@ -107,6 +107,16 @@ interface HallBooking {
   specialRequests?: string;
 }
 
+interface OutOfOrderPeriod {
+  id?: string;
+  reason: string;
+  startDate: string;
+  endDate: string;
+  hallId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 interface Hall {
   id: string;
   name: string;
@@ -115,15 +125,17 @@ interface Hall {
   chargesGuests: number;
   description: string;
   isActive: boolean;
-  isOutOfService: boolean;
+  outOfOrders?: OutOfOrderPeriod[];
   isReserved: boolean;
   isBooked: boolean;
-  outOfServiceReason?: string;
-  outOfServiceFrom?: string;
-  outOfServiceTo?: string;
   reservations: HallReservation[];
   bookings: HallBooking[];
   images: any[];
+  // Legacy fields (kept for compatibility)
+  isOutOfService?: boolean;
+  outOfServiceReason?: string;
+  outOfServiceFrom?: string;
+  outOfServiceTo?: string;
 }
 
 export default function Halls() {
@@ -142,6 +154,18 @@ export default function Halls() {
   });
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("MORNING");
 
+  const [newOutOfOrder, setNewOutOfOrder] = useState({
+    reason: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  const [editNewOutOfOrder, setEditNewOutOfOrder] = useState({
+    reason: "",
+    startDate: "",
+    endDate: "",
+  });
+
   // Add Form State
   const [form, setForm] = useState({
     name: "",
@@ -150,10 +174,7 @@ export default function Halls() {
     chargesGuests: "",
     description: "",
     isActive: true,
-    isOutOfService: false,
-    outOfServiceReason: "",
-    outOfServiceFrom: "",
-    outOfServiceTo: "",
+    outOfOrders: [] as OutOfOrderPeriod[],
     images: [] as File[],
   });
 
@@ -165,10 +186,7 @@ export default function Halls() {
     chargesGuests: "",
     description: "",
     isActive: true,
-    isOutOfService: false,
-    outOfServiceReason: "",
-    outOfServiceFrom: "",
-    outOfServiceTo: "",
+    outOfOrders: [] as OutOfOrderPeriod[],
     existingImages: [] as string[],
     newImages: [] as File[],
   });
@@ -177,8 +195,6 @@ export default function Halls() {
     queryKey: ["halls"],
     queryFn: getHalls,
   });
-
-  console.log(halls)
 
   const createMutation = useMutation({
     mutationFn: createHallApi,
@@ -257,7 +273,85 @@ export default function Halls() {
     },
   });
 
-  // Add these missing functions before the handleCreateHall function:
+  // Add out of order handlers
+  const handleAddOutOfOrder = () => {
+    if (!newOutOfOrder.reason || !newOutOfOrder.startDate || !newOutOfOrder.endDate) {
+      toast({
+        title: "Missing information",
+        description: "Please fill all fields for maintenance period",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (new Date(newOutOfOrder.startDate) > new Date(newOutOfOrder.endDate)) {
+      toast({
+        title: "Invalid date range",
+        description: "End date must be after start date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setForm(prev => ({
+      ...prev,
+      outOfOrders: [...prev.outOfOrders, { ...newOutOfOrder }]
+    }));
+
+    // Reset new form
+    setNewOutOfOrder({
+      reason: "",
+      startDate: "",
+      endDate: "",
+    });
+  };
+
+  const handleRemoveOutOfOrder = (index: number) => {
+    setForm(prev => ({
+      ...prev,
+      outOfOrders: prev.outOfOrders.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Edit out of order handlers
+  const handleAddEditOutOfOrder = () => {
+    if (!editNewOutOfOrder.reason || !editNewOutOfOrder.startDate || !editNewOutOfOrder.endDate) {
+      toast({
+        title: "Missing information",
+        description: "Please fill all fields for maintenance period",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (new Date(editNewOutOfOrder.startDate) > new Date(editNewOutOfOrder.endDate)) {
+      toast({
+        title: "Invalid date range",
+        description: "End date must be after start date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setEditForm(prev => ({
+      ...prev,
+      outOfOrders: [...prev.outOfOrders, { ...editNewOutOfOrder }]
+    }));
+
+    // Reset new form
+    setEditNewOutOfOrder({
+      reason: "",
+      startDate: "",
+      endDate: "",
+    });
+  };
+
+  const handleRemoveEditOutOfOrder = (index: number) => {
+    setEditForm(prev => ({
+      ...prev,
+      outOfOrders: prev.outOfOrders.filter((_, i) => i !== index)
+    }));
+  };
 
   // Get time slot icon
   const getTimeSlotIcon = (timeSlot: string) => {
@@ -296,48 +390,46 @@ export default function Halls() {
     });
   };
 
-  // Replace the existing hasOverlappingReservations function with this version
-const hasOverlappingReservations = (hall: Hall) => {
-  if (!reserveDates.from || !reserveDates.to || !selectedTimeSlot) return false;
+  const hasOverlappingReservations = (hall: Hall) => {
+    if (!reserveDates.from || !reserveDates.to || !selectedTimeSlot) return false;
 
-  const selectedFrom = new Date(reserveDates.from);
-  const selectedTo = new Date(reserveDates.to);
+    const selectedFrom = new Date(reserveDates.from);
+    const selectedTo = new Date(reserveDates.to);
 
-  // Normalize dates to compare only the date part
-  selectedFrom.setHours(0, 0, 0, 0);
-  selectedTo.setHours(0, 0, 0, 0);
+    // Normalize dates to compare only the date part
+    selectedFrom.setHours(0, 0, 0, 0);
+    selectedTo.setHours(0, 0, 0, 0);
 
-  return hall.reservations?.some((reservation) => {
-    const reservationFrom = new Date(reservation.reservedFrom);
-    const reservationTo = new Date(reservation.reservedTo);
-    
-    // Normalize reservation dates
-    reservationFrom.setHours(0, 0, 0, 0);
-    reservationTo.setHours(0, 0, 0, 0);
+    return hall.reservations?.some((reservation) => {
+      const reservationFrom = new Date(reservation.reservedFrom);
+      const reservationTo = new Date(reservation.reservedTo);
 
-    // Must be the same time slot to be a conflict
-    const isSameTimeSlot = reservation.timeSlot === selectedTimeSlot;
-    if (!isSameTimeSlot) return false;
+      // Normalize reservation dates
+      reservationFrom.setHours(0, 0, 0, 0);
+      reservationTo.setHours(0, 0, 0, 0);
 
-    // Check for date overlap (inclusive of start/end dates)
-    const hasDateOverlap =
-      selectedFrom <= reservationTo &&
-      selectedTo >= reservationFrom;
+      // Must be the same time slot to be a conflict
+      const isSameTimeSlot = reservation.timeSlot === selectedTimeSlot;
+      if (!isSameTimeSlot) return false;
 
-    if (!hasDateOverlap) return false;
+      // Check for date overlap (inclusive of start/end dates)
+      const hasDateOverlap =
+        selectedFrom <= reservationTo &&
+        selectedTo >= reservationFrom;
 
-    // Check if it's an exact match (same dates AND same time slot)
-    const isExactMatch =
-      reservationFrom.getTime() === selectedFrom.getTime() &&
-      reservationTo.getTime() === selectedTo.getTime() &&
-      reservation.timeSlot === selectedTimeSlot;
+      if (!hasDateOverlap) return false;
 
-    // It's a conflict only if dates overlap with same time slot but NOT an exact match
-    return !isExactMatch;
-  });
-};
+      // Check if it's an exact match (same dates AND same time slot)
+      const isExactMatch =
+        reservationFrom.getTime() === selectedFrom.getTime() &&
+        reservationTo.getTime() === selectedTo.getTime() &&
+        reservation.timeSlot === selectedTimeSlot;
 
-  // Replace the existing isHallReservedForDates function with this corrected version
+      // It's a conflict only if dates overlap with same time slot but NOT an exact match
+      return !isExactMatch;
+    });
+  };
+
   const isHallReservedForDates = (hall: Hall) => {
     if (!reserveDates.from || !reserveDates.to || !selectedTimeSlot) return false;
 
@@ -378,13 +470,8 @@ const hasOverlappingReservations = (hall: Hall) => {
 
       if (isCurrentlyReserved && reserveDates.from && reserveDates.to && selectedTimeSlot) {
         const fromDate = new Date(reserveDates.from);
-        // fromDate.setHours(0, 0, 0, 0);
-
         const toDate = new Date(reserveDates.to);
-        // toDate.setHours(0, 0, 0, 0);
-
         const today = new Date();
-        // today.setHours(0, 0, 0, 0);
 
         if (fromDate < toDate) {
           reserveMutation.mutate({
@@ -423,7 +510,7 @@ const hasOverlappingReservations = (hall: Hall) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (fromDate >= toDate) {
+    if (fromDate > toDate) {
       toast({
         title: "Invalid date range",
         description: "End date must be after start date",
@@ -509,41 +596,21 @@ const hasOverlappingReservations = (hall: Hall) => {
       return false;
     }
 
-    // If out of service is checked, validate required fields
-    if (formData.isOutOfService) {
-      if (!formData.outOfServiceReason.trim()) {
+    // Validate out of order periods
+    for (const period of formData.outOfOrders) {
+      if (!period.reason.trim()) {
         toast({
-          title: "Out of Service Reason is required",
-          description: "Please provide a reason when marking hall as out of service",
-          variant: "destructive"
-        });
-        return false;
-      }
-      if (!formData.outOfServiceFrom) {
-        toast({
-          title: "Out of Service From date is required",
-          description: "Please specify when the hall went out of service",
-          variant: "destructive"
-        });
-        return false;
-      }
-      if (!formData.outOfServiceTo) {
-        toast({
-          title: "Expected Available From date is required",
-          description: "Please specify when the hall is expected to be available again",
+          title: "Reason required",
+          description: "Please provide a reason for each maintenance period",
           variant: "destructive"
         });
         return false;
       }
 
-      // Validate date range
-      const fromDate = new Date(formData.outOfServiceFrom);
-      const toDate = new Date(formData.outOfServiceTo);
-
-      if (fromDate >= toDate) {
+      if (new Date(period.startDate) > new Date(period.endDate)) {
         toast({
           title: "Invalid date range",
-          description: "Expected Available From must be after Out of Service From",
+          description: "End date must be after start date for all maintenance periods",
           variant: "destructive"
         });
         return false;
@@ -563,21 +630,11 @@ const hasOverlappingReservations = (hall: Hall) => {
     fd.append("chargesMembers", form.chargesMembers || "0");
     fd.append("chargesGuests", form.chargesGuests || "0");
     fd.append("description", form.description);
+    fd.append("isActive", String(form.isActive));
 
-    // Set isActive to false if out of service is true
-    const isActive = !form.isOutOfService;
-    fd.append("isActive", String(isActive));
-    fd.append("isOutOfService", String(form.isOutOfService));
-
-    // Only append out of service fields if out of service is true
-    if (form.isOutOfService) {
-      fd.append("outOfServiceReason", form.outOfServiceReason);
-      fd.append("outOfServiceFrom", form.outOfServiceFrom);
-      fd.append("outOfServiceTo", form.outOfServiceTo);
-    } else {
-      fd.append("outOfServiceReason", "");
-      fd.append("outOfServiceFrom", "");
-      fd.append("outOfServiceTo", "");
+    // Add out of order periods if any
+    if (form.outOfOrders.length > 0) {
+      fd.append("outOfOrders", JSON.stringify(form.outOfOrders));
     }
 
     form.images.forEach((file) => fd.append("files", file));
@@ -586,9 +643,9 @@ const hasOverlappingReservations = (hall: Hall) => {
 
   const filteredHalls = halls?.filter((hall: Hall) => {
     if (statusFilter === "ALL") return true;
-    if (statusFilter === "ACTIVE") return hall.isActive && !hall.isOutOfService && !hall.isReserved;
+    if (statusFilter === "ACTIVE") return hall.isActive && !isCurrentlyOutOfOrder(hall) && !hall.isReserved;
     if (statusFilter === "INACTIVE")
-      return !hall.isActive || hall.isOutOfService || hall.isReserved;
+      return !hall.isActive || isCurrentlyOutOfOrder(hall) || hall.isReserved;
     return true;
   });
 
@@ -600,16 +657,25 @@ const hasOverlappingReservations = (hall: Hall) => {
       chargesGuests: "",
       description: "",
       isActive: true,
-      isOutOfService: false,
-      outOfServiceReason: "",
-      outOfServiceFrom: "",
-      outOfServiceTo: "",
+      outOfOrders: [],
       images: [],
+    });
+    setNewOutOfOrder({
+      reason: "",
+      startDate: "",
+      endDate: "",
     });
   };
 
   useEffect(() => {
     if (editHall) {
+      const outOfOrders = editHall.outOfOrders?.map((period: any) => ({
+        id: period.id,
+        reason: period.reason,
+        startDate: period.startDate?.split("T")[0] || "",
+        endDate: period.endDate?.split("T")[0] || "",
+      })) || [];
+
       setEditForm({
         name: editHall.name || "",
         capacity: editHall.capacity || "",
@@ -617,10 +683,7 @@ const hasOverlappingReservations = (hall: Hall) => {
         chargesGuests: editHall.chargesGuests || "",
         description: editHall.description || "",
         isActive: editHall.isActive || false,
-        isOutOfService: editHall.isOutOfService || false,
-        outOfServiceReason: editHall.outOfServiceReason || "",
-        outOfServiceFrom: editHall.outOfServiceFrom?.split("T")[0] || "",
-        outOfServiceTo: editHall.outOfServiceTo?.split("T")[0] || "",
+        outOfOrders: outOfOrders,
         existingImages:
           editHall.images?.map((img: any) => img.publicId || img.url || img) ||
           [],
@@ -672,18 +735,6 @@ const hasOverlappingReservations = (hall: Hall) => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Get time slot icon
-  // const getTimeSlotIcon = (timeSlot: string) => {
-  //   switch (timeSlot) {
-  //     case "MORNING":
-  //       fd.append("outOfServiceFrom", "");
-  //       fd.append("outOfServiceTo", "");
-  //   }
-
-  //   form.images.forEach((file) => fd.append("files", file));
-  //   createMutation.mutate(fd);
-  // };
-
   const handleUpdateHall = () => {
     if (!editHall) return;
     if (!validateForm(editForm, true)) return;
@@ -695,21 +746,11 @@ const hasOverlappingReservations = (hall: Hall) => {
     fd.append("chargesMembers", editForm.chargesMembers);
     fd.append("chargesGuests", editForm.chargesGuests);
     fd.append("description", editForm.description);
+    fd.append("isActive", String(editForm.isActive));
 
-    // Set isActive to false if out of service is true
-    const isActive = !editForm.isOutOfService;
-    fd.append("isActive", String(isActive));
-    fd.append("isOutOfService", String(editForm.isOutOfService));
-
-    // Only append out of service fields if out of service is true
-    if (editForm.isOutOfService) {
-      fd.append("outOfServiceReason", editForm.outOfServiceReason);
-      fd.append("outOfServiceFrom", editForm.outOfServiceFrom);
-      fd.append("outOfServiceTo", editForm.outOfServiceTo);
-    } else {
-      fd.append("outOfServiceReason", "");
-      fd.append("outOfServiceFrom", "");
-      fd.append("outOfServiceTo", "");
+    // Add out of order periods if any
+    if (editForm.outOfOrders.length > 0) {
+      fd.append("outOfOrders", JSON.stringify(editForm.outOfOrders));
     }
 
     editForm.existingImages.forEach((pid) => fd.append("existingimgs", pid));
@@ -721,20 +762,33 @@ const hasOverlappingReservations = (hall: Hall) => {
     if (deleteHallData) deleteMutation.mutate(deleteHallData.id);
   };
 
+  // Helper functions for out-of-order periods
+  const isCurrentlyOutOfOrder = (hall: Hall) => {
+    const now = new Date();
+    return hall.outOfOrders?.some(period => {
+      const startDate = new Date(period.startDate);
+      const endDate = new Date(period.endDate);
+      return startDate <= now && endDate >= now;
+    });
+  };
+
+  const hasScheduledMaintenance = (hall: Hall) => {
+    const now = new Date();
+    return hall.outOfOrders?.some(period => {
+      const startDate = new Date(period.startDate);
+      return startDate > now;
+    });
+  };
+
   // Get hall status for display
   const getHallStatus = (hall: Hall) => {
     const now = new Date();
-    const outOfServiceFrom = hall.outOfServiceFrom ? new Date(hall.outOfServiceFrom) : null;
-    const outOfServiceTo = hall.outOfServiceTo ? new Date(hall.outOfServiceTo) : null;
 
-    if (hall.isOutOfService) {
-      if (outOfServiceTo && outOfServiceTo < now) {
-        return "Maintenance Completed";
-      }
-      return "Out of Service";
+    if (isCurrentlyOutOfOrder(hall)) {
+      return "Out of Order";
     }
 
-    if (outOfServiceFrom && outOfServiceFrom > now) {
+    if (hasScheduledMaintenance(hall)) {
       return "Scheduled Maintenance";
     }
 
@@ -757,17 +811,14 @@ const hasOverlappingReservations = (hall: Hall) => {
   // Get hall status badge variant
   const getHallStatusVariant = (hall: Hall) => {
     const now = new Date();
-    const outOfServiceFrom = hall.outOfServiceFrom ? new Date(hall.outOfServiceFrom) : null;
-    const outOfServiceTo = hall.outOfServiceTo ? new Date(hall.outOfServiceTo) : null;
 
-    if (hall.isOutOfService) {
-      if (outOfServiceTo && outOfServiceTo < now) {
-        return "outline";
-      }
+    if (isCurrentlyOutOfOrder(hall)) {
       return "destructive";
     }
 
-    if (outOfServiceFrom && outOfServiceFrom > now) return "outline";
+    if (hasScheduledMaintenance(hall)) {
+      return "outline";
+    }
 
     if (hasCurrentBooking(hall)) return "secondary";
 
@@ -792,6 +843,20 @@ const hasOverlappingReservations = (hall: Hall) => {
           new Date(a.reservedFrom).getTime() -
           new Date(b.reservedFrom).getTime()
       );
+  };
+
+  // Check if hall has out-of-order periods during selected dates
+  const isOutOfOrderForSelectedDates = (hall: Hall) => {
+    if (!reserveDates.from || !reserveDates.to) return false;
+
+    const selectedFrom = new Date(reserveDates.from);
+    const selectedTo = new Date(reserveDates.to);
+
+    return hall.outOfOrders?.some(period => {
+      const periodStart = new Date(period.startDate);
+      const periodEnd = new Date(period.endDate);
+      return selectedFrom <= periodEnd && selectedTo >= periodStart;
+    });
   };
 
   const hasActiveFilters = statusFilter !== "ALL";
@@ -958,129 +1023,118 @@ const hasOverlappingReservations = (hall: Hall) => {
                   />
                 </div>
 
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                    <div>
-                      <Label className="text-base font-medium">
-                        Hall Availability Status
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        {form.isOutOfService
-                          ? "Out of Service (Not Available)"
-                          : form.isActive
-                            ? "Active & Available for Booking"
-                            : "Inactive (Hidden from users)"}
-                      </p>
-                    </div>
-                    <div className="flex gap-8 items-center">
-                      <div className="flex items-center gap-3">
-                        <Label>Active</Label>
-                        <Switch
-                          checked={form.isActive && !form.isOutOfService}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setForm({
-                                ...form,
-                                isActive: true,
-                                isOutOfService: false,
-                                outOfServiceReason: "",
-                                outOfServiceFrom: "",
-                                outOfServiceTo: "",
-                              });
-                            } else {
-                              setForm({
-                                ...form,
-                                isActive: false
-                              });
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Label>Out of Service</Label>
-                        <Switch
-                          checked={form.isOutOfService}
-                          onCheckedChange={(checked) => {
-                            setForm({
-                              ...form,
-                              isOutOfService: checked,
-                              isActive: !checked, // Always set isActive to false when out of service
-                              outOfServiceReason: checked ? form.outOfServiceReason : "",
-                              outOfServiceFrom: checked ? form.outOfServiceFrom : "",
-                              outOfServiceTo: checked ? form.outOfServiceTo : "",
-                            });
-                          }}
-                        />
-                      </div>
-                    </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base">Out of Order Periods</Label>
+                    <span className="text-sm text-muted-foreground">
+                      Add multiple maintenance periods (e.g., Nov 9-10, Dec 9-10)
+                    </span>
                   </div>
 
-                  {form.isOutOfService && (
-                    <div className="space-y-4 p-6 border-2 border-orange-300 rounded-lg bg-orange-50 dark:bg-orange-950/30">
-                      <h4 className="font-semibold text-orange-800 dark:text-orange-300">
-                        Out of Service Details *
-                      </h4>
-                      <div>
-                        <Label>Reason *</Label>
-                        <Textarea
-                          value={form.outOfServiceReason}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              outOfServiceReason: e.target.value,
-                            })
-                          }
-                          placeholder="Renovation, AC repair, etc."
-                          className={!form.outOfServiceReason ? "border-red-500" : ""}
-                        />
-                        {!form.outOfServiceReason && (
-                          <p className="text-sm text-red-500 mt-1">Reason is required when hall is out of service</p>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Out of Service From *</Label>
-                          <Input
-                            type="date"
-                            value={form.outOfServiceFrom}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                outOfServiceFrom: e.target.value,
-                              })
-                            }
-                            // REMOVED the min={new Date().toISOString().split("T")[0]} restriction
-                            className={!form.outOfServiceFrom ? "border-red-500" : ""}
-                          />
-                          {!form.outOfServiceFrom && (
-                            <p className="text-sm text-red-500 mt-1">Start date is required</p>
-                          )}
+                  {/* Current out-of-order periods */}
+                  {form.outOfOrders.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Added Maintenance Periods ({form.outOfOrders.length})</Label>
+                      {form.outOfOrders.map((oo, index) => (
+                        <div key={index} className="p-3 border rounded-lg flex justify-between items-center">
+                          <div>
+                            <div className="font-medium">
+                              {new Date(oo.startDate).toLocaleDateString()} - {new Date(oo.endDate).toLocaleDateString()}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {oo.reason}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveOutOfOrder(index)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <div>
-                          <Label>Expected Available From *</Label>
-                          <Input
-                            type="date"
-                            value={form.outOfServiceTo}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                outOfServiceTo: e.target.value,
-                              })
-                            }
-                            // Only set min to outOfServiceFrom if it exists, otherwise no restriction
-                            min={form.outOfServiceFrom || undefined}
-                            className={!form.outOfServiceTo ? "border-red-500" : ""}
-                          />
-                          {!form.outOfServiceTo && (
-                            <p className="text-sm text-red-500 mt-1">End date is required</p>
-                          )}
-                        </div>
-                      </div>
-                      {form.outOfServiceFrom && form.outOfServiceTo && new Date(form.outOfServiceFrom) >= new Date(form.outOfServiceTo) && (
-                        <p className="text-sm text-red-500">Expected Available From must be after Out of Service From</p>
-                      )}
+                      ))}
                     </div>
                   )}
+
+                  {/* Add new out-of-order period form */}
+                  <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                    <h4 className="font-medium">Add New Maintenance Period</h4>
+                    <div>
+                      <Label>Reason *</Label>
+                      <Textarea
+                        value={newOutOfOrder.reason}
+                        onChange={(e) =>
+                          setNewOutOfOrder({ ...newOutOfOrder, reason: e.target.value })
+                        }
+                        placeholder="Describe the issue (maintenance, renovation, repair, etc.)"
+                        className="mt-2"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Start Date *</Label>
+                        <Input
+                          type="date"
+                          value={newOutOfOrder.startDate}
+                          onChange={(e) =>
+                            setNewOutOfOrder({ ...newOutOfOrder, startDate: e.target.value })
+                          }
+                          className="mt-2"
+                          min={new Date().toISOString().split("T")[0]}
+                        />
+                      </div>
+                      <div>
+                        <Label>End Date *</Label>
+                        <Input
+                          type="date"
+                          value={newOutOfOrder.endDate}
+                          onChange={(e) =>
+                            setNewOutOfOrder({ ...newOutOfOrder, endDate: e.target.value })
+                          }
+                          className="mt-2"
+                          min={newOutOfOrder.startDate || new Date().toISOString().split("T")[0]}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleAddOutOfOrder}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Maintenance Period
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                  <div>
+                    <Label className="text-base font-medium">
+                      Hall Availability Status
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {form.outOfOrders.length > 0
+                        ? "Hall has maintenance periods scheduled"
+                        : form.isActive
+                          ? "Active & Available for Booking"
+                          : "Inactive (Hidden from users)"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label>Active</Label>
+                    <Switch
+                      checked={form.isActive}
+                      onCheckedChange={(checked) => {
+                        setForm({
+                          ...form,
+                          isActive: checked,
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
               <DialogFooter>
@@ -1157,6 +1211,8 @@ const hasOverlappingReservations = (hall: Hall) => {
                   const upcomingReservations = getUpcomingReservations(hall);
                   const upcomingBookings = getUpcomingBookings(hall);
                   const hasCurrent = hasCurrentBooking(hall);
+                  const currentlyOutOfOrder = isCurrentlyOutOfOrder(hall);
+                  const scheduledMaintenance = hasScheduledMaintenance(hall);
 
                   return (
                     <TableRow key={hall.id}>
@@ -1192,19 +1248,21 @@ const hasOverlappingReservations = (hall: Hall) => {
                           <Badge variant={getHallStatusVariant(hall)}>
                             {getHallStatus(hall)}
                           </Badge>
-
-                          {(hall.isOutOfService || (hall.outOfServiceFrom && new Date(hall.outOfServiceFrom) > new Date())) && (
-                            <div className="space-y-1">
-                              {hall.outOfServiceFrom && hall.outOfServiceTo && (
-                                <div className="text-xs text-muted-foreground">
-                                  {formatDate(hall.outOfServiceFrom)} - {formatDate(hall.outOfServiceTo)}
+                          {hall.outOfOrders && hall.outOfOrders.length > 0 && (
+                            <div className="space-y-1 mt-2">
+                              {hall.outOfOrders.slice(0, 2).map((period, idx) => (
+                                <div key={idx} className="text-xs bg-orange-50 px-2 py-1 rounded border border-orange-200">
+                                  <div className="font-medium text-orange-700">
+                                    {formatDate(period.startDate)} - {formatDate(period.endDate)}
+                                  </div>
+                                  <div className="text-orange-600 truncate">
+                                    {period.reason}
+                                  </div>
                                 </div>
-                              )}
-
-                              {hall.outOfServiceReason && (
-                                <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200">
-                                  <div className="font-medium">Maintenance:</div>
-                                  {hall.outOfServiceReason}
+                              ))}
+                              {hall.outOfOrders.length > 2 && (
+                                <div className="text-xs text-muted-foreground">
+                                  +{hall.outOfOrders.length - 2} more periods
                                 </div>
                               )}
                             </div>
@@ -1257,17 +1315,17 @@ const hasOverlappingReservations = (hall: Hall) => {
                               .map((booking: any) => (
                                 <div key={booking.id} className="text-xs border-l-2 border-blue-400 pl-2">
                                   <div className="font-medium">
-                                    Booking #{booking.id} {/* Since we don't have member/guest names */}
+                                    Booking #{booking.id}
                                   </div>
                                   <div className="text-muted-foreground">
-                                    {formatDate(booking.bookingDate)} {/* Use bookingDate instead of eventDate */}
+                                    {formatDate(booking.bookingDate)}
                                   </div>
                                   <div className="mt-1">
                                     {getPaymentStatusBadge(booking.paymentStatus)}
                                   </div>
                                   {booking.totalPrice && (
                                     <div className="text-xs text-muted-foreground">
-                                      PKR {Number(booking.totalPrice).toLocaleString()} {/* Convert string to number */}
+                                      PKR {Number(booking.totalPrice).toLocaleString()}
                                     </div>
                                   )}
                                   {booking.eventType && (
@@ -1424,28 +1482,13 @@ const hasOverlappingReservations = (hall: Hall) => {
                   {halls?.map((hall: Hall) => {
                     const isReservedForDates = isHallReservedForDates(hall);
                     const hasOverlap = hasOverlappingReservations(hall);
-
-                    const isOutOfServiceForSelectedDates = (() => {
-                      if (!reserveDates.from || !reserveDates.to) return false;
-
-                      const selectedFrom = new Date(reserveDates.from);
-                      const selectedTo = new Date(reserveDates.to);
-
-                      if (hall.outOfServiceFrom && hall.outOfServiceTo) {
-                        const outOfServiceFrom = new Date(hall.outOfServiceFrom);
-                        const outOfServiceTo = new Date(hall.outOfServiceTo);
-                        return (selectedFrom <= outOfServiceTo && selectedTo >= outOfServiceFrom);
-                      }
-
-                      return false;
-                    })();
+                    const isOutOfOrder = isOutOfOrderForSelectedDates(hall);
 
                     const upcomingReservations = getUpcomingReservations(hall);
 
                     const isCheckboxDisabled =
                       hasOverlap ||
-                      isOutOfServiceForSelectedDates;
-                    console.log(isCheckboxDisabled)
+                      isOutOfOrder;
 
                     return (
                       <div
@@ -1454,7 +1497,7 @@ const hasOverlappingReservations = (hall: Hall) => {
                           ? "bg-orange-50 border-orange-200"
                           : isReservedForDates
                             ? "bg-blue-50 border-blue-200"
-                            : isOutOfServiceForSelectedDates
+                            : isOutOfOrder
                               ? "bg-red-50 border-red-200"
                               : !hall.isActive
                                 ? "bg-gray-50 border-gray-200"
@@ -1474,7 +1517,7 @@ const hasOverlappingReservations = (hall: Hall) => {
                             {hasOverlap && (
                               <AlertCircle className="h-4 w-4 text-orange-500" />
                             )}
-                            {isOutOfServiceForSelectedDates && (
+                            {isOutOfOrder && (
                               <AlertCircle className="h-4 w-4 text-red-500" />
                             )}
                           </div>
@@ -1512,15 +1555,29 @@ const hasOverlappingReservations = (hall: Hall) => {
                               }
                             </div>
                           )}
-                          {isOutOfServiceForSelectedDates && (
-                            <div className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                              <AlertCircle className="h-3 w-3" />
-                              {hall.isOutOfService ? 'Currently out of service' : 'Scheduled for maintenance'} during selected dates
-                              {hall.outOfServiceFrom && hall.outOfServiceTo && (
-                                <span>
-                                  ({new Date(hall.outOfServiceFrom).toLocaleDateString()} - {new Date(hall.outOfServiceTo).toLocaleDateString()})
-                                </span>
-                              )}
+
+                          {isOutOfOrder && (
+                            <div className="text-xs text-red-600 mt-1">
+                              <div className="flex items-center gap-1 mb-1">
+                                <AlertCircle className="h-3 w-3" />
+                                <span className="font-medium">Out of order during selected dates:</span>
+                              </div>
+                              {hall.outOfOrders
+                                ?.filter(period => {
+                                  const periodStart = new Date(period.startDate);
+                                  const periodEnd = new Date(period.endDate);
+                                  const selFrom = new Date(reserveDates.from);
+                                  const selTo = new Date(reserveDates.to);
+
+                                  return selFrom <= periodEnd && selTo >= periodStart;
+                                })
+                                .map((period, idx) => (
+                                  <div key={idx} className="ml-4 text-xs">
+                                    • {formatDate(period.startDate)} - {formatDate(period.endDate)}
+                                    <span className="ml-1">({period.reason})</span>
+                                  </div>
+                                ))
+                              }
                             </div>
                           )}
 
@@ -1531,28 +1588,21 @@ const hasOverlappingReservations = (hall: Hall) => {
                             </div>
                           )}
 
-                          {!hall.isActive && !isOutOfServiceForSelectedDates && !isCheckboxDisabled && (
+                          {!hall.isActive && !isOutOfOrder && !isCheckboxDisabled && (
                             <div className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
                               <AlertCircle className="h-3 w-3" />
                               Inactive but available for selected dates
                             </div>
                           )}
 
-                          {hall.isOutOfService && !isOutOfServiceForSelectedDates && !isCheckboxDisabled && (
+                          {isCurrentlyOutOfOrder(hall) && !isOutOfOrder && !isCheckboxDisabled && (
                             <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
                               <CheckCircle className="h-3 w-3" />
-                              Available for selected dates (currently out of service for other dates)
+                              Available for selected dates (currently out of order for other dates)
                             </div>
                           )}
 
-                          {!hall.isOutOfService && hall.outOfServiceFrom && new Date(hall.outOfServiceFrom) > new Date() && !isOutOfServiceForSelectedDates && !isCheckboxDisabled && (
-                            <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" />
-                              Available for selected dates (scheduled maintenance for other dates)
-                            </div>
-                          )}
-
-                          {hall.isActive && !hall.isOutOfService && !hall.outOfServiceFrom && !isCheckboxDisabled && !isReservedForDates && (
+                          {hall.isActive && !isCurrentlyOutOfOrder(hall) && !isCheckboxDisabled && !isReservedForDates && (
                             <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
                               <CheckCircle className="h-3 w-3" />
                               Available for reservation
@@ -1567,9 +1617,9 @@ const hasOverlappingReservations = (hall: Hall) => {
                         </div>
                         <Badge
                           variant={
-                            isOutOfServiceForSelectedDates
+                            isOutOfOrder
                               ? "destructive"
-                              : hall.isOutOfService
+                              : isCurrentlyOutOfOrder(hall)
                                 ? "secondary"
                                 : hall.isReserved
                                   ? "secondary"
@@ -1728,124 +1778,115 @@ const hasOverlappingReservations = (hall: Hall) => {
               />
             </div>
 
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                <div>
-                  <Label className="text-base font-medium">Hall Status</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {editForm.isOutOfService
-                      ? "Out of Service"
-                      : editForm.isActive
-                        ? "Active & Available"
-                        : "Inactive"}
-                  </p>
-                </div>
-                <div className="flex gap-8 items-center">
-                  <div className="flex items-center gap-3">
-                    <Label>Active</Label>
-                    <Switch
-                      checked={editForm.isActive && !editForm.isOutOfService}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setEditForm({
-                            ...editForm,
-                            isActive: true,
-                            isOutOfService: false,
-                            outOfServiceReason: "",
-                            outOfServiceFrom: "",
-                            outOfServiceTo: "",
-                          });
-                        } else {
-                          setEditForm({ ...editForm, isActive: false });
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Label>Out of Service</Label>
-                    <Switch
-                      checked={editForm.isOutOfService}
-                      onCheckedChange={(checked) => {
-                        setEditForm({
-                          ...editForm,
-                          isOutOfService: checked,
-                          isActive: !checked, // Always set isActive to false when out of service
-                          outOfServiceReason: checked ? editForm.outOfServiceReason : "",
-                          outOfServiceFrom: checked ? editForm.outOfServiceFrom : "",
-                          outOfServiceTo: checked ? editForm.outOfServiceTo : "",
-                        });
-                      }}
-                    />
-                  </div>
-                </div>
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+              <div>
+                <Label className="text-base font-medium">Hall Status</Label>
+                <p className="text-sm text-muted-foreground">
+                  {editForm.outOfOrders.length > 0
+                    ? "Hall has maintenance periods scheduled"
+                    : editForm.isActive
+                      ? "Active & Available"
+                      : "Inactive"}
+                </p>
               </div>
+              <div className="flex items-center gap-3">
+                <Label>Active</Label>
+                <Switch
+                  checked={editForm.isActive}
+                  onCheckedChange={(checked) => {
+                    setEditForm({ ...editForm, isActive: checked });
+                  }}
+                />
+              </div>
+            </div>
 
-              {editForm.isOutOfService && (
-                <div className="space-y-4 p-6 border-2 border-orange-300 rounded-lg bg-orange-50 dark:bg-orange-950/30">
-                  <h4 className="font-semibold text-orange-800 dark:text-orange-300">
-                    Out of Service Details *
-                  </h4>
-                  <div>
-                    <Label>Reason *</Label>
-                    <Textarea
-                      value={editForm.outOfServiceReason}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          outOfServiceReason: e.target.value,
-                        })
-                      }
-                      className={!editForm.outOfServiceReason ? "border-red-500" : ""}
-                    />
-                    {!editForm.outOfServiceReason && (
-                      <p className="text-sm text-red-500 mt-1">Reason is required when hall is out of service</p>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Out of Service From *</Label>
-                      <Input
-                        type="date"
-                        value={editForm.outOfServiceFrom}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            outOfServiceFrom: e.target.value,
-                          })
-                        }
-                        // REMOVED the min={new Date().toISOString().split("T")[0]} restriction
-                        className={!editForm.outOfServiceFrom ? "border-red-500" : ""}
-                      />
-                      {!editForm.outOfServiceFrom && (
-                        <p className="text-sm text-red-500 mt-1">Start date is required</p>
-                      )}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base">Out of Order Periods</Label>
+                <span className="text-sm text-muted-foreground">
+                  Add multiple maintenance periods (e.g., Nov 9-10, Dec 9-10)
+                </span>
+              </div>
+              {/* Current out-of-order periods */}
+              {editForm.outOfOrders.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Added Maintenance Periods ({editForm.outOfOrders.length})</Label>
+                  {editForm.outOfOrders.map((oo, index) => (
+                    <div key={index} className="p-3 border rounded-lg flex justify-between items-center">
+                      <div>
+
+                        <div className="font-medium">
+                          {new Date(oo.startDate).toLocaleDateString()} - {new Date(oo.endDate).toLocaleDateString()}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {oo.reason}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveEditOutOfOrder(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div>
-                      <Label>Expected Available From *</Label>
-                      <Input
-                        type="date"
-                        value={editForm.outOfServiceTo}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            outOfServiceTo: e.target.value,
-                          })
-                        }
-                        // Only set min to outOfServiceFrom if it exists, otherwise no restriction
-                        min={editForm.outOfServiceFrom || undefined}
-                        className={!editForm.outOfServiceTo ? "border-red-500" : ""}
-                      />
-                      {!editForm.outOfServiceTo && (
-                        <p className="text-sm text-red-500 mt-1">End date is required</p>
-                      )}
-                    </div>
-                  </div>
-                  {editForm.outOfServiceFrom && editForm.outOfServiceTo && new Date(editForm.outOfServiceFrom) >= new Date(editForm.outOfServiceTo) && (
-                    <p className="text-sm text-red-500">Expected Available From must be after Out of Service From</p>
-                  )}
+                  ))}
                 </div>
               )}
+              {/* Add new out-of-order period form */}
+              <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                <h4 className="font-medium">Add New Maintenance Period</h4>
+                <div>
+                  <Label>Reason *</Label>
+                  <Textarea
+                    value={editNewOutOfOrder.reason}
+                    onChange={(e) =>
+                      setEditNewOutOfOrder({ ...editNewOutOfOrder, reason: e.target.value })
+                    }
+                    placeholder="Describe the issue (maintenance, renovation, repair, etc.)"
+                    className="mt-2"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Start Date *</Label>
+                    <Input
+                      type="date"
+                      value={editNewOutOfOrder.startDate}
+                      onChange={(e) =>
+                        setEditNewOutOfOrder({ ...editNewOutOfOrder, startDate: e.target.value })
+                      }
+                      className="mt-2"
+                      min={new Date().toISOString().split("T")[0]}
+                    />
+                  </div>
+                  <div>
+                    <Label>End Date *</Label>
+                    <Input
+                      type="date"
+                      value={editNewOutOfOrder.endDate}
+                      onChange={(e) =>
+                        setEditNewOutOfOrder({ ...editNewOutOfOrder, endDate: e.target.value })
+                      }
+                      className="mt-2"
+                      min={editNewOutOfOrder.startDate || new Date().toISOString().split("T")[0]}
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleAddEditOutOfOrder}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Maintenance Period
+                </Button>
+              </div>
             </div>
+
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditHall(null)}>

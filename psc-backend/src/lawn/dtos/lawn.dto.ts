@@ -1,5 +1,18 @@
 import { IsNotEmpty, IsOptional } from "class-validator";
 
+
+
+export class LawnOutOfOrderDto {
+  @IsOptional()
+  id?: number;
+  @IsNotEmpty({message: "reason must be provided"})
+  reason: string;
+  @IsNotEmpty({message: "start date must be provided"})
+  startDate: string;
+  @IsNotEmpty({message: "end date must be provided"})
+  endDate: string;
+}
+
 export class LawnDto {
   @IsOptional() id?: string;
   @IsOptional() description?: string;
@@ -8,8 +21,7 @@ export class LawnDto {
   @IsNotEmpty() maxGuests: string;
   @IsNotEmpty() memberCharges: string;
   @IsNotEmpty() guestCharges: string;
-  @IsOptional() isOutOfService?: string | boolean;
-  @IsOptional() outOfServiceReason?: string;
-  @IsOptional() outOfServiceFrom?: string;
-  @IsOptional() outOfServiceUntil?: string;
+  @IsNotEmpty({message: "hall activity must be provided"})
+  isActive: boolean | string;
+  @IsOptional() outOfOrders?: LawnOutOfOrderDto[];
 }

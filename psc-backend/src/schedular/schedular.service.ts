@@ -17,48 +17,116 @@ export class SchedularService {
       try {
         await this.prismaService.$transaction(async (tx) => {
           const now = new Date();
-          const localDate = new Date(
-            now.getTime() - now.getTimezoneOffset() * 60000,
-          );
-          const localDateString = localDate.toISOString().split('T')[0];
-          const localDateTime = new Date(localDateString + 'T00:00:00.000Z');
 
-          // STEP 1 — mark rooms out-of-order
-          const setToOutOfOrder = await tx.room.updateMany({
+          // Get current date at midnight in local time
+          const today = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+          );
+
+          // STEP 1 — Find rooms that should be marked as "currently out of order"
+          // Rooms that have active out-of-order periods overlapping with today
+          const roomsWithActiveOutOfOrder = await tx.room.findMany({
             where: {
-              isOutOfOrder: false,
-              outOfOrderFrom: { lte: localDateTime },
-              outOfOrderTo: { gte: localDateTime },
+              outOfOrders: {
+                some: {
+                  AND: [
+                    { startDate: { lte: today } },
+                    { endDate: { gte: today } },
+                  ],
+                },
+              },
             },
-            data: {
-              isOutOfOrder: true,
-              isActive: false,
+            include: {
+              outOfOrders: {
+                where: {
+                  AND: [
+                    { startDate: { lte: today } },
+                    { endDate: { gte: today } },
+                  ],
+                },
+              },
             },
           });
 
-          if (setToOutOfOrder.count > 0) {
+          // Update rooms that should be marked as out-of-order
+          const roomsToMarkOutOfOrder = roomsWithActiveOutOfOrder
+            .filter((room) => room.isActive) // Only mark if currently active
+            .map((room) => room.id);
+
+          if (roomsToMarkOutOfOrder.length > 0) {
+            const markOutOfOrderResult = await tx.room.updateMany({
+              where: {
+                id: { in: roomsToMarkOutOfOrder },
+                isActive: true,
+              },
+              data: {
+                isActive: false,
+              },
+            });
+
             this.logger.log(
-              `Set ${setToOutOfOrder.count} rooms to out-of-order.`,
+              `Marked ${markOutOfOrderResult.count} rooms as inactive due to out-of-order periods.`,
             );
           }
 
-          // STEP 2 — reset rooms
-          const resetFromOutOfOrder = await tx.room.updateMany({
+          // STEP 2 — Find rooms that should be reactivated
+          // Rooms that don't have any active out-of-order periods today
+          const allRooms = await tx.room.findMany({
             where: {
-              isOutOfOrder: true,
-              outOfOrderTo: { lt: localDateTime },
+              isActive: false,
             },
-            data: {
-              isOutOfOrder: false,
-              isActive: true,
-              outOfOrderReason: null,
-              outOfOrderFrom: null,
-              outOfOrderTo: null,
+            include: {
+              outOfOrders: {
+                where: {
+                  endDate: { gte: today }, // Only consider ongoing or future periods
+                },
+              },
             },
           });
 
-          if (resetFromOutOfOrder.count > 0) {
-            this.logger.log(`Reset ${resetFromOutOfOrder.count} rooms.`);
+          const roomsToReactivate = allRooms
+            .filter((room) => {
+              // Room should be reactivated if it has NO out-of-order periods covering today
+              const hasActiveOutOfOrderToday = room.outOfOrders.some(
+                (oo) => oo.startDate <= today && oo.endDate >= today,
+              );
+              return !hasActiveOutOfOrderToday;
+            })
+            .map((room) => room.id);
+
+          if (roomsToReactivate.length > 0) {
+            const reactivateResult = await tx.room.updateMany({
+              where: {
+                id: { in: roomsToReactivate },
+                isActive: false,
+              },
+              data: {
+                isActive: true,
+              },
+            });
+
+            this.logger.log(
+              `Reactivated ${reactivateResult.count} rooms (no active out-of-order periods today).`,
+            );
+          }
+
+          // STEP 3 — Clean up expired out-of-order records (optional, for data cleanup)
+          // Remove out-of-order records that ended more than 30 days ago
+          const thirtyDaysAgo = new Date(today);
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+          const cleanupResult = await tx.roomOutOfOrder.deleteMany({
+            where: {
+              endDate: { lt: thirtyDaysAgo },
+            },
+          });
+
+          if (cleanupResult.count > 0) {
+            this.logger.log(
+              `Cleaned up ${cleanupResult.count} expired out-of-order records.`,
+            );
           }
         });
 
@@ -94,7 +162,7 @@ export class SchedularService {
       data: {
         onHold: false,
         holdExpiry: null,
-        holdBy: null
+        holdBy: null,
       },
     });
     if (expiredHolds.count > 0) {

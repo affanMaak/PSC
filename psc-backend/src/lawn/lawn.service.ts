@@ -16,7 +16,7 @@ export class LawnService {
   // ─────────────────────────── LAWN CATEGORY ───────────────────────────
   async getLawnCategories() {
     return await this.prismaService.lawnCategory.findMany({
-        include: {lawns: true},
+      include: { lawns: true },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -258,32 +258,74 @@ export class LawnService {
   }
 
   // ─────────────────────────── LAWNS ───────────────────────────
-  async createLawn(payload: LawnDto) {
-    return this.prismaService.lawn.create({
-      data: {
-        lawnCategoryId: Number(payload.lawnCategoryId),
-        description: payload.description?.trim() || 'Lawn',
-        minGuests: Number(payload.minGuests) || 0,
-        maxGuests: Number(payload.maxGuests) || 0,
-        memberCharges: new Prisma.Decimal(payload.memberCharges || 0),
-        guestCharges: new Prisma.Decimal(payload.guestCharges || 0),
-        isActive: true,
-        isOutOfService:
-          payload.isOutOfService === true || payload.isOutOfService === 'true',
-        outOfServiceReason:
-          payload.isOutOfService === true || payload.isOutOfService === 'true'
-            ? payload.outOfServiceReason?.trim() || null
-            : null,
-        outOfServiceFrom:new Date(payload.outOfServiceFrom!),
-        outOfServiceTo:
-          payload.isOutOfService === true || payload.isOutOfService === 'true'
-            ? payload.outOfServiceUntil
-              ? new Date(payload.outOfServiceUntil)
-              : null
-            : null,
-        // Images field removed
+
+  private isCurrentlyOutOfOrder(outOfOrders: any[]): boolean {
+    if (!outOfOrders || outOfOrders.length === 0) return false;
+    
+    const now = new Date();
+    return outOfOrders.some(period => {
+      const start = new Date(period.startDate);
+      const end = new Date(period.endDate);
+      return start <= now && end >= now;
+    });
+  }
+
+  async getLawnWithOutOfOrders(id: number) {
+    const lawn = await this.prismaService.lawn.findUnique({
+      where: { id },
+      include: {
+        lawnCategory: true,
+        outOfOrders: {
+          orderBy: { startDate: 'asc' },
+        },
       },
     });
+
+    if (!lawn) return null;
+
+    return {
+      ...lawn,
+      isOutOfService: this.isCurrentlyOutOfOrder(lawn.outOfOrders),
+    };
+  }
+  async createLawn(payload: LawnDto) {
+    // Calculate isOutOfService based on outOfOrders if provided
+    const hasOutOfOrders =
+      payload.outOfOrders && payload.outOfOrders.length > 0;
+
+    const data: any = {
+      lawnCategoryId: Number(payload.lawnCategoryId),
+      description: payload.description?.trim() || 'Lawn',
+      minGuests: Number(payload.minGuests) || 0,
+      maxGuests: Number(payload.maxGuests) || 0,
+      memberCharges: new Prisma.Decimal(payload.memberCharges || 0),
+      guestCharges: new Prisma.Decimal(payload.guestCharges || 0),
+      isActive: true,
+    };
+
+    const lawn = await this.prismaService.lawn.create({
+      data,
+      include: {
+        outOfOrders: true,
+        lawnCategory: true,
+      },
+    });
+
+    // Create out-of-order periods if provided
+    if (payload.outOfOrders && payload.outOfOrders.length > 0) {
+      for (const oo of payload.outOfOrders) {
+        await this.prismaService.lawnOutOfOrder.create({
+          data: {
+            lawnId: lawn.id,
+            reason: oo.reason.trim(),
+            startDate: new Date(oo.startDate),
+            endDate: new Date(oo.endDate),
+          },
+        });
+      }
+    }
+
+    return this.getLawnWithOutOfOrders(lawn.id);
   }
 
   async updateLawn(payload: Partial<LawnDto>) {
@@ -294,51 +336,81 @@ export class LawnService {
     const lawnId = Number(payload.id);
     const existingLawn = await this.prismaService.lawn.findUnique({
       where: { id: lawnId },
+      include: { outOfOrders: true },
     });
 
     if (!existingLawn) {
       throw new HttpException('Lawn not found', HttpStatus.NOT_FOUND);
     }
 
-    return this.prismaService.lawn.update({
+    // Calculate isOutOfService based on outOfOrders if provided
+    const hasOutOfOrders =
+      payload.outOfOrders && payload.outOfOrders.length > 0;
+
+    const data: any = {
+      lawnCategoryId: payload.lawnCategoryId
+        ? Number(payload.lawnCategoryId)
+        : undefined,
+      description: payload.description?.trim(),
+      minGuests: payload.minGuests ? Number(payload.minGuests) : undefined,
+      maxGuests: payload.maxGuests ? Number(payload.maxGuests) : undefined,
+      memberCharges: payload.memberCharges
+        ? new Prisma.Decimal(payload.memberCharges)
+        : undefined,
+      guestCharges: payload.guestCharges
+        ? new Prisma.Decimal(payload.guestCharges)
+        : undefined,
+      isActive: payload.isActive === 'true' ? false : true,
+    };
+
+    const updatedLawn = await this.prismaService.lawn.update({
       where: { id: lawnId },
-      data: {
-        lawnCategoryId: payload.lawnCategoryId
-          ? Number(payload.lawnCategoryId)
-          : undefined,
-        description: payload.description?.trim(),
-        minGuests: payload.minGuests ? Number(payload.minGuests) : undefined,
-        maxGuests: payload.maxGuests ? Number(payload.maxGuests) : undefined,
-        memberCharges: payload.memberCharges
-          ? new Prisma.Decimal(payload.memberCharges)
-          : undefined,
-        guestCharges: payload.guestCharges
-          ? new Prisma.Decimal(payload.guestCharges)
-          : undefined,
-        isActive: payload.isOutOfService === 'true' ? false : true,
-        isOutOfService:
-          payload.isOutOfService === true || payload.isOutOfService === 'true',
-        outOfServiceReason:
-          payload.isOutOfService === true || payload.isOutOfService === 'true'
-            ? payload.outOfServiceReason?.trim() || null
-            : null,
-        outOfServiceFrom:
-          new Date(payload.outOfServiceFrom!),
-        outOfServiceTo:
-          payload.isOutOfService === true || payload.isOutOfService === 'true'
-            ? payload.outOfServiceUntil
-              ? new Date(payload.outOfServiceUntil)
-              : null
-            : null,
-        // Images field removed
-      },
+      data,
     });
+
+    // Handle out-of-order periods
+    if (payload.outOfOrders) {
+      // Delete existing periods
+      await this.prismaService.lawnOutOfOrder.deleteMany({
+        where: { lawnId },
+      });
+
+      // Create new periods
+      for (const oo of payload.outOfOrders) {
+        await this.prismaService.lawnOutOfOrder.create({
+          data: {
+            lawnId,
+            reason: oo.reason.trim(),
+            startDate: new Date(oo.startDate),
+            endDate: new Date(oo.endDate),
+          },
+        });
+      }
+    }
+
+    return this.getLawnWithOutOfOrders(lawnId);
   }
 
   async getLawns() {
     return this.prismaService.lawn.findMany({
       where: { isBooked: false },
-      include: { lawnCategory: { select: { id: true, category: true } } },
+      include: { outOfOrders: {orderBy: {startDate: "asc"}}, lawnCategory: { select: { id: true, category: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getCalendarLawns() {
+    return this.prismaService.lawn.findMany({
+      include: {
+        lawnCategory: { select: { id: true, category: true } },
+        bookings: {
+          include: {
+            member: {
+              select: { Name: true },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

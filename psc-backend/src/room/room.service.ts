@@ -264,22 +264,33 @@ export class RoomService {
   }
 
   // ─────────────────────────── ROOMS ───────────────────────────
+
   async getRooms() {
     return await this.prismaService.room.findMany({
       include: {
-        roomType: {
-          select: { type: true, priceMember: true, priceGuest: true },
+        roomType: true,
+        outOfOrders: {
+          orderBy: {
+            startDate: 'asc',
+          },
         },
         reservations: {
           include: {
-            admin: {
-              select: { name: true },
-            },
+            admin: true,
+          },
+          orderBy: {
+            reservedFrom: 'asc',
           },
         },
-        bookings: true,
+        bookings: {
+          orderBy: {
+            checkIn: 'asc',
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: {
+        roomNumber: 'asc',
+      },
     });
   }
   async getRoomCategories() {
@@ -288,35 +299,60 @@ export class RoomService {
     });
   }
   async getAvailRooms(roomTypeId: number) {
-    // console.log(roomTypeId);
     return await this.prismaService.room.findMany({
       where: { roomTypeId },
       include: {
-        roomType: {
-          select: { type: true, priceMember: true, priceGuest: true },
+        roomType: true,
+        outOfOrders: {
+          orderBy: {
+            startDate: 'asc',
+          },
         },
-        reservations: true,
-        bookings: true,
+        reservations: {
+          include: {
+            admin: true,
+          },
+          orderBy: {
+            reservedFrom: 'asc',
+          },
+        },
+        bookings: {
+          orderBy: {
+            checkIn: 'asc',
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: {
+        roomNumber: 'asc',
+      },
     });
   }
 
   async createRoom(payload: RoomDto) {
-    return await this.prismaService.room.create({
+    const room = await this.prismaService.room.create({
       data: {
         roomNumber: payload.roomNumber,
         roomTypeId: Number(payload.roomTypeId),
         description: payload.description,
         isActive: payload.isActive == 'true' || payload.isActive === true,
-        isOutOfOrder:
-          payload.isOutOfOrder == 'true' || payload.isOutOfOrder === true,
-        outOfOrderReason: payload.outOfOrderReason,
-        outOfOrderTo: payload.outOfOrderTo,
-        outOfOrderFrom: payload.outOfOrderFrom,
-        // Remove images field
       },
     });
+
+    // Create out-of-order periods if provided
+    if (payload.outOfOrders && payload.outOfOrders.length > 0) {
+      const outOfOrderData = payload.outOfOrders.map((oo) => ({
+        roomId: room.id,
+        reason: oo.reason,
+        startDate: new Date(oo.startDate),
+        endDate: new Date(oo.endDate),
+      }));
+
+      await this.prismaService.roomOutOfOrder.createMany({
+        data: outOfOrderData,
+      });
+    }
+
+    return room;
   }
 
   async updateRoom(payload: RoomDto) {
@@ -327,105 +363,158 @@ export class RoomService {
 
     const existingRoom = await this.prismaService.room.findUnique({
       where: { id: roomId },
+      include: {
+        outOfOrders: true,
+        bookings: true,
+        reservations: true,
+      },
     });
 
     if (!existingRoom)
       throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
 
-    // Parse dates
-    const outOfOrderFrom = payload.outOfOrderFrom
-      ? new Date(payload.outOfOrderFrom)
-      : null;
-    const outOfOrderTo = payload.outOfOrderTo
-      ? new Date(payload.outOfOrderTo)
-      : null;
+    // Validate new out-of-order periods
+    if (payload.outOfOrders && payload.outOfOrders.length > 0) {
+      for (const oo of payload.outOfOrders) {
+        const startDate = new Date(oo.startDate);
+        const endDate = new Date(oo.endDate);
 
-    // Check for reservation and booking conflicts only if setting out-of-order dates
-    if (payload.isOutOfOrder && outOfOrderFrom && outOfOrderTo) {
-      // Check for conflicting reservations
-      const conflictingReservations =
-        await this.prismaService.roomReservation.findMany({
-          where: {
-            roomId: roomId,
-            OR: [
-              {
-                reservedFrom: { lte: outOfOrderTo },
-                reservedTo: { gte: outOfOrderFrom },
-              },
-            ],
-          },
-        });
-
-      // Check for conflicting bookings
-      const conflictingBookings = await this.prismaService.roomBooking.findMany(
-        {
-          where: {
-            roomId: roomId,
-            OR: [
-              {
-                checkIn: { lte: outOfOrderTo },
-                checkOut: { gte: outOfOrderFrom },
-              },
-            ],
-          },
-        },
-      );
-
-      if (
-        conflictingReservations.length > 0 ||
-        conflictingBookings.length > 0
-      ) {
-        const conflictMessages: any[] = [];
-
-        if (conflictingReservations.length > 0) {
-          conflictMessages.push(
-            `${conflictingReservations.length} reservation(s)`,
+        if (endDate < startDate) {
+          throw new HttpException(
+            'End date must be after start date',
+            HttpStatus.BAD_REQUEST,
           );
         }
 
-        if (conflictingBookings.length > 0) {
-          conflictMessages.push(`${conflictingBookings.length} booking(s)`);
-        }
+        // Check for conflicting reservations
+        const conflictingReservations =
+          await this.prismaService.roomReservation.findMany({
+            where: {
+              roomId: roomId,
+              OR: [
+                {
+                  reservedFrom: { lte: endDate },
+                  reservedTo: { gte: startDate },
+                },
+              ],
+            },
+          });
 
-        throw new HttpException(
-          `Cannot set room as out of order. Room has ${conflictMessages.join(' and ')} during the selected period.`,
-          HttpStatus.CONFLICT,
-        );
+        // Check for conflicting bookings
+        const conflictingBookings =
+          await this.prismaService.roomBooking.findMany({
+            where: {
+              roomId: roomId,
+              OR: [
+                {
+                  checkIn: { lte: endDate },
+                  checkOut: { gte: startDate },
+                },
+              ],
+            },
+          });
+
+        // Check for conflicting existing out-of-order periods
+        const conflictingOutOfOrders =
+          await this.prismaService.roomOutOfOrder.findMany({
+            where: {
+              roomId: roomId,
+              NOT: { id: oo.id ? Number(oo.id) : undefined }, // Exclude current if updating
+              OR: [
+                {
+                  startDate: { lte: endDate },
+                  endDate: { gte: startDate },
+                },
+              ],
+            },
+          });
+
+        const conflicts = [
+          ...conflictingReservations,
+          ...conflictingBookings,
+          ...conflictingOutOfOrders,
+        ];
+
+        if (conflicts.length > 0) {
+          throw new HttpException(
+            `Cannot set out-of-order period from ${oo.startDate} to ${oo.endDate}. Room has conflicts during this period.`,
+            HttpStatus.CONFLICT,
+          );
+        }
       }
     }
 
-    // Determine if room should be out of order now or scheduled for future
-    const now = new Date();
-    const shouldBeOutOfOrderNow =
-      payload.isOutOfOrder &&
-      outOfOrderFrom &&
-      outOfOrderFrom <= now &&
-      outOfOrderTo &&
-      outOfOrderTo >= now;
-    const isScheduledForOutOfOrder =
-      payload.isOutOfOrder && outOfOrderFrom && outOfOrderFrom > now;
-
-    // Room should be active if:
-    // - It's not out of order at all, OR
-    // - It's only scheduled for future maintenance
-    const shouldBeActive = !payload.isOutOfOrder || isScheduledForOutOfOrder;
-
-    // Room should be marked as out of order only if it's currently out of order
-    const shouldBeMarkedOutOfOrder = shouldBeOutOfOrderNow;
-
-    return await this.prismaService.room.update({
+    // Update room basic info
+    const updatedRoom = await this.prismaService.room.update({
       where: { id: roomId },
       data: {
         roomNumber: payload.roomNumber,
         roomTypeId: Number(payload.roomTypeId),
         description: payload.description,
-        // Keep room active if it's only scheduled for future maintenance
-        isActive: !!shouldBeActive,
-        // Only set isOutOfOrder to true if it's currently out of order
-        isOutOfOrder: !!shouldBeMarkedOutOfOrder,
-        outOfOrderReason: payload.outOfOrderReason,
-        outOfOrderFrom: outOfOrderFrom,
-        outOfOrderTo: outOfOrderTo,
+        isActive: payload.isActive == 'true' || payload.isActive === true,
+      },
+      include: {
+        outOfOrders: true,
+      },
+    });
+
+    // Handle out-of-order periods
+    if (payload.outOfOrders) {
+      // Delete existing out-of-orders
+      await this.prismaService.roomOutOfOrder.deleteMany({
+        where: { roomId: roomId },
+      });
+
+      // Create new out-of-orders
+      if (payload.outOfOrders.length > 0) {
+        const outOfOrderData = payload.outOfOrders.map((oo) => ({
+          roomId: roomId,
+          reason: oo.reason,
+          startDate: new Date(oo.startDate),
+          endDate: new Date(oo.endDate),
+        }));
+
+        await this.prismaService.roomOutOfOrder.createMany({
+          data: outOfOrderData,
+        });
+      }
+    }
+
+    return this.prismaService.room.findUnique({
+      where: { id: roomId },
+      include: {
+        outOfOrders: true,
+        roomType: true,
+      },
+    });
+  }
+
+  // helpers:
+  async isRoomOutOfOrder(
+    roomId: number,
+    date: Date = new Date(),
+  ): Promise<boolean> {
+    const currentOutOfOrder = await this.prismaService.roomOutOfOrder.findFirst(
+      {
+        where: {
+          roomId: roomId,
+          startDate: { lte: date },
+          endDate: { gte: date },
+        },
+      },
+    );
+
+    return !!currentOutOfOrder;
+  }
+
+  async getRoomOutOfOrderPeriods(roomId: number, fromDate: Date = new Date()) {
+    return await this.prismaService.roomOutOfOrder.findMany({
+      where: {
+        roomId: roomId,
+        endDate: { gte: fromDate },
+      },
+      orderBy: {
+        startDate: 'asc',
       },
     });
   }
@@ -433,7 +522,6 @@ export class RoomService {
   async deleteRoom(id: number) {
     return await this.prismaService.room.delete({ where: { id } });
   }
-
 
   async reserveRooms(
     roomIds: number[],
@@ -503,48 +591,45 @@ export class RoomService {
           },
         });
 
-        // Check for out-of-order conflicts
-        const outOfOrderRooms = await prisma.room.findMany({
+        // Check for out-of-order conflicts using the new RoomOutOfOrder table
+        const roomsWithOutOfOrderConflicts = await prisma.room.findMany({
           where: {
             id: { in: roomIds },
-            OR: [
-              {
-                // Currently out of order
-                isOutOfOrder: true,
-              },
-              {
-                // Scheduled out of order during reservation period
+            outOfOrders: {
+              some: {
+                // Check if any out-of-order period overlaps with the reservation
                 AND: [
-                  { outOfOrderFrom: { not: null } },
-                  { outOfOrderTo: { not: null } },
-                  {
-                    OR: [
-                      {
-                        // Out of order period overlaps with reservation
-                        outOfOrderFrom: { lte: toDate },
-                        outOfOrderTo: { gte: fromDate },
-                      },
-                    ],
-                  },
+                  { startDate: { lte: toDate } },
+                  { endDate: { gte: fromDate } },
                 ],
               },
-            ],
+            },
           },
-          select: {
-            roomNumber: true,
-            outOfOrderFrom: true,
-            outOfOrderTo: true,
-            isOutOfOrder: true,
+          include: {
+            outOfOrders: {
+              where: {
+                AND: [
+                  { startDate: { lte: toDate } },
+                  { endDate: { gte: fromDate } },
+                ],
+              },
+              orderBy: {
+                startDate: 'asc',
+              },
+            },
           },
         });
 
-        if (outOfOrderRooms.length > 0) {
-          const conflicts = outOfOrderRooms.map((room) => {
-            if (room.isOutOfOrder) {
-              return `Room ${room.roomNumber} is currently out of order`;
-            } else {
-              return `Room ${room.roomNumber} is out of order from ${formatPakistanDate(room.outOfOrderFrom!)} to ${formatPakistanDate(room.outOfOrderTo!)}`;
-            }
+        if (roomsWithOutOfOrderConflicts.length > 0) {
+          const conflicts = roomsWithOutOfOrderConflicts.map((room) => {
+            const conflictPeriods = room.outOfOrders
+              .map(
+                (oo) =>
+                  `${formatPakistanDate(oo.startDate)} to ${formatPakistanDate(oo.endDate)}`,
+              )
+              .join(', ');
+
+            return `Room ${room.roomNumber} has maintenance scheduled during selected dates (${conflictPeriods})`;
           });
           throw new HttpException(
             `Out of order conflicts: ${conflicts.join(', ')}`,
@@ -582,11 +667,17 @@ export class RoomService {
         const conflictingReservations = await prisma.roomReservation.findMany({
           where: {
             roomId: { in: roomIds },
-            OR: [
+            AND: [
               {
                 // Reservation overlaps with new reservation period
                 reservedFrom: { lt: toDate }, // existing reservation starts before new reservation ends
                 reservedTo: { gt: fromDate }, // existing reservation ends after new reservation starts
+              },
+              // Exclude exact matches (already deleted above)
+              {
+                NOT: {
+                  AND: [{ reservedFrom: fromDate }, { reservedTo: toDate }],
+                },
               },
             ],
           },
@@ -660,52 +751,79 @@ export class RoomService {
     if (!typeExists) return new NotFoundException(`room type not found`);
 
     // Parse dates as Pakistan Time
-    // console.log('Searching for rooms from:', fromDate, 'to:', toDate);
     const from = new Date(fromDate);
     const to = new Date(toDate);
-    // console.log('Parsed dates:', from, to);
 
+    // First, get all room IDs that have conflicts
+    const [
+      conflictingOutOfOrderRooms,
+      conflictingReservationRooms,
+      conflictingBookingRooms,
+    ] = await Promise.all([
+      // Rooms with out-of-order conflicts
+      this.prismaService.roomOutOfOrder.findMany({
+        where: {
+          startDate: { lte: to },
+          endDate: { gte: from },
+        },
+        select: { roomId: true },
+        distinct: ['roomId'],
+      }),
+
+      // Rooms with reservation conflicts
+      this.prismaService.roomReservation.findMany({
+        where: {
+          reservedFrom: { lt: to },
+          reservedTo: { gt: from },
+        },
+        select: { roomId: true },
+        distinct: ['roomId'],
+      }),
+
+      // Rooms with booking conflicts
+      this.prismaService.roomBooking.findMany({
+        where: {
+          checkIn: { lt: to },
+          checkOut: { gt: from },
+        },
+        select: { roomId: true },
+        distinct: ['roomId'],
+      }),
+    ]);
+
+    // Combine all conflicting room IDs
+    const allConflictingRoomIds = [
+      ...conflictingOutOfOrderRooms.map((oo) => oo.roomId),
+      ...conflictingReservationRooms.map((r) => r.roomId),
+      ...conflictingBookingRooms.map((b) => b.roomId),
+    ];
+
+    // Get unique conflicting room IDs
+    const conflictingRoomIds = [...new Set(allConflictingRoomIds)];
+
+    // Find available rooms (excluding conflicting ones)
     return await this.prismaService.room.findMany({
       where: {
         roomTypeId: roomType,
         onHold: false,
-
-        // Exclude rooms that are out of order during the requested period
-        OR: [
-          { isOutOfOrder: false },
-          {
-            // Room is out of order but NOT during our requested dates
-            AND: [
-              { isOutOfOrder: true },
-              {
-                OR: [
-                  { outOfOrderFrom: { gt: to } }, // Out of order starts after our period ends
-                  { outOfOrderTo: { lt: from } }, // Out of order ends before our period starts
-                ],
-              },
-            ],
+        isActive: true,
+        id: {
+          notIn: conflictingRoomIds,
+        },
+      },
+      include: {
+        roomType: true,
+        outOfOrders: {
+          where: {
+            endDate: { gte: new Date() },
           },
-        ],
-
-        // No reservations overlapping with our dates (exclusive end date for reservations)
-        reservations: {
-          none: {
-            AND: [
-              { reservedFrom: { lt: to } }, // Reservation starts before our period ends
-              { reservedTo: { gt: from } }, // Reservation ends after our period starts
-            ],
+          orderBy: {
+            startDate: 'asc',
           },
         },
-
-        // No bookings overlapping with our dates (exclusive end date for bookings)
-        bookings: {
-          none: {
-            AND: [
-              { checkIn: { lt: to } }, // Booking starts before our period ends
-              { checkOut: { gt: from } }, // Booking ends after our period starts
-            ],
-          },
-        },
+      },
+      orderBy: {
+        roomNumber: 'asc',
       },
     });
   }

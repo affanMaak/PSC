@@ -3,7 +3,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { HallDto } from './dtos/hall.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { capitalizeWords } from 'src/utils/CapitalizeFirst';
-import { formatPakistanDate, getPakistanDate, parsePakistanDate } from 'src/utils/time';
+import {
+  formatPakistanDate,
+  getPakistanDate,
+  parsePakistanDate,
+} from 'src/utils/time';
 
 @Injectable()
 export class HallService {
@@ -16,6 +20,11 @@ export class HallService {
   async getHalls() {
     return await this.prismaService.hall.findMany({
       include: {
+        outOfOrders: {
+          orderBy: {
+            startDate: 'asc',
+          },
+        },
         reservations: {
           include: {
             admin: {
@@ -38,6 +47,13 @@ export class HallService {
   async getAvailHalls() {
     return await this.prismaService.hall.findMany({
       where: { isActive: true, isBooked: false },
+      include: {
+        outOfOrders: {
+          orderBy: {
+            startDate: 'asc',
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -53,33 +69,23 @@ export class HallService {
       });
     }
 
-    // Parse dates
-    const outOfServiceFrom = payload.outOfServiceFrom
-      ? new Date(payload.outOfServiceFrom)
-      : null;
-    const outOfServiceTo = payload.outOfServiceTo
-      ? new Date(payload.outOfServiceTo)
-      : null;
+    // Parse out of order periods if provided
+    let outOfOrderPeriodsData: any[] = [];
+    if (payload.outOfOrders && Array.isArray(payload.outOfOrders)) {
+      outOfOrderPeriodsData = payload.outOfOrders.map((period) => ({
+        reason: period.reason,
+        startDate: new Date(period.startDate),
+        endDate: new Date(period.endDate),
+      }));
+    }
 
-    // Determine if hall should be out of service now or scheduled for future
+    // Check if hall should be active based on current date and out-of-order periods
     const now = new Date();
-    const shouldBeOutOfServiceNow =
-      payload.isOutOfService &&
-      outOfServiceFrom &&
-      outOfServiceFrom <= now &&
-      outOfServiceTo &&
-      outOfServiceTo >= now;
-    const isScheduledForOutOfService =
-      payload.isOutOfService && outOfServiceFrom && outOfServiceFrom > now;
+    const hasActiveOutOfOrder = outOfOrderPeriodsData.some(
+      (period) => period.startDate <= now && period.endDate >= now,
+    );
 
-    // Hall should be active if:
-    // - It's not out of service at all, OR
-    // - It's only scheduled for future maintenance
-    const shouldBeActive =
-      !payload.isOutOfService || isScheduledForOutOfService;
-
-    // Hall should be marked as out of service only if it's currently out of service
-    const shouldBeMarkedOutOfService = shouldBeOutOfServiceNow;
+    const shouldBeActive = !hasActiveOutOfOrder;
 
     return await this.prismaService.hall.create({
       data: {
@@ -88,14 +94,14 @@ export class HallService {
         capacity: Number(payload.capacity),
         chargesGuests: Number(payload.chargesGuests),
         chargesMembers: Number(payload.chargesMembers),
-        // Keep hall active if it's only scheduled for future maintenance
-        isActive: !!shouldBeActive,
-        // Only set isOutOfService to true if it's currently out of service
-        isOutOfService: !!shouldBeMarkedOutOfService,
-        outOfServiceReason: payload.outOfServiceReason,
-        outOfServiceFrom: outOfServiceFrom,
-        outOfServiceTo: outOfServiceTo,
+        isActive: shouldBeActive,
         images: uploadedImages,
+        outOfOrders: {
+          create: outOfOrderPeriodsData,
+        },
+      },
+      include: {
+        outOfOrders: true,
       },
     });
   }
@@ -107,27 +113,32 @@ export class HallService {
 
     const hallId = Number(payload.id);
 
-    const hall: any = await this.prismaService.hall.findUnique({
+    const hall = await this.prismaService.hall.findUnique({
       where: { id: hallId },
-      select: { images: true },
+      include: {
+        outOfOrders: true,
+        reservations: true,
+        bookings: true,
+      },
     });
 
     if (!hall) {
       throw new HttpException('Hall not found', HttpStatus.NOT_FOUND);
     }
 
-    // Extract only safe fields
+    // Handle images (existing code)
     const keepImagePublicIds = Array.isArray(payload.existingimgs)
       ? payload.existingimgs
       : payload.existingimgs
         ? [payload.existingimgs]
         : [];
 
-    const filteredExistingImages = hall?.images?.filter((img: any) =>
-      keepImagePublicIds.includes(img.publicId),
-    );
+    const filteredExistingImages = Array.isArray(hall.images)
+      ? hall.images?.filter((img: any) =>
+          keepImagePublicIds.includes(img.publicId),
+        )
+      : [];
 
-    // Upload new images
     const newUploadedImages: any[] = [];
     for (const file of files) {
       const result: any = await this.cloudinaryService.uploadFile(file);
@@ -139,106 +150,94 @@ export class HallService {
 
     const finalImages = [...filteredExistingImages, ...newUploadedImages];
 
-    // Parse dates
-    const outOfServiceFrom = payload.outOfServiceFrom
-      ? new Date(payload.outOfServiceFrom)
-      : null;
-    const outOfServiceTo = payload.outOfServiceTo
-      ? new Date(payload.outOfServiceTo)
-      : null;
-    // console.log(payload)
-    // Check for reservation and booking conflicts only if setting out-of-service dates
-    if (payload.isOutOfService && outOfServiceFrom && outOfServiceTo && !payload.isActive) {
-      // Check for conflicting reservations
-      const conflictingReservations =
-        await this.prismaService.hallReservation.findMany({
-          where: {
-            hallId: hallId,
-            OR: [
-              {
-                reservedFrom: { lte: outOfServiceTo },
-                reservedTo: { gte: outOfServiceFrom },
-              },
-            ],
-          },
-        });
+    // Parse out of order periods from payload
+    const newOutOfOrderPeriods = payload.outOfOrders
+      ? JSON.parse(payload.outOfOrders as any)
+      : [];
 
-      // Check for conflicting bookings
-      const conflictingBookings = await this.prismaService.hallBooking.findMany(
-        {
-          where: {
-            hallId: hallId,
-            OR: [
-              {
-                bookingDate: {
-                  gte: outOfServiceFrom,
-                  lte: outOfServiceTo,
-                },
-              },
-            ],
-          },
+    // Check for conflicts with existing reservations and bookings
+    const now = new Date();
+
+    for (const period of newOutOfOrderPeriods) {
+      const startDate = new Date(period.startDate);
+      const endDate = new Date(period.endDate);
+
+      // Check for conflicting reservations
+      const conflictingReservations = hall.reservations.filter(
+        (reservation) => {
+          const resStart = new Date(reservation.reservedFrom);
+          const resEnd = new Date(reservation.reservedTo);
+          return (
+            (startDate <= resEnd && endDate >= resStart) ||
+            (resStart <= endDate && resEnd >= startDate)
+          );
         },
       );
+
+      // Check for conflicting bookings
+      const conflictingBookings = hall.bookings.filter((booking) => {
+        const bookingDate = new Date(booking.bookingDate);
+        return bookingDate >= startDate && bookingDate <= endDate;
+      });
 
       if (
         conflictingReservations.length > 0 ||
         conflictingBookings.length > 0
       ) {
-        const conflictMessages: any[] = [];
-
-        if (conflictingReservations.length > 0) {
-          conflictMessages.push(
-            `${conflictingReservations.length} reservation(s)`,
-          );
-        }
-
-        if (conflictingBookings.length > 0) {
-          conflictMessages.push(`${conflictingBookings.length} booking(s)`);
-        }
-
         throw new HttpException(
-          `Cannot set hall as out of service. Hall has ${conflictMessages.join(' and ')} during the selected period.`,
+          `Cannot set hall as out of order from ${startDate.toDateString()} to ${endDate.toDateString()}. Hall has ${conflictingReservations.length} reservation(s) and ${conflictingBookings.length} booking(s) during this period.`,
           HttpStatus.CONFLICT,
         );
       }
     }
 
-    // Determine if hall should be out of service now or scheduled for future
-    const now = new Date();
-    const shouldBeOutOfServiceNow =
-      payload.isOutOfService &&
-      outOfServiceFrom &&
-      outOfServiceFrom <= now &&
-      outOfServiceTo &&
-      outOfServiceTo >= now;
-    const isScheduledForOutOfService = payload.isOutOfService && !!outOfServiceFrom && outOfServiceFrom > now;
+    // Determine if hall should be active based on current date
+    const hasActiveOutOfOrder = newOutOfOrderPeriods.some((period) => {
+      const startDate = new Date(period.startDate);
+      const endDate = new Date(period.endDate);
+      return startDate <= now && endDate >= now;
+    });
 
-    // Hall should be active if:
-    // - It's not out of service at all, OR
-    // - It's only scheduled for future maintenance
-    const shouldBeActive = !payload.isOutOfService || isScheduledForOutOfService;
-    // console.log(shouldBeActive)
-    // Hall should be marked as out of service only if it's currently out of service
-    const shouldBeMarkedOutOfService = shouldBeOutOfServiceNow;
+    const shouldBeActive = !hasActiveOutOfOrder;
 
-    // Update with CLEAN DATA ONLY
-    return this.prismaService.hall.update({
-      where: { id: hallId },
-      data: {
-        name: payload.name?.trim(),
-        description: payload.description?.trim(),
-        capacity: Number(payload.capacity) || 0,
-        chargesMembers: Number(payload.chargesMembers) || 0,
-        chargesGuests: Number(payload.chargesGuests) || 0,
-        // Keep hall active if it's only scheduled for future maintenance
-        isActive: !!shouldBeActive,
-        // Only set isOutOfService to true if it's currently out of service
-        isOutOfService: !!shouldBeMarkedOutOfService,
-        outOfServiceReason: payload.outOfServiceReason?.trim() || null,
-        outOfServiceFrom: outOfServiceFrom,
-        outOfServiceTo: outOfServiceTo,
-        images: finalImages,
-      },
+    // Perform transaction to update hall and out-of-order periods
+    return await this.prismaService.$transaction(async (prisma) => {
+      // Delete all existing out-of-order periods
+      await prisma.hallOutOfOrder.deleteMany({
+        where: { hallId },
+      });
+
+      // Update hall with new data
+      const updatedHall = await prisma.hall.update({
+        where: { id: hallId },
+        data: {
+          name: payload.name?.trim(),
+          description: payload.description?.trim(),
+          capacity: Number(payload.capacity) || 0,
+          chargesMembers: Number(payload.chargesMembers) || 0,
+          chargesGuests: Number(payload.chargesGuests) || 0,
+          isActive: shouldBeActive,
+          images: finalImages,
+        },
+      });
+
+      // Create new out-of-order periods if any
+      if (newOutOfOrderPeriods.length > 0) {
+        await prisma.hallOutOfOrder.createMany({
+          data: newOutOfOrderPeriods.map((period) => ({
+            hallId,
+            reason: period.reason,
+            startDate: new Date(period.startDate),
+            endDate: new Date(period.endDate),
+          })),
+        });
+      }
+
+      // Fetch complete hall data
+      return await prisma.hall.findUnique({
+        where: { id: hallId },
+        include: { outOfOrders: true },
+      });
     });
   }
 
@@ -371,56 +370,56 @@ export class HallService {
           },
         });
 
-        // Check for out-of-service conflicts
-        const outOfServiceHalls = await prisma.hall.findMany({
+        // Check for out-of-order period conflicts
+        const outOfOrderHalls = await prisma.hall.findMany({
           where: {
             id: { in: hallIds },
-            OR: [
-              {
-                // Currently out of service
-                isOutOfService: true,
-              },
-              {
-                // Scheduled out of service during reservation period
+            outOfOrders: {
+              some: {
+                // Check if any out-of-order period overlaps with reservation period
                 AND: [
-                  { outOfServiceFrom: { not: null } },
-                  { outOfServiceTo: { not: null } },
-                  {
-                    OR: [
-                      {
-                        // Out of service period overlaps with reservation
-                        outOfServiceFrom: { lte: reservedTo },
-                        outOfServiceTo: { gte: reservedFrom },
-                      },
-                    ],
-                  },
+                  { startDate: { lte: reservedTo } },
+                  { endDate: { gte: reservedFrom } },
                 ],
               },
-            ],
+            },
           },
-          select: {
-            name: true,
-            outOfServiceFrom: true,
-            outOfServiceTo: true,
-            isOutOfService: true,
+          include: {
+            outOfOrders: {
+              where: {
+                AND: [
+                  { startDate: { lte: reservedTo } },
+                  { endDate: { gte: reservedFrom } },
+                ],
+              },
+            },
           },
         });
 
-        if (outOfServiceHalls.length > 0) {
-          const conflicts = outOfServiceHalls.map((hall) => {
-            if (hall.isOutOfService) {
-              return `Hall "${hall.name}" is currently out of service`;
-            } else {
-              return `Hall "${hall.name}" is out of service from ${formatPakistanDate(hall.outOfServiceFrom!)} to ${formatPakistanDate(hall.outOfServiceTo!)}`;
-            }
+        if (outOfOrderHalls.length > 0) {
+          const conflicts = outOfOrderHalls.map((hall: any) => {
+            const conflictingPeriods = hall.outOfOrders
+              .filter((period: any) => {
+                const periodStart = new Date(period.startDate);
+                const periodEnd = new Date(period.endDate);
+                return periodStart <= reservedTo && periodEnd >= reservedFrom;
+              })
+              .map((period) => {
+                const startDate = new Date(period.startDate);
+                const endDate = new Date(period.endDate);
+                return `${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}: ${period.reason}`;
+              });
+
+            return `Hall "${hall.name}" has out-of-order periods: ${conflictingPeriods.join('; ')}`;
           });
+
           throw new HttpException(
-            `Out of service conflicts: ${conflicts.join(', ')}`,
+            `Out-of-order conflicts: ${conflicts.join(', ')}`,
             HttpStatus.CONFLICT,
           );
         }
 
-        // Now check for booking conflicts (excluding the ones we just deleted)
+        // Check for booking conflicts (excluding the ones we just deleted)
         const conflictingBookings = await prisma.hallBooking.findMany({
           where: {
             hallId: { in: hallIds },
@@ -476,6 +475,61 @@ export class HallService {
           );
         }
 
+        // Check if halls are active
+        const inactiveHalls = await prisma.hall.findMany({
+          where: {
+            id: { in: hallIds },
+            isActive: false,
+          },
+          select: { name: true, id: true },
+        });
+
+        if (inactiveHalls.length > 0) {
+          // For inactive halls that have no active out-of-order periods
+          // during the reservation period, allow reservation
+          const allowedInactiveHalls: any[] = [];
+          const deniedInactiveHalls: any[] = [];
+
+          for (const hall of inactiveHalls) {
+            // Check if hall has any out-of-order periods during reservation period
+            const hasOutOfOrderDuringPeriod =
+              await prisma.hallOutOfOrder.findFirst({
+                where: {
+                  hallId: hall.id,
+                  AND: [
+                    { startDate: { lte: reservedTo } },
+                    { endDate: { gte: reservedFrom } },
+                  ],
+                },
+              });
+
+            if (hasOutOfOrderDuringPeriod) {
+              deniedInactiveHalls.push(hall.name);
+            } else {
+              allowedInactiveHalls.push(hall.id);
+            }
+          }
+
+          if (deniedInactiveHalls.length > 0) {
+            throw new HttpException(
+              `Cannot reserve inactive halls with active out-of-order periods: ${deniedInactiveHalls.join(', ')}`,
+              HttpStatus.CONFLICT,
+            );
+          }
+
+          // Update inactive halls without out-of-order conflicts to active
+          if (allowedInactiveHalls.length > 0) {
+            await prisma.hall.updateMany({
+              where: {
+                id: { in: allowedInactiveHalls },
+              },
+              data: {
+                isActive: true,
+              },
+            });
+          }
+        }
+
         // Create new reservations
         const reservations = hallIds.map((hallId) => ({
           hallId,
@@ -485,7 +539,19 @@ export class HallService {
           timeSlot: timeSlot,
         }));
 
-        await prisma.hallReservation.createMany({ data: reservations });
+        const createdReservations = await prisma.hallReservation.createMany({
+          data: reservations,
+        });
+
+        // Update hall reserved status
+        await prisma.hall.updateMany({
+          where: {
+            id: { in: hallIds },
+          },
+          data: {
+            isReserved: true,
+          },
+        });
 
         return {
           message: `${hallIds.length} hall(s) reserved successfully for ${timeSlot.toLowerCase()} slot`,
@@ -493,6 +559,9 @@ export class HallService {
           fromDate: reservedFrom.toISOString(),
           toDate: reservedTo.toISOString(),
           timeSlot: timeSlot,
+          updatedInactiveHalls: inactiveHalls
+            .filter((h) => hallIds.some((id) => id === h.id && h.name))
+            .map((h) => h.name),
         };
       });
     } else {
@@ -531,49 +600,68 @@ export class HallService {
           },
         });
 
-        // Check if halls still have other reservations
-        const hallsWithRemainingReservations =
+        // Check if halls have any other upcoming reservations
+        const upcomingReservations =
           await this.prismaService.hallReservation.findMany({
             where: {
               hallId: { in: hallIds },
-              reservedFrom: { gte: new Date() }, // Only count future reservations
-              reservedTo: { gte: new Date() },
-              timeSlot: { in: ['MORNING', 'EVENING', 'NIGHT'] },
-              OR: [
-                {
-                  reservedFrom: { lte: new Date() },
-                  reservedTo: { gte: new Date() },
-                },
-                {
-                  reservedFrom: { gte: new Date() },
-                },
-              ],
+              reservedTo: { gte: new Date() }, // Only count reservations that haven't ended yet
             },
             select: { hallId: true },
             distinct: ['hallId'],
           });
 
-        const hallIdsWithReservations = hallsWithRemainingReservations.map(
+        const hallIdsWithUpcomingReservations = upcomingReservations.map(
           (r) => r.hallId,
         );
-
-        // Update hall reserved status - set to false for halls with no remaining reservations
-        const hallIdsWithoutReservations = hallIds.filter(
-          (id) => !hallIdsWithReservations.includes(id),
+        const hallIdsWithoutUpcomingReservations = hallIds.filter(
+          (id) => !hallIdsWithUpcomingReservations.includes(id),
         );
 
-        if (hallIdsWithoutReservations.length > 0) {
+        // Update hall reserved status - set to false for halls with no upcoming reservations
+        if (hallIdsWithoutUpcomingReservations.length > 0) {
           await this.prismaService.hall.updateMany({
-            where: { id: { in: hallIdsWithoutReservations } },
+            where: { id: { in: hallIdsWithoutUpcomingReservations } },
             data: { isReserved: false },
           });
+        }
+
+        // Check if halls should be marked as inactive based on out-of-order periods
+        const now = new Date();
+        const hallsToCheck = await this.prismaService.hall.findMany({
+          where: {
+            id: { in: hallIds },
+          },
+          include: {
+            outOfOrders: {
+              where: {
+                endDate: { gte: now }, // Only check periods that haven't ended
+              },
+            },
+          },
+        });
+
+        // Update halls that have current out-of-order periods
+        for (const hall of hallsToCheck) {
+          const hasCurrentOutOfOrder = hall.outOfOrders.some((period) => {
+            const startDate = new Date(period.startDate);
+            const endDate = new Date(period.endDate);
+            return startDate <= now && endDate >= now;
+          });
+
+          if (hasCurrentOutOfOrder && hall.isActive) {
+            await this.prismaService.hall.update({
+              where: { id: hall.id },
+              data: { isActive: false },
+            });
+          }
         }
 
         return {
           message: `${result.count} reservation(s) removed for the specified dates and ${timeSlot.toLowerCase()} slot`,
           count: result.count,
-          hallsStillReserved: hallIdsWithReservations.length,
-          hallsFreed: hallIdsWithoutReservations.length,
+          hallsStillReserved: hallIdsWithUpcomingReservations.length,
+          hallsFreed: hallIdsWithoutUpcomingReservations.length,
         };
       } else {
         // If no specific dates and time slot provided, don't remove any reservations

@@ -74,7 +74,33 @@ export class MemberService {
   }
 
   async removeMember(memberID: string) {
-    return 'member deleted';
+    // Check if member exists
+    const memberExists = await this.prismaService.member.findFirst({
+      where: { Membership_No: memberID.toString() },
+    });
+    
+    if (!memberExists) {
+      throw new HttpException('Member not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Delete member (Prisma will handle cascading deletes based on schema)
+    try {
+      return await this.prismaService.member.delete({
+        where: { Membership_No: memberID },
+      });
+    } catch (error) {
+      // If there are foreign key constraints, provide a helpful error
+      if (error.code === 'P2003') {
+        throw new HttpException(
+          'Cannot delete member with existing bookings or dependencies. Please delete related records first.',
+          HttpStatus.BAD_REQUEST
+        );
+      }
+      throw new HttpException(
+        'Failed to delete member',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   async getMembers({ page, limit, search, status }) {

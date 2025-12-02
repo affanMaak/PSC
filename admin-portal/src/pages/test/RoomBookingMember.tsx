@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { checkAvailRooms, getRoomTypes, generateInvoice } from "../../../config/apis";
+import {getRoomTypes, generateInvoice } from "../../../config/apis";
 import { useToast } from "@/hooks/use-toast";
 
 export default function RoomTypeDatePicker() {
@@ -131,10 +131,11 @@ export default function RoomTypeDatePicker() {
 
         setCheckingAvailability(true);
         try {
-            const res = await checkAvailRooms(selectedRoomType, {
-                from: format(fromDate, 'yyyy-MM-dd'),
-                to: format(toDate, 'yyyy-MM-dd'),
-            });
+            // const res = await checkAvailRooms(selectedRoomType, {
+            //     from: format(fromDate, 'yyyy-MM-dd'),
+            //     to: format(toDate, 'yyyy-MM-dd'),
+            // });
+            const res = []
 
             // Simply check if the array has any items, don't filter anything
             const hasAvailableRooms = (res || []).length > 0;
@@ -818,3 +819,4 @@ export default function RoomTypeDatePicker() {
         </div>
     );
 }
+

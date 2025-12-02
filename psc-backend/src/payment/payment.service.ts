@@ -6,7 +6,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { getPakistanDate, parsePakistanDate } from 'src/utils/time';
+import {
+  formatPakistanDate,
+  getPakistanDate,
+  parsePakistanDate,
+} from 'src/utils/time';
 
 @Injectable()
 export class PaymentService {
@@ -43,8 +47,6 @@ export class PaymentService {
   ///////////////////////////////////////////////////////////////////////
   // generateInvoice
   async genInvoiceRoom(roomType: number, bookingData: any) {
-    // console.log('Booking data received:', bookingData);
-
     // Validate room type exists
     const typeExists = await this.prismaService.roomType.findFirst({
       where: { id: roomType },
@@ -52,8 +54,8 @@ export class PaymentService {
     if (!typeExists) throw new NotFoundException(`Room type not found`);
 
     // Parse dates
-    const checkIn = new Date(bookingData.from);
-    const checkOut = new Date(bookingData.to);
+    const checkIn = parsePakistanDate(bookingData.from);
+    const checkOut = parsePakistanDate(bookingData.to);
 
     // Validate dates
     if (checkIn >= checkOut) {
@@ -62,7 +64,7 @@ export class PaymentService {
       );
     }
 
-    const today = new Date();
+    const today = getPakistanDate();
     today.setHours(0, 0, 0, 0);
 
     const checkInDateOnly = new Date(checkIn);
@@ -72,12 +74,10 @@ export class PaymentService {
       throw new BadRequestException('Check-in date cannot be in the past');
     }
 
-    // Calculate number of nights
+    // Calculate number of nights and price
     const nights = Math.ceil(
       (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24),
     );
-
-    // Calculate total price
     const pricePerNight =
       bookingData.pricingType === 'member'
         ? typeExists.priceMember
@@ -85,168 +85,82 @@ export class PaymentService {
     const totalPrice =
       Number(pricePerNight) * nights * bookingData.numberOfRooms;
 
-    // Check for available rooms
+    // Get available rooms with a single complex query
     const availableRooms = await this.prismaService.room.findMany({
       where: {
         roomTypeId: roomType,
-        // isActive: true,
-        // isOutOfOrder: false,
-        // isBooked: false,
+        isActive: true,
+        // Not on active hold
         OR: [
-          // Rooms with no reservations or on hold (expired holds are considered available)
-          {
-            onHold: false,
-          },
-          // Rooms with expired holds
-          {
-            onHold: true,
-            holdExpiry: { lt: new Date() },
-          },
-          // Rooms with reservations that don't conflict with selected dates
-          {
-            reservations: {
-              none: {
-                OR: [
-                  // Reservation starts during booking period
-                  {
-                    reservedFrom: {
-                      gte: checkIn,
-                      lt: checkOut,
-                    },
-                  },
-                  // Reservation ends during booking period
-                  {
-                    reservedTo: {
-                      gt: checkIn,
-                      lte: checkOut,
-                    },
-                  },
-                  // Reservation spans the entire booking period
-                  {
-                    reservedFrom: { lte: checkIn },
-                    reservedTo: { gte: checkOut },
-                  },
-                ],
-              },
-            },
-          },
+          { onHold: false },
+          { onHold: true, holdExpiry: { lt: new Date() } },
         ],
-      },
-      include: {
+        // No reservations during requested period
         reservations: {
-          where: {
-            OR: [
-              { reservedTo: { gte: new Date() } }, // Current and future reservations
+          none: {
+            reservedFrom: { lt: checkOut },
+            reservedTo: { gt: checkIn },
+          },
+        },
+        // No bookings during requested period
+        bookings: {
+          none: {
+            checkIn: { lt: checkOut },
+            checkOut: { gt: checkIn },
+          },
+        },
+        // No out-of-order periods during requested period
+        outOfOrders: {
+          none: {
+            AND: [
+              { startDate: { lte: checkOut } },
+              { endDate: { gte: checkIn } },
             ],
           },
         },
       },
+      orderBy: {
+        roomNumber: 'asc',
+      },
     });
-
-    // Filter out rooms that are currently reserved or on hold (not expired)
-    const trulyAvailableRooms = availableRooms.filter(
-      (room) =>
-        // !room.isReserved &&
-        // !room.isBooked &&
-        !room.onHold || room.holdExpiry! < new Date(),
-    );
-
-    // console.log(
-    //   `Found ${trulyAvailableRooms.length} available rooms out of ${availableRooms.length} total rooms of this type`,
-    // );
-    console.log(availableRooms);
-    console.log(trulyAvailableRooms);
 
     // Check if enough rooms are available
-    if (trulyAvailableRooms.length < bookingData.numberOfRooms) {
+    if (availableRooms.length < bookingData.numberOfRooms) {
+      // Get total count of rooms of this type for better error message
+      const totalRoomsOfType = await this.prismaService.room.count({
+        where: { roomTypeId: roomType, isActive: true },
+      });
+
+      const unavailableCount = totalRoomsOfType - availableRooms.length;
+
       throw new ConflictException(
-        `Only ${trulyAvailableRooms.length} room(s) available. Requested: ${bookingData.numberOfRooms}`,
+        `Only ${availableRooms.length} room(s) available. Requested: ${bookingData.numberOfRooms}. ` +
+          `${unavailableCount} room(s) are either reserved, booked, on maintenance, or on active hold.`,
       );
     }
 
-    // Check for overlapping bookings
-    const overlappingBookings = await this.prismaService.roomBooking.findMany({
-      where: {
-        room: {
-          roomTypeId: roomType,
-        },
-        OR: [
-          // Booking starts during selected period
-          {
-            checkIn: {
-              gte: checkIn,
-              lt: checkOut,
-            },
-          },
-          // Booking ends during selected period
-          {
-            checkOut: {
-              gt: checkIn,
-              lte: checkOut,
-            },
-          },
-          // Booking spans the entire selected period
-          {
-            checkIn: { lte: checkIn },
-            checkOut: { gte: checkOut },
-          },
-        ],
-      },
-    });
-
-    if (overlappingBookings.length > 0) {
-      throw new ConflictException(
-        `There are ${overlappingBookings.length} overlapping booking(s) for the selected dates`,
-      );
-    }
-
-    // Check for out-of-order rooms during the selected period
-    const outOfOrderRooms = await this.prismaService.room.findMany({
-      where: {
-        roomTypeId: roomType,
-        isOutOfOrder: true,
-        OR: [
-          {
-            outOfOrderFrom: { lte: checkOut },
-            outOfOrderTo: { gte: checkIn },
-          },
-        ],
-      },
-    });
-
-    if (outOfOrderRooms.length > 0) {
-      // console.log(
-      //   `Warning: ${outOfOrderRooms.length} room(s) are out of order during selected period`,
-      // );
-    }
-
-    // Select specific rooms for booking (first X available rooms)
-    const selectedRooms = trulyAvailableRooms.slice(
-      0,
-      bookingData.numberOfRooms,
-    );
+    // Select specific rooms for booking
+    const selectedRooms = availableRooms.slice(0, bookingData.numberOfRooms);
 
     // Calculate expiry time (3 minutes from now)
-    const holdExpiry = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes in milliseconds
-    const invoiceDueDate = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes in milliseconds
+    const holdExpiry = new Date(Date.now() + 3 * 60 * 1000);
+    const invoiceDueDate = new Date(Date.now() + 3 * 60 * 1000);
 
-    // Put rooms on hold with 3-minute expiry (NO temporary reservations)
+    // Put rooms on hold
     try {
+      const membershipNoString = String(bookingData.membership_no);
       const holdPromises = selectedRooms.map((room) =>
         this.prismaService.room.update({
           where: { id: room.id },
           data: {
             onHold: true,
             holdExpiry: holdExpiry,
-            holdBy: bookingData.membership_no?.toString(),
+            holdBy: membershipNoString,
           },
         }),
       );
 
       await Promise.all(holdPromises);
-      // console.log(
-      //   `Put ${selectedRooms.length} rooms on hold until ${holdExpiry}`,
-      // );
     } catch (holdError) {
       console.error('Failed to put rooms on hold:', holdError);
       throw new InternalServerErrorException(
@@ -254,7 +168,7 @@ export class PaymentService {
       );
     }
 
-    // Prepare booking data for database (to be created after successful payment)
+    // Prepare booking data
     const bookingRecord = {
       roomTypeId: roomType,
       checkIn,
@@ -266,19 +180,21 @@ export class PaymentService {
       specialRequest: bookingData.specialRequest || '',
       totalPrice,
       selectedRoomIds: selectedRooms.map((room) => room.id),
+      selectedRoomNumbers: selectedRooms.map((room) => room.roomNumber),
     };
 
-    // console.log('Booking record prepared:', bookingRecord);
-
-    // Call payment gateway to generate invoice
+    // Call payment gateway
     try {
       const invoiceResponse = await this.callPaymentGateway({
         amount: totalPrice,
         consumerInfo: {
-          membership_no: bookingData.membership_no,
+          membership_no: String(bookingData.membership_no),
           roomType: typeExists.type,
           nights: nights,
           rooms: bookingData.numberOfRooms,
+          selectedRooms: selectedRooms.map((room) => room.roomNumber),
+          checkIn: formatPakistanDate(checkIn),
+          checkOut: formatPakistanDate(checkOut),
         },
         bookingData: bookingRecord,
       });
@@ -305,10 +221,11 @@ export class PaymentService {
           ],
           BookingSummary: {
             RoomType: typeExists.type,
-            CheckIn: bookingData.from,
-            CheckOut: bookingData.to,
+            CheckIn: formatPakistanDate(checkIn),
+            CheckOut: formatPakistanDate(checkOut),
             Nights: nights,
             Rooms: bookingData.numberOfRooms,
+            SelectedRooms: selectedRooms.map((room) => room.roomNumber),
             Adults: bookingData.numberOfAdults,
             Children: bookingData.numberOfChildren,
             PricePerNight: pricePerNight.toString(),
@@ -316,7 +233,6 @@ export class PaymentService {
             HoldExpiresAt: holdExpiry.toISOString(),
           },
         },
-        // Include temporary data for cleanup if payment fails
         TemporaryData: {
           roomIds: selectedRooms.map((room) => room.id),
           holdExpiry: holdExpiry,
@@ -326,17 +242,9 @@ export class PaymentService {
       // Clean up room holds if payment gateway fails
       try {
         await this.prismaService.room.updateMany({
-          where: {
-            id: { in: selectedRooms.map((room) => room.id) },
-          },
-          data: {
-            onHold: false,
-            holdExpiry: null,
-            holdBy: null,
-          },
+          where: { id: { in: selectedRooms.map((room) => room.id) } },
+          data: { onHold: false, holdExpiry: null, holdBy: null },
         });
-
-        // console.log('Cleaned up room holds after payment failure');
       } catch (cleanupError) {
         console.error('Failed to clean up room holds:', cleanupError);
       }
@@ -353,6 +261,9 @@ export class PaymentService {
     // ── 1. VALIDATE HALL EXISTS ─────────────────────────────
     const hallExists = await this.prismaService.hall.findFirst({
       where: { id: hallId },
+      include: {
+        outOfOrders: true, // Include out-of-order periods
+      },
     });
 
     if (!hallExists) {
@@ -408,47 +319,39 @@ export class PaymentService {
       }
     }
 
-    // ── 6. CHECK OUT OF SERVICE PERIODS ─────────────────────
-    if (hallExists.isOutOfService) {
-      const outOfServiceFrom = hallExists.outOfServiceFrom
-        ? new Date(hallExists.outOfServiceFrom)
-        : null;
-      const outOfServiceTo = hallExists.outOfServiceTo
-        ? new Date(hallExists.outOfServiceTo)
-        : null;
+    // ── 6. CHECK OUT-OF-ORDER PERIODS ──────────────────────
+    // Check for conflicts with out-of-order periods
+    const conflictingOutOfOrder = hallExists.outOfOrders?.find((period) => {
+      const periodStart = new Date(period.startDate);
+      const periodEnd = new Date(period.endDate);
+      periodStart.setHours(0, 0, 0, 0);
+      periodEnd.setHours(0, 0, 0, 0);
 
-      if (outOfServiceFrom && outOfServiceTo) {
-        outOfServiceFrom.setHours(0, 0, 0, 0);
-        outOfServiceTo.setHours(0, 0, 0, 0);
+      return bookingDate >= periodStart && bookingDate <= periodEnd;
+    });
 
-        if (bookingDate >= outOfServiceFrom && bookingDate <= outOfServiceTo) {
-          throw new ConflictException(
-            `Hall '${hallExists.name}' is out of service from ${outOfServiceFrom.toLocaleDateString()} to ${outOfServiceTo.toLocaleDateString()}`,
-          );
-        }
-      } else if (hallExists.isOutOfService) {
-        throw new ConflictException(
-          `Hall '${hallExists.name}' is currently out of service`,
-        );
-      }
+    if (conflictingOutOfOrder) {
+      const startDate = new Date(conflictingOutOfOrder.startDate);
+      const endDate = new Date(conflictingOutOfOrder.endDate);
+
+      throw new ConflictException(
+        `Hall '${hallExists.name}' is out of order from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}: ${conflictingOutOfOrder.reason}`,
+      );
     }
 
-    // Check for scheduled maintenance
-    if (
-      hallExists.outOfServiceFrom &&
-      hallExists.outOfServiceTo &&
-      !hallExists.isOutOfService
-    ) {
-      const scheduledFrom = new Date(hallExists.outOfServiceFrom);
-      scheduledFrom.setHours(0, 0, 0, 0);
-      const scheduledTo = new Date(hallExists.outOfServiceTo);
-      scheduledTo.setHours(0, 0, 0, 0);
+    // Check if hall is currently out of order (active period)
+    const now = new Date();
+    const isCurrentlyOutOfOrder = hallExists.outOfOrders?.some((period) => {
+      const periodStart = new Date(period.startDate);
+      const periodEnd = new Date(period.endDate);
+      return now >= periodStart && now <= periodEnd;
+    });
 
-      if (bookingDate >= scheduledFrom && bookingDate <= scheduledTo) {
-        throw new ConflictException(
-          `Hall '${hallExists.name}' has scheduled maintenance from ${scheduledFrom.toLocaleDateString()}`,
-        );
-      }
+    // If hall is currently out of order and not active
+    if (isCurrentlyOutOfOrder && !hallExists.isActive) {
+      throw new ConflictException(
+        `Hall '${hallExists.name}' is currently out of order`,
+      );
     }
 
     // ── 7. CHECK FOR EXISTING BOOKINGS ──────────────────────
@@ -509,7 +412,7 @@ export class PaymentService {
         data: {
           onHold: true,
           holdExpiry: holdExpiry,
-          holdBy: bookingData.membership_no?.toString(),
+          holdBy: String(bookingData.membership_no),
         },
       });
 
@@ -629,6 +532,9 @@ export class PaymentService {
       where: { id: lawnId },
       include: {
         lawnCategory: true,
+        outOfOrders: {
+          orderBy: { startDate: 'asc' },
+        },
       },
     });
 
@@ -692,50 +598,54 @@ export class PaymentService {
       }
     }
 
-    // ── 7. CHECK OUT OF SERVICE PERIODS ─────────────────────
-    if (lawnExists.isOutOfService) {
-      const outOfServiceFrom = lawnExists.outOfServiceFrom
-        ? new Date(lawnExists.outOfServiceFrom)
-        : null;
-      const outOfServiceTo = lawnExists.outOfServiceTo
-        ? new Date(lawnExists.outOfServiceTo)
-        : null;
+    // ── 7. CHECK MULTIPLE OUT OF SERVICE PERIODS ─────────────────────
+    // First, check if lawn is currently out of service (based on current periods)
+    const isCurrentlyOutOfOrder = this.isCurrentlyOutOfOrder(
+      lawnExists.outOfOrders,
+    );
 
-      if (outOfServiceFrom && outOfServiceTo) {
-        outOfServiceFrom.setHours(0, 0, 0, 0);
-        outOfServiceTo.setHours(0, 0, 0, 0);
+    if (isCurrentlyOutOfOrder) {
+      // Find the current out-of-order period
+      const currentPeriod = this.getCurrentOutOfOrderPeriod(
+        lawnExists.outOfOrders,
+      );
+      if (currentPeriod) {
+        throw new ConflictException(
+          `Lawn '${lawnExists.description}' is currently out of service from ${currentPeriod.startDate.toLocaleDateString()} to ${currentPeriod.endDate.toLocaleDateString()}${currentPeriod.reason ? `: ${currentPeriod.reason}` : ''}`,
+        );
+      }
+    }
 
-        if (bookingDate >= outOfServiceFrom && bookingDate <= outOfServiceTo) {
+    // ── 8. CHECK IF BOOKING DATE FALLS WITHIN ANY OUT-OF-ORDER PERIOD ──
+    if (lawnExists.outOfOrders && lawnExists.outOfOrders.length > 0) {
+      const conflictingPeriod = lawnExists.outOfOrders.find((period) => {
+        const periodStart = new Date(period.startDate);
+        const periodEnd = new Date(period.endDate);
+        periodStart.setHours(0, 0, 0, 0);
+        periodEnd.setHours(0, 0, 0, 0);
+
+        return bookingDate >= periodStart && bookingDate <= periodEnd;
+      });
+
+      if (conflictingPeriod) {
+        const startDate = new Date(conflictingPeriod.startDate);
+        const endDate = new Date(conflictingPeriod.endDate);
+
+        const isScheduled = startDate > today;
+
+        if (isScheduled) {
           throw new ConflictException(
-            `Lawn '${lawnExists.description}' is out of service from ${outOfServiceFrom.toLocaleDateString()} to ${outOfServiceTo.toLocaleDateString()}`,
+            `Lawn '${lawnExists.description}' has scheduled maintenance from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}${conflictingPeriod.reason ? `: ${conflictingPeriod.reason}` : ''}`,
+          );
+        } else {
+          throw new ConflictException(
+            `Lawn '${lawnExists.description}' is out of service from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}${conflictingPeriod.reason ? `: ${conflictingPeriod.reason}` : ''}`,
           );
         }
-      } else if (lawnExists.isOutOfService) {
-        throw new ConflictException(
-          `Lawn '${lawnExists.description}' is currently out of service${lawnExists.outOfServiceReason ? `: ${lawnExists.outOfServiceReason}` : ''}`,
-        );
       }
     }
 
-    // Check for scheduled maintenance
-    if (
-      lawnExists.outOfServiceFrom &&
-      lawnExists.outOfServiceTo &&
-      !lawnExists.isOutOfService
-    ) {
-      const scheduledFrom = new Date(lawnExists.outOfServiceFrom);
-      scheduledFrom.setHours(0, 0, 0, 0);
-      const scheduledTo = new Date(lawnExists.outOfServiceTo);
-      scheduledTo.setHours(0, 0, 0, 0);
-
-      if (bookingDate >= scheduledFrom && bookingDate <= scheduledTo) {
-        throw new ConflictException(
-          `Lawn '${lawnExists.description}' has scheduled maintenance from ${scheduledFrom.toLocaleDateString()}`,
-        );
-      }
-    }
-
-    // ── 8. CHECK GUEST COUNT AGAINST CAPACITY ───────────────
+    // ── 9. CHECK GUEST COUNT AGAINST CAPACITY ───────────────
     if (bookingData.numberOfGuests < (lawnExists.minGuests || 0)) {
       throw new ConflictException(
         `Number of guests (${bookingData.numberOfGuests}) is below the minimum requirement of ${lawnExists.minGuests} for this lawn`,
@@ -748,7 +658,7 @@ export class PaymentService {
       );
     }
 
-    // ── 9. CHECK FOR EXISTING BOOKINGS ──────────────────────
+    // ── 10. CHECK FOR EXISTING BOOKINGS ──────────────────────
     const existingBooking = await this.prismaService.lawnBooking.findFirst({
       where: {
         lawnId: lawnExists.id,
@@ -769,25 +679,25 @@ export class PaymentService {
       );
     }
 
-    // ── 10. CALCULATE TOTAL PRICE ───────────────────────────
+    // ── 11. CALCULATE TOTAL PRICE ───────────────────────────
     const basePrice =
       bookingData.pricingType === 'member'
         ? lawnExists.memberCharges
         : lawnExists.guestCharges;
     const totalPrice = Number(basePrice);
 
-    // ── 11. CALCULATE HOLD EXPIRY ───────────────────────────
+    // ── 12. CALCULATE HOLD EXPIRY ───────────────────────────
     const holdExpiry = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
     const invoiceDueDate = new Date(Date.now() + 3 * 60 * 1000);
 
-    // ── 12. PUT LAWN ON HOLD ────────────────────────────────
+    // ── 13. PUT LAWN ON HOLD ────────────────────────────────
     try {
       await this.prismaService.lawn.update({
         where: { id: lawnExists.id },
         data: {
           onHold: true,
           holdExpiry: holdExpiry,
-          holdBy: bookingData.membership_no?.toString(),
+          holdBy: String(bookingData.membership_no),
         },
       });
 
@@ -801,7 +711,7 @@ export class PaymentService {
       );
     }
 
-    // ── 13. PREPARE BOOKING DATA ────────────────────────────
+    // ── 14. PREPARE BOOKING DATA ────────────────────────────
     const bookingRecord = {
       lawnId: lawnExists.id,
       bookingDate: bookingData.bookingDate,
@@ -814,7 +724,7 @@ export class PaymentService {
 
     console.log('Lawn booking record prepared:', bookingRecord);
 
-    // ── 14. GENERATE INVOICE ────────────────────────────────
+    // ── 15. GENERATE INVOICE ────────────────────────────────
     try {
       const timeSlotMap = {
         MORNING: 'Morning (8:00 AM - 2:00 PM)',
@@ -867,6 +777,13 @@ export class PaymentService {
             BasePrice: basePrice.toString(),
             TotalAmount: totalPrice.toString(),
             HoldExpiresAt: holdExpiry.toISOString(),
+            MaintenancePeriods:
+              lawnExists.outOfOrders.length > 0
+                ? lawnExists.outOfOrders.map((period) => ({
+                    dates: `${new Date(period.startDate).toLocaleDateString()} - ${new Date(period.endDate).toLocaleDateString()}`,
+                    reason: period.reason,
+                  }))
+                : [],
           },
         },
         // Include temporary data for cleanup if payment fails
@@ -876,7 +793,7 @@ export class PaymentService {
         },
       };
     } catch (paymentError) {
-      // ── 15. CLEANUP ON FAILURE ──────────────────────────────
+      // ── 16. CLEANUP ON FAILURE ──────────────────────────────
       console.error('Payment gateway error:', paymentError);
 
       try {
@@ -898,6 +815,29 @@ export class PaymentService {
         'Failed to generate invoice with payment gateway',
       );
     }
+  }
+
+  // Helper methods
+  private isCurrentlyOutOfOrder(outOfOrders: any[]): boolean {
+    if (!outOfOrders || outOfOrders.length === 0) return false;
+
+    const now = new Date();
+    return outOfOrders.some((period) => {
+      const start = new Date(period.startDate);
+      const end = new Date(period.endDate);
+      return start <= now && end >= now;
+    });
+  }
+
+  private getCurrentOutOfOrderPeriod(outOfOrders: any[]): any | null {
+    if (!outOfOrders || outOfOrders.length === 0) return null;
+
+    const now = new Date();
+    return outOfOrders.find((period) => {
+      const start = new Date(period.startDate);
+      const end = new Date(period.endDate);
+      return start <= now && end >= now;
+    });
   }
 
   async genInvoicePhotoshoot(photoshootId: number, bookingData: any) {
@@ -953,7 +893,9 @@ export class PaymentService {
     // Validate time slot is between 9am and 6pm (since booking is 2 hours, last slot ends at 8pm)
     const bookingHour = startTime.getHours();
     if (bookingHour < 9 || bookingHour >= 18) {
-      throw new BadRequestException('Photoshoot bookings are only available between 9:00 AM and 6:00 PM');
+      throw new BadRequestException(
+        'Photoshoot bookings are only available between 9:00 AM and 6:00 PM',
+      );
     }
 
     // ── 5. CALCULATE END TIME ───────────────────────────────
@@ -1048,6 +990,9 @@ export class PaymentService {
   async getMemberVouchers(membershipNo: string) {
     return await this.prismaService.paymentVoucher.findMany({
       where: { membership_no: membershipNo },
+      include: {
+        member: true,
+      },
       orderBy: { issued_at: 'desc' },
     });
   }

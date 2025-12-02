@@ -44,6 +44,9 @@ export interface Booking {
   totalPrice: number;
   paymentStatus: "UNPAID" | "HALF_PAID" | "PAID";
   pricingType: "member" | "guest";
+  paidBy: "MEMBER" | "GUEST",
+  guestContact: "",
+  guestName: "",
   paidAmount: number;
   pendingAmount: number;
   member?: Member;
@@ -68,6 +71,9 @@ export interface BookingForm {
   roomTypeId: string;
   roomId: string;
   pricingType: "member" | "guest";
+  paidBy: "MEMBER" | "GUEST" ,
+  guestName: "",
+  guestContact: "",
   checkIn: string;
   checkOut: string;
   totalPrice: number;

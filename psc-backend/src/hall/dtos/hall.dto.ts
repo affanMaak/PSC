@@ -1,5 +1,23 @@
 import { IsNotEmpty, IsOptional } from "class-validator";
 
+
+export class OutOfOrderPeriod {
+  @IsOptional()
+  id?: string;
+  @IsNotEmpty({message: "reason must be provided"})
+  reason: string;
+  @IsNotEmpty({message: "start date must be provided"})
+  startDate: string;
+  @IsNotEmpty({message: "end date must be provided"})
+  endDate: string;
+  @IsOptional()
+  hallId?: string;
+  @IsOptional()
+  createdAt?: string;
+  @IsOptional()
+  updatedAt?: string;
+}
+
 export class HallDto {
     @IsOptional()
     id?: string
@@ -17,16 +35,8 @@ export class HallDto {
 
     @IsNotEmpty({message: "hall activity must be provided"})
     isActive: boolean | string;
-    @IsNotEmpty({message: "hall activity must be provided"})
-    isOutOfService: boolean | string ;
-
     @IsOptional()
-    outOfServiceReason?: string;
-    @IsOptional()
-    outOfServiceFrom?: string;
-    @IsOptional()
-    outOfServiceTo?: string;
-
+    outOfOrders?: OutOfOrderPeriod[];
     @IsOptional()
     existingimgs?: string[]; 
     @IsOptional()

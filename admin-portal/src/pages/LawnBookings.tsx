@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getLawnCategories, getBookings, createBooking, updateBooking, deleteBooking, searchMembers, getVouchers } from "../../config/apis";
+import { FormInput } from "@/components/FormInputs";
+import { UnifiedDatePicker } from "@/components/UnifiedDatePicker";
+import { format } from "date-fns";
 
 interface Member {
   id: number;
@@ -65,6 +68,9 @@ interface LawnBooking {
   entityId?: string;
   member?: Member;
   bookingTime?: string;
+  paidBy?: string;
+  guestName?: string;
+  guestContact?: string;
 }
 
 interface Voucher {
@@ -226,6 +232,12 @@ export default function LawnBookings() {
   const [guestCount, setGuestCount] = useState(0);
   const [eventTime, setEventTime] = useState("NIGHT");
 
+  const [guestSec, setGuestSec] = useState({
+    paidBy: "",
+    guestName: "",
+    guestContact: ""
+  })
+
   // Member search states
   const [memberSearch, setMemberSearch] = useState("");
   const [showMemberResults, setShowMemberResults] = useState(false);
@@ -286,7 +298,7 @@ export default function LawnBookings() {
     isLoading: isLoadingVouchers,
   } = useQuery<Voucher[]>({
     queryKey: ["lawn-vouchers", viewVouchers?.id],
-    queryFn: () => (viewVouchers ? getVouchers("Lawn", viewVouchers.id) : []),
+    queryFn: () => (viewVouchers ? getVouchers("LAWN", viewVouchers.id) : []),
     enabled: !!viewVouchers,
   });
 
@@ -484,6 +496,11 @@ export default function LawnBookings() {
     setSelectedMember(null);
     setMemberSearch("");
     setShowMemberResults(false);
+    setGuestSec({
+      paidBy: "",
+      guestName: "",
+      guestContact: ""
+    });
   };
 
   const handleCreateBooking = () => {
@@ -492,6 +509,7 @@ export default function LawnBookings() {
         title: "Please fill all required fields",
         description: "Member, lawn, booking date, and guest count are required",
         variant: "destructive",
+        duration: 3000
       });
       return;
     }
@@ -521,6 +539,9 @@ export default function LawnBookings() {
       pricingType: pricingType,
       paymentMode: "CASH",
       eventTime: eventTime,
+      paidBy: guestSec.paidBy,
+      guestName: guestSec.guestName,
+      guestContact: guestSec.guestContact
     };
 
     createMutation.mutate(payload);
@@ -763,12 +784,14 @@ export default function LawnBookings() {
                 </div>
                 <div>
                   <Label>Booking Date *</Label>
-                  <Input
-                    type="date"
-                    className="mt-2"
+                  <UnifiedDatePicker
                     value={bookingDate}
-                    onChange={(e) => setBookingDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(date) => {
+                      const dateStr = date ? format(date, "yyyy-MM-dd") : "";
+                      setBookingDate(dateStr);
+                    }}
+                    placeholder="Select booking date"
+                    minDate={new Date()}
                   />
                 </div>
                 <div>
@@ -783,53 +806,68 @@ export default function LawnBookings() {
                     max={selectedLawn ? availableLawns.find((l: Lawn) => l.id.toString() === selectedLawn)?.maxGuests : undefined}
                   />
                 </div>
-                <div className="md:col-span-2">
-                  <Label>Total Price</Label>
-                  <Input
-                    type="text"
-                    className="mt-2 font-bold text-lg"
-                    value={`PKR ${calculatedPrice.toLocaleString()}`}
-                    disabled
-                  />
-                </div>
-                {/* <div>
-                  <Label>Payment Status</Label>
-                  <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UNPAID">Unpaid</SelectItem>
-                      <SelectItem value="HALF_PAID">Half Paid</SelectItem>
-                      <SelectItem value="PAID">Paid</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {paymentStatus === "HALF_PAID" && (
-                  <>
-                    <div>
-                      <Label>Paid Amount (PKR)</Label>
-                      <Input
-                        type="number"
-                        value={paidAmount || ""}
-                        onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
-                        className="mt-2"
-                        placeholder="Enter paid amount"
-                        max={calculatedPrice}
-                      />
+                {pricingType == "guest" && <div className="p-4 rounded-xl border bg-white shadow-sm col-span-full">
+
+                  <h3 className="text-lg font-semibold mb-4">Guest Information</h3>
+
+                  <div className="flex  flex-col">
+
+                    <div className="flex items-center justify-center gap-x-5">
+
+                      <div className="w-1/2">
+                        <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                          Guest Name *
+                        </Label>
+                        {/* {console.log(form)} */}
+
+                        <FormInput
+                          label=""
+                          type="text"
+                          value={guestSec.guestName}
+                          onChange={(val) => setGuestSec((prev) => ({ ...prev, guestName: val }))}
+                        />
+                      </div>
+
+                      <div className="w-1/2">
+                        <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                          Contact
+                        </Label>
+
+                        <FormInput
+                          label=""
+                          type="number"
+                          value={guestSec.guestContact}
+                          onChange={(val) => setGuestSec((prev) => ({ ...prev, guestContact: val }))}
+                          min="0"
+                        />
+                      </div>
+
                     </div>
-                    <div>
-                      <Label>Remaining Amount (PKR)</Label>
-                      <Input
-                        type="number"
-                        value={calculatedPrice - paidAmount}
-                        className="mt-2"
-                        readOnly
-                        disabled
-                      />
+
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <Label className="text-sm font-medium my-2 block whitespace-nowrap">
+                        Who will Pay?
+                      </Label>
+                      <Select
+                        value={guestSec.paidBy}
+                        onValueChange={(val) => setGuestSec((prev) => ({ ...prev, paidBy: val }))}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Who will pay?" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          <SelectItem value="MEMBER">Member</SelectItem>
+                          <SelectItem value="GUEST">Guest</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+
                     </div>
-                  </>
-                )} */}
+
+                  </div>
+                </div>}
+
                 <LawnPaymentSection
                   form={{
                     paymentStatus: paymentStatus,
@@ -1007,11 +1045,14 @@ export default function LawnBookings() {
             </div>
             <div>
               <Label>Booking Date</Label>
-              <Input
-                type="date"
-                value={editBooking?.bookingDate ? new Date(editBooking.bookingDate).toISOString().split('T')[0] : ""}
-                onChange={(e) => setEditBooking(prev => prev ? { ...prev, bookingDate: e.target.value } : null)}
-                className="mt-2"
+              <UnifiedDatePicker
+                value={editBooking?.bookingDate ? new Date(editBooking.bookingDate) : undefined}
+                onChange={(date) => {
+                  const dateStr = date ? format(date, "yyyy-MM-dd") : "";
+                  setEditBooking(prev => prev ? { ...prev, bookingDate: dateStr } : null);
+                }}
+                placeholder="Select booking date"
+                minDate={new Date()}
               />
             </div>
             <div>
@@ -1054,15 +1095,68 @@ export default function LawnBookings() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Total Price (PKR)</Label>
-              <Input
-                type="number"
-                value={editBooking?.totalPrice || ""}
-                onChange={(e) => setEditBooking(prev => prev ? { ...prev, totalPrice: parseFloat(e.target.value) || 0 } : null)}
-                className="mt-2"
-              />
-            </div>
+            <div></div>
+            {editBooking?.pricingType == "guest" && <div className="p-4 rounded-xl border bg-white shadow-sm col-span-full">
+
+              <h3 className="text-lg font-semibold mb-4">Guest Information</h3>
+
+              <div className="flex  flex-col">
+
+                <div className="flex items-center justify-center gap-x-5">
+
+                  <div className="w-1/2">
+                    <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                      Guest Name *
+                    </Label>
+                    {/* {console.log(form)} */}
+
+                    <FormInput
+                      label=""
+                      type="text"
+                      value={editBooking.guestName}
+                      onChange={(val) => setEditBooking((prev) => ({ ...prev, guestName: val }))}
+                    />
+                  </div>
+
+                  <div className="w-1/2">
+                    <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                      Contact
+                    </Label>
+
+                    <FormInput
+                      label=""
+                      type="number"
+                      value={editBooking.guestContact}
+                      onChange={(val) => setEditBooking((prev) => ({ ...prev, guestContact: val }))}
+                      min="0"
+                    />
+                  </div>
+
+                </div>
+
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <Label className="text-sm font-medium my-2 block whitespace-nowrap">
+                    Who will Pay?
+                  </Label>
+                  <Select
+                    value={editBooking.paidBy}
+                    onValueChange={(val) => setEditBooking((prev) => ({ ...prev, paidBy: val }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Who will pay?" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="MEMBER">Member</SelectItem>
+                      <SelectItem value="GUEST">Guest</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+
+                </div>
+
+              </div>
+            </div>}
 
             {/* Payment Section with Accounting Summary */}
             <LawnPaymentSection
@@ -1125,6 +1219,9 @@ export default function LawnBookings() {
                   pricingType: editBooking.pricingType || "member",
                   paymentMode: "CASH",
                   eventTime: editBooking.bookingTime || "NIGHT",
+                  paidBy: editBooking.paidBy,
+                  guestName: editBooking.guestName,
+                  guestContact: editBooking.guestContact
                 };
 
                 updateMutation.mutate(payload);

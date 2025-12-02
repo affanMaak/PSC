@@ -2,10 +2,12 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RoomType, Room, BookingForm, DateStatus } from "@/types/room-booking.type";
-import { FormInput, DatePickerInput, SpecialRequestsInput } from "./FormInputs";
+import { FormInput, SpecialRequestsInput } from "./FormInputs";
 import { PaymentSection } from "./PaymentSection";
 import { MemberSearchComponent } from "./MemberSearch";
 import { Member } from "@/types/room-booking.type";
+import { UnifiedDatePicker } from "@/components/UnifiedDatePicker";
+import { format } from "date-fns";
 
 interface BookingFormProps {
   form: BookingForm;
@@ -163,9 +165,72 @@ export const BookingFormComponent = React.memo(({
         </div>
       </div>
 
-      {/* GUEST INFORMATION */}
-      <div className="p-4 rounded-xl border bg-white shadow-sm">
+
+      {/* Guest INFORMATION */}
+      {form.pricingType == "guest" && <div className="p-4 rounded-xl border bg-white shadow-sm">
         <h3 className="text-lg font-semibold mb-4">Guest Information</h3>
+
+        <div className="flex  flex-col">
+
+          <div className="flex items-center justify-center gap-x-5">
+
+            <div className="w-1/2">
+              <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                Guest Name *
+              </Label>
+              {/* {console.log(form)} */}
+
+              <FormInput
+                label=""
+                type="text"
+                value={form.guestName}
+                onChange={(val) => onChange("guestName", val)}
+              />
+            </div>
+
+            <div className="w-1/2">
+              <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                Contact
+              </Label>
+
+              <FormInput
+                label=""
+                type="number"
+                value={form.guestContact}
+                onChange={(val) => onChange("guestContact", val)}
+                min="0"
+              />
+            </div>
+
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-1">
+            <Label className="text-sm font-medium my-2 block whitespace-nowrap">
+              Who will Pay?
+            </Label>
+            <Select
+              value={form.paidBy}
+              onValueChange={(val) => onChange("paidBy", val)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Who will pay?" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="MEMBER">Member</SelectItem>
+                <SelectItem value="GUEST">Guest</SelectItem>
+              </SelectContent>
+            </Select>
+
+
+          </div>
+
+        </div>
+      </div>}
+
+      {/* General INFORMATION */}
+      <div className="p-4 rounded-xl border bg-white shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">General Information</h3>
 
         <div className="flex  flex-col">
 
@@ -224,18 +289,16 @@ export const BookingFormComponent = React.memo(({
             <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
               Check-in *
             </Label>
-            <DatePickerInput
-              label=""
+            <UnifiedDatePicker
               value={form.checkIn}
-              onChange={(val) => onChange("checkIn", val)}
-              // Use the currently selected room (with its reservations/bookings)
+              onChange={(date) => onChange("checkIn", date ? format(date, "yyyy-MM-dd'T'HH:mm") : "")}
               rooms={
                 form.roomId
                   ? availableRooms.filter((room: Room) => room.id.toString() === form.roomId)
                   : []
               }
               placeholder="Select check-in date"
-              isCheckout={false}
+              mode="date"
             />
           </div>
 
@@ -244,10 +307,9 @@ export const BookingFormComponent = React.memo(({
             <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
               Check-out *
             </Label>
-            <DatePickerInput
-              label=""
+            <UnifiedDatePicker
               value={form.checkOut}
-              onChange={(val) => onChange("checkOut", val)}
+              onChange={(date) => onChange("checkOut", date ? format(date, "yyyy-MM-dd'T'HH:mm") : "")}
               rooms={
                 form.roomId
                   ? availableRooms.filter((room: Room) => room.id.toString() === form.roomId)
@@ -255,6 +317,7 @@ export const BookingFormComponent = React.memo(({
               }
               placeholder="Select check-out date"
               isCheckout={true}
+              mode="date"
             />
           </div>
 

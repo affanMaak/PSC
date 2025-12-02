@@ -88,8 +88,6 @@ export default function Members() {
       initialPageParam: 1,
     });
 
-  // console.log(data)
-
   const members = data?.pages.flatMap((p) => p.data) ?? [];
 
   // ─── Mutations ───────────────────────────────────────────────────
@@ -103,7 +101,7 @@ export default function Members() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ Membership_No, updates}: { Membership_No: any, updates: any})=> updateMember({Membership_No, updates}),
+    mutationFn: ({ Membership_No, updates }: { Membership_No: any, updates: any }) => updateMember({ Membership_No, updates }),
     onSuccess: () => {
       toast({ title: "Member updated successfully" });
       setEditMember(null);
@@ -112,11 +110,19 @@ export default function Members() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteMember,
+    mutationFn: ({ Membership_No }: { Membership_No: string }) => 
+      deleteMember(Membership_No),
     onSuccess: () => {
       toast({ title: "Member deleted successfully" });
       setDeleteMemberDialog(null);
       queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete member",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
     },
   });
 
@@ -140,6 +146,15 @@ export default function Members() {
       });
     },
   });
+
+  // ─── Delete Handler ──────────────────────────────────────────────
+  const handleDeleteMember = () => {
+    if (deleteMemberDialog) {
+      deleteMutation.mutate({ 
+        Membership_No: deleteMemberDialog.Membership_No 
+      });
+    }
+  };
 
   // ─── File Upload Logic ────────────────────────────────────────────
   const handleBulkUpload = async () => {
@@ -188,7 +203,7 @@ export default function Members() {
     const handleScroll = () => {
       if (
         window.innerHeight + window.scrollY >=
-          document.body.offsetHeight - 300 && // near bottom
+        document.body.offsetHeight - 300 && // near bottom
         hasNextPage &&
         !isFetchingNextPage
       ) {
@@ -319,7 +334,8 @@ export default function Members() {
               </form>
             </DialogContent>
           </Dialog>
-          {/* Edit Member Dialog with Other Details */}
+          
+          {/* Edit Member Dialog */}
           <Dialog open={!!editMember} onOpenChange={() => setEditMember(null)}>
             <DialogContent>
               <DialogHeader>
@@ -332,45 +348,55 @@ export default function Members() {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const updates = Object.fromEntries(formData.entries());
-                    console.log(editMember)
-                    updateMutation.mutate({ Membership_No: editMember.Membership_No, updates: {...updates, Sno: editMember.Sno} });
+                    updateMutation.mutate({ 
+                      Membership_No: editMember.Membership_No, 
+                      updates: { ...updates, Sno: editMember.Sno } 
+                    });
                   }}
                 >
-                  <div><Label>Membership Number</Label>
-                  <Input
-                    name="Membership_No"
-                    defaultValue={editMember.Membership_No}
-                    /></div>
-                    <div><Label>Name</Label>
-                  <Input name="Name" defaultValue={editMember.Name} /></div>
-                    <div><Label>Email</Label>
-                  <Input name="Email" defaultValue={editMember.Email} /></div>
-                  <div><Label>Contact Number</Label>
-                  <Input
-                    name="Contact_No"
-                    defaultValue={editMember.Contact_No}
-                    /></div>
-                    <div>
-                      <Label>Other Details(optional)</Label>
-                  <Input
-                    name="Other_Details"
-                    defaultValue={editMember.Other_Details || ""}
-                    placeholder="Additional info..."
+                  <div>
+                    <Label>Membership Number</Label>
+                    <Input
+                      name="Membership_No"
+                      defaultValue={editMember.Membership_No}
                     />
-                    </div>
-                    <div>
-                      <Label>Status</Label>
-                  <Select name="Status" defaultValue={editMember.Status}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ACTIVE">Active</SelectItem>
-                      <SelectItem value="DEACTIVATED">Deactivated</SelectItem>
-                      <SelectItem value="BLOCKED">Blocked</SelectItem>
-                    </SelectContent>
-                  </Select>
-                    </div>
+                  </div>
+                  <div>
+                    <Label>Name</Label>
+                    <Input name="Name" defaultValue={editMember.Name} />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input name="Email" defaultValue={editMember.Email} />
+                  </div>
+                  <div>
+                    <Label>Contact Number</Label>
+                    <Input
+                      name="Contact_No"
+                      defaultValue={editMember.Contact_No}
+                    />
+                  </div>
+                  <div>
+                    <Label>Other Details (optional)</Label>
+                    <Input
+                      name="Other_Details"
+                      defaultValue={editMember.Other_Details || ""}
+                      placeholder="Additional info..."
+                    />
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <Select name="Status" defaultValue={editMember.Status}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ACTIVE">Active</SelectItem>
+                        <SelectItem value="DEACTIVATED">Deactivated</SelectItem>
+                        <SelectItem value="BLOCKED">Blocked</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <DialogFooter>
                     <Button
                       type="button"
@@ -389,6 +415,37 @@ export default function Members() {
           </Dialog>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteMemberDialog} onOpenChange={() => setDeleteMemberDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p>
+              Are you sure you want to delete member{" "}
+              <strong>{deleteMemberDialog?.Name}</strong> (
+              {deleteMemberDialog?.Membership_No})? This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteMemberDialog(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteMember}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete Member"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Members Table */}
       <Card>

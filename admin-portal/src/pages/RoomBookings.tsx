@@ -85,12 +85,13 @@ export default function RoomBookings() {
   });
 
   // Vouchers query - only enabled when viewing vouchers
+
   const {
     data: vouchers = [],
     isLoading: isLoadingVouchers,
   } = useQuery<any[]>({
     queryKey: ["vouchers", viewVouchers?.id],
-    queryFn: () => (viewVouchers ? getVouchers("Room", viewVouchers.id) : []),
+    queryFn: () => (viewVouchers ? getVouchers("ROOM", viewVouchers.id) : []),
     enabled: !!viewVouchers,
   });
 
@@ -99,11 +100,12 @@ export default function RoomBookings() {
     data: searchResults = [],
     isLoading: isSearching,
     refetch: searchMembersFn,
+    useQuery: useMemberSearchQuery,
   } = useQuery<Member[]>({
     queryKey: ["memberSearch", memberSearch],
     queryFn: async () => (await searchMembers(memberSearch)) as Member[],
     enabled: false,
-  });
+  }) as any; // Cast to any to avoid type issues if useQuery signature mismatch
 
   // Date statuses for the create/edit dialogs
   const createDateStatuses = useMemo(
@@ -276,6 +278,9 @@ export default function RoomBookings() {
         roomTypeId: roomTypeId?.toString() || "",
         roomId: roomId?.toString() || "",
         pricingType: editBooking.pricingType || "member",
+        paidBy: editBooking.paidBy || "MEMBER",
+        guestName: editBooking.guestName,
+        guestContact: editBooking.guestContact,
         checkIn: editBooking.checkIn ? convertToDateTimeLocal(editBooking.checkIn) : "",
         checkOut: editBooking.checkOut ? convertToDateTimeLocal(editBooking.checkOut) : "",
         totalPrice: editBooking.totalPrice || 0,
@@ -286,6 +291,7 @@ export default function RoomBookings() {
         numberOfAdults: editBooking.numberOfAdults || 1,
         numberOfChildren: editBooking.numberOfChildren || 0,
         specialRequests: editBooking.specialRequest || "",
+
       };
 
       setEditForm(newEditForm);
@@ -305,6 +311,11 @@ export default function RoomBookings() {
                 roomType: editBooking.roomType || editBooking.room?.roomType?.type || "Unknown",
                 roomTypeId: roomTypeId,
                 isActive: true,
+                isOutOfOrder: false,
+                outOfOrderFrom: null,
+                outOfOrderTo: null,
+                reservations: [],
+                bookings: []
               };
               setEditAvailableRooms([currentRoom, ...availableRoomsData]);
             }
@@ -319,6 +330,11 @@ export default function RoomBookings() {
                 roomType: editBooking.roomType || editBooking.room?.roomType?.type || "Unknown",
                 roomTypeId: roomTypeId,
                 isActive: true,
+                isOutOfOrder: false,
+                outOfOrderFrom: null,
+                outOfOrderTo: null,
+                reservations: [],
+                bookings: []
               };
               setEditAvailableRooms([fallbackRoom]);
             } else {
@@ -488,9 +504,11 @@ export default function RoomBookings() {
       numberOfAdults: form.numberOfAdults,
       numberOfChildren: form.numberOfChildren,
       specialRequests: form.specialRequests,
+      paidBy: form.paidBy,
+      guestName: form.guestName,
+      guestContact: form.guestContact
     };
 
-    console.log(payload)
 
     createMutation.mutate(payload);
   };
@@ -531,15 +549,20 @@ export default function RoomBookings() {
       subCategoryId: editForm.roomTypeId,
       entityId: editForm.roomId,
       pricingType: editForm.pricingType,
-      checkIn: new Date(editForm.checkIn).toISOString(),
-      checkOut: new Date(editForm.checkOut).toISOString(),
+      checkIn: editForm.checkIn.split("T")[0],
+      checkOut: editForm.checkOut.split("T")[0],
       totalPrice: editForm.totalPrice.toString(),
       paymentStatus: editForm.paymentStatus,
       paidAmount: editForm.paidAmount,
       pendingAmount: editForm.pendingAmount,
       paymentMode: "CASH",
       prevRoomId: editBooking?.roomId?.toString(),
+      paidBy: editBooking.paidBy,
+      guestContact: editBooking.guestContact,
+      guestName: editBooking.guestName,
     };
+
+    console.log(payload)
 
     updateMutation.mutate(payload);
   };

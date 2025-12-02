@@ -25,6 +25,9 @@ export const hallInitialFormState: HallBookingForm = {
   paidAmount: 0,
   pendingAmount: 0,
   paymentMode: "CASH",
+  paidBy: "MEMBER",
+  guestName: "",
+  guestContact: ""
 };
 
 export const calculateHallPrice = (

@@ -19,6 +19,15 @@ export class PhotoshootService {
 
     async getPhotoshoots() {
         return await this.prismaService.photoshoot.findMany({
+            include: {
+                bookings: {
+                    include: {
+                        member: {
+                            select: { Name: true },
+                        },
+                    },
+                },
+            },
             orderBy: { createdAt: 'desc' },
         });
     }

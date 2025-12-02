@@ -1,10 +1,30 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getDashboardStats } from "@/lib/mockData";
-import { Users, UserCheck, UserX, Ban, Calendar, DollarSign } from "lucide-react";
+import { Users, UserCheck, UserX, Ban, Calendar, DollarSign, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import { getDashboardStats } from "../../config/apis";
 
 export default function Dashboard() {
-  const stats = getDashboardStats();
+  const { data: stats, isLoading, error } = useQuery({
+    queryKey: ["dashboardStats"],
+    queryFn: getDashboardStats,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center text-destructive">
+        Error loading dashboard stats. Please try again later.
+      </div>
+    );
+  }
 
   const memberChartData = [
     { name: "Active", value: stats.activeMembers, color: "hsl(var(--success))" },
@@ -23,14 +43,6 @@ export default function Dashboard() {
     { name: "Unpaid", value: stats.paymentsUnpaid, color: "hsl(var(--destructive))" },
     { name: "Half Paid", value: stats.paymentsHalfPaid, color: "hsl(var(--warning))" },
     { name: "Paid", value: stats.paymentsPaid, color: "hsl(var(--success))" },
-  ];
-
-  const monthlyTrendData = [
-    { month: "Jul", bookings: 12, revenue: 450000 },
-    { month: "Aug", bookings: 18, revenue: 620000 },
-    { month: "Sep", bookings: 15, revenue: 580000 },
-    { month: "Oct", bookings: 22, revenue: 780000 },
-    { month: "Nov", bookings: 19, revenue: 690000 },
   ];
 
   return (
@@ -239,7 +251,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyTrendData}>
+              <LineChart data={stats.monthlyTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis yAxisId="left" />

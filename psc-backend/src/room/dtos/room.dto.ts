@@ -1,5 +1,13 @@
 import { IsNotEmpty, IsOptional } from 'class-validator';
 
+
+export class RoomOutOfOrderDto {
+    id: string;
+  reason: string;
+  startDate: string;
+  endDate: string;
+}
+
 export class RoomDto {
     @IsOptional()
     id?: string | number
@@ -12,20 +20,10 @@ export class RoomDto {
     
     @IsNotEmpty({message: "Activity must be provided"})
     isActive: boolean | string;
-    @IsNotEmpty({message: "OutofOrder must be provided"})
-    isOutOfOrder: boolean | string;
-
     @IsOptional()
     existingimgs?: string[]; 
     @IsOptional()
     files?: Express.Multer.File[];
-
     @IsOptional()
-    outOfOrderFrom?: string
-
-    @IsOptional()
-    outOfOrderTo?: string;
-
-    @IsOptional()
-    outOfOrderReason?: string;
+    outOfOrders?: RoomOutOfOrderDto[];
 }

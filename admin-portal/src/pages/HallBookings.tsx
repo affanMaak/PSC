@@ -56,8 +56,9 @@ import {
   getAvailableTimeSlots,
 } from "@/utils/hallBookingUtils";
 import { MemberSearchComponent } from "@/components/MemberSearch";
-import { DatePickerInput } from "@/components/FormInputs";
-import { HallDatePicker } from "@/components/HallDatePicker";
+import { FormInput } from "@/components/FormInputs";
+import { UnifiedDatePicker } from "@/components/UnifiedDatePicker";
+import { format } from "date-fns";
 
 // Payment section built for hall bookings
 const HallPaymentSection = React.memo(
@@ -227,7 +228,7 @@ export default function HallBookings() {
     isLoading: isLoadingVouchers,
   } = useQuery<Voucher[]>({
     queryKey: ["hall-vouchers", viewVouchers?.id],
-    queryFn: () => (viewVouchers ? getVouchers("Hall", viewVouchers.id) : []),
+    queryFn: () => (viewVouchers ? getVouchers("HALL", viewVouchers.id) : []),
     enabled: !!viewVouchers,
   });
 
@@ -460,7 +461,8 @@ export default function HallBookings() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (bookingDate < today) {
+    if (bookingDate < today && editForm.bookingDate === "") {
+      // console.log(editForm)
       toast({
         title: "Invalid booking date",
         description: "Booking date cannot be in the past",
@@ -483,7 +485,7 @@ export default function HallBookings() {
       category: "Hall",
       membershipNo: form.membershipNo,
       entityId: form.hallId,
-      bookingDate: new Date(form.bookingDate).toISOString(),
+      bookingDate: form.bookingDate,
       eventType: form.eventType,
       eventTime: form.eventTime,
       totalPrice: form.totalPrice.toString(),
@@ -493,6 +495,9 @@ export default function HallBookings() {
       pendingAmount: form.pendingAmount,
       pricingType: form.pricingType,
       paymentMode: "CASH",
+      paidby: form.paidBy,
+      guestName: form.guestName,
+      guestContact: form.guestContact
     };
 
     createMutation.mutate(payload);
@@ -500,7 +505,7 @@ export default function HallBookings() {
 
   const handleUpdate = () => {
 
-    console.log(editForm)
+    // console.log(editForm)
     // Enhanced validation that handles null/undefined values
     const requiredFields = [
       { field: editForm.membershipNo, name: "Membership" },
@@ -535,16 +540,7 @@ export default function HallBookings() {
     // Validate booking date
     const bookingDate = new Date(editForm.bookingDate);
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (bookingDate < today) {
-      toast({
-        title: "Invalid booking date",
-        description: "Booking date cannot be in the past",
-        variant: "destructive",
-      });
-      return;
-    }
+    today.setHours(0, 0, 0, 0)
 
     // Validate paid amount for half-paid status
     if (editForm.paymentStatus === "HALF_PAID" && editForm.paidAmount <= 0) {
@@ -555,13 +551,12 @@ export default function HallBookings() {
       });
       return;
     }
-
     const payload = {
       id: editBooking?.id?.toString(),
       category: "Hall",
       membershipNo: editForm.membershipNo,
       entityId: editForm.hallId,
-      bookingDate: new Date(editForm.bookingDate).toISOString(),
+      bookingDate: editForm.bookingDate,
       eventType: editForm.eventType,
       eventTime: editForm.eventTime,
       numberOfGuests: editForm.numberOfGuests || 0,
@@ -571,6 +566,9 @@ export default function HallBookings() {
       pendingAmount: editForm.pendingAmount,
       pricingType: editForm.pricingType,
       paymentMode: "CASH",
+      paidBy: editForm.paidBy,
+      guestName: editForm.guestName,
+      guestContact: editForm.guestContact
     };
 
     updateMutation.mutate(payload);
@@ -652,7 +650,7 @@ export default function HallBookings() {
   // Update edit form when editBooking changes
   useEffect(() => {
     if (editBooking) {
-      console.log(editBooking)
+      // console.log(editBooking)
       const newEditForm: HallBookingForm = {
         membershipNo: editBooking.member?.Membership_No || "",
         memberName: editBooking.memberName || editBooking.member?.Name || "",
@@ -673,6 +671,10 @@ export default function HallBookings() {
         paidAmount: Number(editBooking.paidAmount) || 0,
         pendingAmount: Number(editBooking.pendingAmount) || 0,
         paymentMode: "CASH",
+
+        paidBy: editBooking.paidBy,
+        guestName: editBooking.guestName,
+        guestContact: editBooking.guestContact
       };
       setEditForm(newEditForm);
     }
@@ -762,9 +764,12 @@ export default function HallBookings() {
 
                 <div>
                   <Label>Booking Date *</Label>
-                  <HallDatePicker
+                  <UnifiedDatePicker
                     value={form.bookingDate}
-                    onChange={(val) => handleFormChange("bookingDate", val)}
+                    onChange={(date) => {
+                      const dateStr = date ? format(date, "yyyy-MM-dd") : "";
+                      handleFormChange("bookingDate", dateStr);
+                    }}
                     placeholder="Select booking date"
                   />
                 </div>
@@ -1060,14 +1065,14 @@ export default function HallBookings() {
 
             <div>
               <Label>Booking Date *</Label>
-              <Input
-                type="date"
+              <UnifiedDatePicker
                 value={editForm.bookingDate}
-                onChange={(e) =>
-                  handleEditFormChange("bookingDate", e.target.value)
-                }
-                className="mt-2"
-                min={new Date().toISOString().split("T")[0]}
+                onChange={(date) => {
+                  const dateStr = date ? format(date, "yyyy-MM-dd") : "";
+                  handleEditFormChange("bookingDate", dateStr);
+                }}
+                placeholder="Select booking date"
+                minDate={new Date()}
               />
             </div>
 
@@ -1152,6 +1157,69 @@ export default function HallBookings() {
                 min="1"
               />
             </div>
+
+            {/* guest information */}
+            {editForm.pricingType == "guest" && <div className="p-4 rounded-xl border bg-white shadow-sm w-full col-span-full">
+
+              <h3 className="text-lg font-semibold mb-4">Guest Information</h3>
+
+              <div className="flex  flex-col">
+
+                <div className="flex items-center justify-center gap-x-5">
+
+                  <div className="w-1/2">
+                    <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                      Guest Name *
+                    </Label>
+                    {/* {console.log(form)} */}
+
+                    <FormInput
+                      label=""
+                      type="text"
+                      value={editForm.guestName}
+                      onChange={(val) => handleEditFormChange("guestName", val)}
+                    />
+                  </div>
+
+                  <div className="w-1/2">
+                    <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+                      Contact
+                    </Label>
+
+                    <FormInput
+                      label=""
+                      type="number"
+                      value={editForm.guestContact}
+                      onChange={(val) => handleEditFormChange("guestContact", val)}
+                      min="0"
+                    />
+                  </div>
+
+                </div>
+
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <Label className="text-sm font-medium my-2 block whitespace-nowrap">
+                    Who will Pay?
+                  </Label>
+                  <Select
+                    value={editForm.paidBy}
+                    onValueChange={(val) => handleEditFormChange("paidBy", val)}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Who will pay?" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="MEMBER">Member</SelectItem>
+                      <SelectItem value="GUEST">Guest</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+
+                </div>
+
+              </div>
+            </div>}
 
             <HallPaymentSection
               form={editForm}

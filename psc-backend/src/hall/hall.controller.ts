@@ -45,14 +45,8 @@ export class HallController {
   async createHall(
     @UploadedFiles() files: Express.Multer.File[],
     @Body() payload: HallDto,
-    @Res({ passthrough: true }) res: Response,
   ) {
-    const { isActive, isOutOfService } = payload;
-    if (isActive === isOutOfService)
-      return res.status(400).send({
-        cause: 'hall activity and out-of-order cannot be at the same time',
-      });
-    return this.hall.createHall({...payload, isActive: Boolean(payload.isActive), isOutOfService: Boolean(payload.isOutOfService)}, files);
+    return this.hall.createHall({...payload, isActive: Boolean(payload.isActive)}, files);
   }
 
   @UseGuards(JwtAccGuard, RolesGuard)
@@ -62,16 +56,9 @@ export class HallController {
   async updateHall(
     @UploadedFiles() files: Express.Multer.File[],
     @Body() payload: HallDto,
-    @Res({ passthrough: true }) res: Response,
   ) {
-    const { isActive, isOutOfService } = payload;
 
-    if (isActive === isOutOfService)
-      return res.status(400).send({
-        cause: 'hall activity and out-of-service cannot be at the same time',
-      });
-
-    return this.hall.updateHall({...payload, isActive: payload.isActive === 'true' ? true:false, isOutOfService: payload.isOutOfService === 'true' ? true:false }, files);
+    return this.hall.updateHall({...payload, isActive: payload.isActive === 'true' ? true:false}, files);
   }
 
   @UseGuards(JwtAccGuard, RolesGuard)

@@ -50,7 +50,7 @@ export class MemberController {
       @UseGuards(JwtAccGuard, RolesGuard)
       @Roles(RolesEnum.SUPER_ADMIN, RolesEnum.ADMIN)
       @Delete('remove/member')
-      async(@Query('memberID') memberID: string) {
+      async removeMember(@Query('memberID') memberID: string) {
         return this.member.removeMember(memberID);
       }
     
