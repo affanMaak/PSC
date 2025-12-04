@@ -27,7 +27,8 @@ export const hallInitialFormState: HallBookingForm = {
   paymentMode: "CASH",
   paidBy: "MEMBER",
   guestName: "",
-  guestContact: ""
+  guestContact: "",
+  remarks: "",
 };
 
 export const calculateHallPrice = (
@@ -131,7 +132,7 @@ export const isHallOutOfOrderForDate = (hall: Hall, date: Date): boolean => {
   if (hall.outOfServiceFrom && hall.outOfServiceTo) {
     const outOfServiceFrom = new Date(hall.outOfServiceFrom);
     const outOfServiceTo = new Date(hall.outOfServiceTo);
-    
+
     outOfServiceFrom.setHours(0, 0, 0, 0);
     outOfServiceTo.setHours(0, 0, 0, 0);
 
@@ -152,7 +153,7 @@ export const getUnavailableTimeSlotsForDate = (
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   const dateString = `${year}-${month}-${day}`;
-  
+
   const unavailableSlots: string[] = [];
 
   // Check bookings for this date
@@ -175,7 +176,7 @@ export const getUnavailableTimeSlotsForDate = (
   const dateReservations = reservations.filter(reservation => {
     const reservedFrom = new Date(reservation.reservedFrom);
     const reservedTo = new Date(reservation.reservedTo);
-    
+
     reservedFrom.setHours(0, 0, 0, 0);
     reservedTo.setHours(0, 0, 0, 0);
 
@@ -203,7 +204,7 @@ export const getAvailableTimeSlots = (
   reservations: any[] = []
 ): string[] => {
   const allTimeSlots = ['MORNING', 'EVENING', 'NIGHT'];
-  
+
   if (!date || !hallId) return allTimeSlots;
 
   const hall = halls.find((h) => h.id.toString() === hallId);
@@ -221,7 +222,7 @@ export const getAvailableTimeSlots = (
     reservations
   );
 
-  return allTimeSlots.filter(slot => 
+  return allTimeSlots.filter(slot =>
     !unavailableSlots.includes(slot)
   );
 };

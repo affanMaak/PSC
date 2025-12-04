@@ -33,17 +33,18 @@ export class PhotoshootController {
     async updatePhotoShoot(@Body() payload: Partial<PhotoShootDto>) {
         return this.photo.updatePhotoshoot(payload);
     }
-    @UseGuards(JwtAccGuard, RolesGuard)
-    @Roles(RolesEnum.SUPER_ADMIN)
+    // @UseGuards(JwtAccGuard, RolesGuard)
+    // @Roles(RolesEnum.SUPER_ADMIN)
+    @UseGuards(JwtAccGuard)
     @Get('get/photoShoots')
     async getPhotoShoots() {
         return this.photo.getPhotoshoots();
     }
-    @UseGuards(JwtAccGuard, RolesGuard)
-    @Roles(RolesEnum.SUPER_ADMIN)
+    // @UseGuards(JwtAccGuard, RolesGuard)
+    // @Roles(RolesEnum.SUPER_ADMIN)
+    @UseGuards(JwtAccGuard)
     @Get('get/photoShoots/available')
     async getAvailPhotoShoots() {
-        console.log('avail photoshoots');
         return this.photo.getPhotoshoots();
     }
     @UseGuards(JwtAccGuard, RolesGuard)

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, XCircle, Loader2, User, Search, Receipt } from "lucide-react";
+import { Plus, Edit, XCircle, Loader2, User, Search, Receipt, NotepadText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { getLawnCategories, getBookings, createBooking, updateBooking, deleteBoo
 import { FormInput } from "@/components/FormInputs";
 import { UnifiedDatePicker } from "@/components/UnifiedDatePicker";
 import { format } from "date-fns";
+import { LawnBookingDetailsCard } from "@/components/details/LawnBookingDets";
 
 interface Member {
   id: number;
@@ -50,16 +51,23 @@ interface Lawn {
   updatedAt: string;
 }
 
-interface LawnBooking {
+export interface LawnBooking {
   id: number;
   memberName: string;
   lawn: {
     id: string,
-    description: string
+    description: string,
+    outOfOrders?: any[],
+    lawnCategory: {
+      id: number
+    }
   };
+  lawnCategoryId?: number | string
+  lawnId?: string;
   bookingDate: string;
   guestsCount: number;
   totalPrice: number;
+  pendingAmount: number;
   paymentStatus: string;
   pricingType?: string;
   paidAmount?: number;
@@ -71,6 +79,7 @@ interface LawnBooking {
   paidBy?: string;
   guestName?: string;
   guestContact?: string;
+  createdAt?: string;
 }
 
 interface Voucher {
@@ -232,8 +241,11 @@ export default function LawnBookings() {
   const [guestCount, setGuestCount] = useState(0);
   const [eventTime, setEventTime] = useState("NIGHT");
 
+  const [detailBooking, setDetailBooking] = useState<LawnBooking | null>(null);
+  const [openDetails, setOpenDetails] = useState(false)
+
   const [guestSec, setGuestSec] = useState({
-    paidBy: "",
+    paidBy: "MEMBER",
     guestName: "",
     guestContact: ""
   })
@@ -264,6 +276,8 @@ export default function LawnBookings() {
     queryKey: ["lawn-bookings"],
     queryFn: async () => await getBookings("lawns"),
   });
+
+  console.log(lawnBookings)
 
   // Fetch available lawns when category is selected
   const {
@@ -967,7 +981,28 @@ export default function LawnBookings() {
                     <TableCell>{getPaymentBadge(booking.paymentStatus)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => setEditBooking(booking)} title="Edit Booking">
+                        <Button variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setDetailBooking(booking)
+                            setOpenDetails(true)
+                          }}
+                          title="Booking Details">
+                          <NotepadText />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          // Find the lawn to get its category ID
+                          const lawn = lawnCategories
+                            .flatMap((cat: LawnCategory) => cat.lawns)
+                            .find((l: Lawn) => l.id.toString() === booking.lawn?.id);
+
+                          setEditBooking({
+                            ...booking,
+                            lawn: {
+                              ...booking.lawn,
+                            }
+                          });
+                        }} title="Edit Booking">
                           <Edit className="h-4 w-4" />
                         </Button>
                         {(booking.paymentStatus === "PAID" || booking.paymentStatus === "HALF_PAID") && (
@@ -1036,13 +1071,106 @@ export default function LawnBookings() {
             </div>
 
             <div>
-              <Label>Lawn Name</Label>
-              <Input
-                value={editBooking?.lawn?.description || ""}
-                onChange={(e) => setEditBooking(prev => prev ? { ...prev, lawnName: e.target.value } : null)}
-                className="mt-2"
-              />
+              <Label>Lawn Category *</Label>
+              <Select
+                value={editBooking?.lawn?.lawnCategory?.id?.toString() || ""}
+                onValueChange={(categoryId) => {
+                  if (!editBooking) return;
+                  setEditBooking(prev => prev ? {
+                    ...prev,
+                    lawn: {
+                      ...prev.lawn,
+                      lawnCategory: { id: parseInt(categoryId) },
+                      id: "",
+                      description: ""
+                    }
+                  } : null);
+                }}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Select lawn category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {lawnCategories.map((cat: LawnCategory) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            <div>
+              <Label>Lawn *</Label>
+              <Select
+                value={editBooking?.lawn?.id?.toString() || ""}
+                onValueChange={(lawnId) => {
+                  if (!editBooking) return;
+                  const oldTotal = editBooking.totalPrice || 0;
+                  const oldPaid = editBooking.paidAmount || 0;
+                  const oldPaymentStatus = editBooking.paymentStatus;
+                  const lawn = lawnCategories.flatMap((cat: LawnCategory) => cat.lawns).find((l: Lawn) => l.id.toString() === lawnId);
+                  if (!lawn) return;
+                  const newPrice = editBooking.pricingType === "member" ? parseInt(lawn.memberCharges) : parseInt(lawn.guestCharges);
+                  let newPaidAmount = oldPaid;
+                  let newPendingAmount = newPrice - oldPaid;
+                  let newPaymentStatus = oldPaymentStatus;
+
+                  // AUTO-ADJUST PAYMENT STATUS
+                  if (newPrice < oldPaid) {
+                    newPaymentStatus = "PAID";
+                    newPaidAmount = newPrice;
+                    newPendingAmount = 0;
+                  } else if (newPrice > oldPaid && oldPaymentStatus === "PAID") {
+                    newPaymentStatus = "HALF_PAID";
+                    newPaidAmount = oldPaid;
+                    newPendingAmount = newPrice - oldPaid;
+                  } else if (newPrice > oldTotal && (oldPaymentStatus === "HALF_PAID" || oldPaymentStatus === "UNPAID")) {
+                    newPaidAmount = oldPaid;
+                    newPendingAmount = newPrice - oldPaid;
+                  } else {
+                    if (oldPaymentStatus === "PAID") {
+                      newPaidAmount = newPrice;
+                      newPendingAmount = 0;
+                    } else if (oldPaymentStatus === "HALF_PAID") {
+                      newPaidAmount = oldPaid;
+                      newPendingAmount = newPrice - oldPaid;
+                    } else {
+                      newPaidAmount = 0;
+                      newPendingAmount = newPrice;
+                    }
+                  }
+
+                  setEditBooking(prev => prev ? {
+                    ...prev,
+                    lawn: { ...lawn, id: lawnId, lawnCategory: { id: lawn.lawnCategoryId }},
+                    totalPrice: newPrice,
+                    paidAmount: newPaidAmount,
+                    pendingAmount: newPendingAmount,
+                    remainingAmount: newPendingAmount,
+                    paymentStatus: newPaymentStatus,
+                    lawnId: lawnId,
+                    entityId: lawnId
+                  } : null);
+                }}
+                disabled={!editBooking?.lawn?.lawnCategory?.id}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder={!editBooking?.lawn?.lawnCategory?.id ? "Select category first" : "Select lawn"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {lawnCategories.find((cat: LawnCategory) => cat.id.toString() === editBooking?.lawn?.lawnCategory?.id?.toString())?.lawns.filter((lawn: Lawn) => lawn.isActive && !lawn.isOutOfService).map((lawn: Lawn) => (
+                    <SelectItem key={lawn.id} value={lawn.id.toString()}>
+                      <div className="flex flex-col">
+                        <span>{lawn.description}</span>
+                        <span className="text-xs text-muted-foreground">Capacity: {lawn.minGuests}-{lawn.maxGuests} guests</span>
+                        <span className="text-xs text-muted-foreground">Member: PKR {parseInt(lawn.memberCharges).toLocaleString()} | Guest: PKR {parseInt(lawn.guestCharges).toLocaleString()}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label>Booking Date</Label>
               <UnifiedDatePicker
@@ -1084,7 +1212,77 @@ export default function LawnBookings() {
               <Label>Pricing Type</Label>
               <Select
                 value={editBooking?.pricingType || "member"}
-                onValueChange={(value) => setEditBooking(prev => prev ? { ...prev, pricingType: value } : null)}
+                onValueChange={(value) => {
+                  if (!editBooking) return;
+
+                  const oldTotal = editBooking.totalPrice || 0;
+                  const oldPaid = editBooking.paidAmount || 0;
+                  const oldPaymentStatus = editBooking.paymentStatus;
+
+                  // Find the lawn to get pricing
+                  const lawn = lawnCategories
+                    .flatMap((cat: LawnCategory) => cat.lawns)
+                    .find((l: Lawn) => l.id.toString() === editBooking.lawn?.id.toString());
+
+                  if (!lawn) {
+                    setEditBooking(prev => prev ? { ...prev, pricingType: value } : null);
+                    return;
+                  }
+
+                  // Calculate new price
+                  const newPrice = value === "member"
+                    ? parseInt(lawn.memberCharges)
+                    : parseInt(lawn.guestCharges);
+
+                  let newPaidAmount = oldPaid;
+                  let newPendingAmount = newPrice - oldPaid;
+                  let newPaymentStatus = oldPaymentStatus;
+
+                  // AUTO-ADJUST PAYMENT STATUS BASED ON PRICE CHANGES
+                  // Scenario 1: Price DECREASED (refund scenario)
+                  if (newPrice < oldPaid) {
+                    // Keep PAID status - backend will handle refund voucher
+                    newPaymentStatus = "PAID";
+                    newPaidAmount = newPrice;
+                    newPendingAmount = 0;
+                  }
+                  // Scenario 2: Price INCREASED and was previously PAID
+                  else if (newPrice > oldPaid && oldPaymentStatus === "PAID") {
+                    // Auto-change to HALF_PAID
+                    newPaymentStatus = "HALF_PAID";
+                    newPaidAmount = oldPaid; // Keep amount already paid
+                    newPendingAmount = newPrice - oldPaid;
+                  }
+                  // Scenario 3: Price INCREASED but was HALF_PAID or UNPAID
+                  else if (newPrice > oldTotal && (oldPaymentStatus === "HALF_PAID" || oldPaymentStatus === "UNPAID")) {
+                    // Keep current status, just update amounts
+                    newPaidAmount = oldPaid;
+                    newPendingAmount = newPrice - oldPaid;
+                  }
+                  // Scenario 4: Other cases - normal recalculation
+                  else {
+                    if (oldPaymentStatus === "PAID") {
+                      newPaidAmount = newPrice;
+                      newPendingAmount = 0;
+                    } else if (oldPaymentStatus === "HALF_PAID") {
+                      newPaidAmount = oldPaid;
+                      newPendingAmount = newPrice - oldPaid;
+                    } else {
+                      newPaidAmount = 0;
+                      newPendingAmount = newPrice;
+                    }
+                  }
+
+                  setEditBooking(prev => prev ? {
+                    ...prev,
+                    pricingType: value,
+                    totalPrice: newPrice,
+                    paidAmount: newPaidAmount,
+                    pendingAmount: newPendingAmount,
+                    remainingAmount: newPendingAmount,
+                    paymentStatus: newPaymentStatus
+                  } : null);
+                }}
               >
                 <SelectTrigger className="mt-2">
                   <SelectValue />
@@ -1238,6 +1436,18 @@ export default function LawnBookings() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* booking details */}
+      <Dialog open={openDetails} onOpenChange={setOpenDetails}>
+        <DialogContent className="p-0 max-w-5xl min-w-4xl overflow-hidden">
+          {detailBooking && (
+            <LawnBookingDetailsCard
+              booking={detailBooking}
+              className="rounded-none border-0 shadow-none"
+            />
+          )}
         </DialogContent>
       </Dialog>
 

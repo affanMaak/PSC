@@ -99,6 +99,10 @@ model RoomBooking {
   paidBy       PaidBy  @default(MEMBER)
 
   specialRequests String? @db.Text
+  remarks         String? @db.Text
+
+  refundAmount   Decimal @default(0.00) @db.Decimal(30, 2)
+  refundReturned Boolean @default(false)
 
   member Member @relation(fields: [Membership_No], references: [Membership_No])
   room   Room   @relation(fields: [roomId], references: [id])
@@ -131,6 +135,10 @@ model HallBooking {
   guestName    String? @db.Text
   guestContact String? @db.Text
   paidBy       PaidBy  @default(MEMBER)
+  remarks      String? @db.Text
+
+  refundAmount   Decimal @default(0.00) @db.Decimal(30, 2)
+  refundReturned Boolean @default(false)
 
   member Member @relation(fields: [memberId], references: [Sno])
   hall   Hall   @relation(fields: [hallId], references: [id])
@@ -156,6 +164,8 @@ model LawnBooking {
   guestContact String? @db.Text
   paidBy       PaidBy  @default(MEMBER)
 
+  refundAmount   Decimal @default(0.00) @db.Decimal(30, 2)
+  refundReturned Boolean @default(false)
 
   member Member @relation(fields: [memberId], references: [Sno])
   lawn   Lawn   @relation(fields: [lawnId], references: [id])
@@ -181,6 +191,9 @@ model PhotoshootBooking {
   guestName    String? @db.Text
   guestContact String? @db.Text
   paidBy       PaidBy  @default(MEMBER)
+
+  refundAmount   Decimal @default(0.00) @db.Decimal(30, 2)
+  refundReturned Boolean @default(false)
 
   member     Member     @relation(fields: [memberId], references: [Sno])
   photoshoot Photoshoot @relation(fields: [photoshootId], references: [id])
@@ -460,7 +473,7 @@ model Photoshoot {
 
   memberCharges Decimal @default(0.00) @db.Decimal(30, 2)
   guestCharges  Decimal @default(0.00) @db.Decimal(30, 2)
-
+  isActive Boolean @default(true)
   isBooked   Boolean             @default(false)
   bookings   PhotoshootBooking[]
   onHold     Boolean             @default(false)

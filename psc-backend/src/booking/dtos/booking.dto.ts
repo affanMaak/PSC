@@ -11,13 +11,13 @@ enum PaymentStatus {
 //     ONLINE
 // }
 
-export class BookingDto{
-    
+export class BookingDto {
+
     @IsOptional()
     id?: string
-    @IsNotEmpty({message: "Member must be provided"})
+    @IsNotEmpty({ message: "Member must be provided" })
     membershipNo: string
-    @IsNotEmpty({message: "Booking Category must be specified"})
+    @IsNotEmpty({ message: "Booking Category must be specified" })
     category: string
     @IsOptional()
     subCategoryId?: string | null
@@ -50,30 +50,32 @@ export class BookingDto{
     guestName?: string
     @IsOptional()
     guestContact?: string
-    
 
-    
-    @IsNotEmpty({message: "Total Price must be specified"})
+
+
+    @IsNotEmpty({ message: "Total Price must be specified" })
     totalPrice: string
     @IsEnum(PaymentStatus, { message: "Payment status must be UNPAID, HALF_PAID, or PAID" })
     paymentStatus: PaymentStatus
-    @IsNotEmpty({message: "Pricing type either be Member or Guest"})
+    @IsNotEmpty({ message: "Pricing type either be Member or Guest" })
     pricingType: string
     @IsOptional()
     paidAmount: string | number
     @IsOptional()
-    pendingAmount?: string |number
-    @IsEnum(PaymentMode, {message: "payment mode must be provided"})
+    pendingAmount?: string | number
+    @IsEnum(PaymentMode, { message: "payment mode must be provided" })
     paymentMode: PaymentMode
     @IsOptional()
-    prevRoomId?:string|null
-    
-    
+    prevRoomId?: string | null
+
+
     @IsOptional()
     numberOfAdults?: number;
     @IsOptional()
     numberOfChildren?: number;
     @IsOptional()
     specialRequests?: string;
+    @IsOptional()
+    remarks?: string;
 
 }

@@ -29,8 +29,8 @@ export interface Room {
   reservedFrom?: string;
   reservedTo?: string;
   outOfOrders?: any[]
-  reservations? : [];
-  bookings? : []
+  reservations?: [];
+  bookings?: []
   status?: "AVAILABLE" | "OUT_OF_ORDER" | "RESERVED";
 }
 
@@ -68,6 +68,7 @@ export interface Booking {
   numberOfAdults: number;
   numberOfChildren: number;
   specialRequests?: string;
+  remarks?: string;
 }
 
 export interface BookingForm {
@@ -78,7 +79,7 @@ export interface BookingForm {
   roomTypeId: string;
   roomId: string;
   pricingType: "member" | "guest";
-  paidBy: "MEMBER" | "GUEST" ,
+  paidBy: "MEMBER" | "GUEST",
   guestName: "",
   guestContact: "",
   checkIn: string;
@@ -91,6 +92,7 @@ export interface BookingForm {
   numberOfAdults: number;
   numberOfChildren: number;
   specialRequests?: string;
+  remarks?: string;
 }
 
 export interface Voucher {

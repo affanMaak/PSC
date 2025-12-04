@@ -27,19 +27,21 @@ export class LawnController {
   constructor(private lawn: LawnService) {}
 
   // lawn cateogry
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  @UseGuards(JwtAccGuard)
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN)
   @Get('get/lawn/categories')
   async getLawnCategories() {
     return this.lawn.getLawnCategories();
   }
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN)
+  @UseGuards(JwtAccGuard)
   @Get('get/lawn/categories/names')
   async getLawnNames(@Query() catId: { catId: string }) {
     return this.lawn.getLawnNames(Number(catId.catId));
   }
-
+  
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @UseInterceptors(FileFieldsInterceptor([{ name: 'files', maxCount: 5 }]))
@@ -58,7 +60,7 @@ export class LawnController {
       files?.files || [],
     );
   }
-
+  
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @Patch('update/lawn/category')
@@ -104,7 +106,7 @@ export class LawnController {
   async deleteLawnCategory(@Query('catID') catID: string) {
     return this.lawn.deleteLawnCategory(Number(catID));
   }
-
+  
   // lawns
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
@@ -120,22 +122,24 @@ export class LawnController {
     return this.lawn.updateLawn(payload);
   }
 
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN)
+  @UseGuards(JwtAccGuard)
   @Get('get/lawns')
   async getLawns() {
     return this.lawn.getLawns();
   }
-
+  
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN, RolesEnum.ADMIN)
   @Get('get/lawns/calendar')
   async getCalendarLawns() {
     return this.lawn.getCalendarLawns();
   }
-
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN)
+  @UseGuards(JwtAccGuard)
   @Get('get/lawns/available')
   async getAvailLawns(@Query('catId') catId: string) {
     return this.lawn.getLawnNames(Number(catId));

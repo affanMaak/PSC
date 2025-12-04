@@ -21,7 +21,7 @@ import { PaymentMode } from '@prisma/client';
 
 @Controller('booking')
 export class BookingController {
-  constructor(private readonly bookingService: BookingService) {}
+  constructor(private readonly bookingService: BookingService) { }
 
   @Get('lock')
   async lockBookings() {
@@ -36,6 +36,18 @@ export class BookingController {
     return await this.bookingService.getVouchersByBooking(
       bookingType,
       Number(bookingId),
+    );
+  }
+
+  @UseGuards(JwtAccGuard, RolesGuard)
+  @Roles(RolesEnum.SUPER_ADMIN, RolesEnum.ADMIN)
+  @Patch('voucher/update-status')
+  async updateVoucherStatus(
+    @Body() payload: { voucherId: number; status: string },
+  ) {
+    return await this.bookingService.updateVoucherStatus(
+      payload.voucherId,
+      payload.status as 'PENDING' | 'CONFIRMED' | 'CANCELLED',
     );
   }
 
@@ -185,7 +197,7 @@ export class BookingController {
     const {
       hallId,
       bookingDate,
-      eventTime, 
+      eventTime,
       eventType,
       pricingType,
       specialRequest,
@@ -234,7 +246,7 @@ export class BookingController {
     const {
       lawnId,
       bookingDate,
-      eventTime, 
+      eventTime,
       eventType,
       pricingType,
       specialRequest,
@@ -283,7 +295,7 @@ export class BookingController {
     const {
       photoshootId,
       bookingDate,
-      startTime, 
+      startTime,
       pricingType,
       specialRequest,
       totalPrice,

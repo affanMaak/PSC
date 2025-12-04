@@ -397,6 +397,10 @@ export default function HallBookings() {
 
         // Recalculate price when relevant fields change
         if (["hallId", "pricingType"].includes(field)) {
+          const oldTotal = prev.totalPrice || 0;
+          const oldPaid = prev.paidAmount || 0;
+          const oldPaymentStatus = prev.paymentStatus;
+
           const newPrice = calculateHallPrice(
             halls,
             field === "hallId" ? value : newForm.hallId,
@@ -404,14 +408,49 @@ export default function HallBookings() {
           );
           newForm.totalPrice = newPrice;
 
-          // Recalculate accounting values
-          const accounting = calculateHallAccountingValues(
-            newForm.paymentStatus as PaymentStatus,
-            newPrice,
-            newForm.paidAmount
-          );
-          newForm.paidAmount = accounting.paid;
-          newForm.pendingAmount = accounting.pendingAmount;
+          // AUTO-ADJUST PAYMENT STATUS WHEN HALL/PRICING CHANGES IN EDIT MODE
+          if (isEdit && ["hallId", "pricingType"].includes(field)) {
+            // Scenario 1: Charges DECREASED (refund scenario)
+            if (newPrice < oldPaid) {
+              // Keep PAID status - backend will handle refund voucher
+              newForm.paymentStatus = "PAID";
+              newForm.paidAmount = newPrice;
+              newForm.pendingAmount = 0;
+            }
+            // Scenario 2: Charges INCREASED and was previously PAID
+            else if (newPrice > oldPaid && oldPaymentStatus === "PAID") {
+              // Auto-change to HALF_PAID
+              newForm.paymentStatus = "HALF_PAID";
+              newForm.paidAmount = oldPaid; // Keep the amount already paid
+              newForm.pendingAmount = newPrice - oldPaid;
+            }
+            // Scenario 3: Charges INCREASED but was HALF_PAID or UNPAID
+            else if (newPrice > oldTotal && (oldPaymentStatus === "HALF_PAID" || oldPaymentStatus === "UNPAID")) {
+              // Keep current status, just update amounts
+              newForm.paidAmount = oldPaid;
+              newForm.pendingAmount = newPrice - oldPaid;
+            }
+            // Scenario 4: Charges UNCHANGED or other cases
+            else {
+              // Recalculate accounting values normally
+              const accounting = calculateHallAccountingValues(
+                newForm.paymentStatus as PaymentStatus,
+                newPrice,
+                newForm.paidAmount
+              );
+              newForm.paidAmount = accounting.paid;
+              newForm.pendingAmount = accounting.pendingAmount;
+            }
+          } else {
+            // Not in edit mode - use normal recalculation
+            const accounting = calculateHallAccountingValues(
+              newForm.paymentStatus as PaymentStatus,
+              newPrice,
+              newForm.paidAmount
+            );
+            newForm.paidAmount = accounting.paid;
+            newForm.pendingAmount = accounting.pendingAmount;
+          }
         }
 
         // Handle payment status changes
@@ -501,9 +540,10 @@ export default function HallBookings() {
       pendingAmount: form.pendingAmount,
       pricingType: form.pricingType,
       paymentMode: "CASH",
-      paidby: form.paidBy,
+      paidBy: form.paidBy,
       guestName: form.guestName,
-      guestContact: form.guestContact
+      guestContact: form.guestContact,
+      remarks: form.remarks,
     };
 
     createMutation.mutate(payload);
@@ -574,7 +614,8 @@ export default function HallBookings() {
       paymentMode: "CASH",
       paidBy: editForm.paidBy,
       guestName: editForm.guestName,
-      guestContact: editForm.guestContact
+      guestContact: editForm.guestContact,
+      remarks: editForm.remarks,
     };
 
     updateMutation.mutate(payload);
@@ -680,7 +721,8 @@ export default function HallBookings() {
 
         paidBy: editBooking.paidBy,
         guestName: editBooking.guestName,
-        guestContact: editBooking.guestContact
+        guestContact: editBooking.guestContact,
+        remarks: editBooking.remarks || "",
       };
       setEditForm(newEditForm);
     }
@@ -860,6 +902,20 @@ export default function HallBookings() {
                     placeholder="Enter number of guests"
                     min="1"
                   />
+                </div>
+
+                {/* Remarks (Optional) */}
+                <div className="md:col-span-2">
+                  <Label>Remarks (Optional)</Label>
+                  <textarea
+                    className="w-full p-2 mt-2 border rounded-md resize-none min-h-[60px] text-sm"
+                    placeholder="Add notes about this booking (e.g., special arrangements, event details, etc.)"
+                    value={form.remarks || ""}
+                    onChange={(e) => handleFormChange("remarks", e.target.value)}
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    These remarks will be stored with the booking record
+                  </div>
                 </div>
 
                 <HallPaymentSection form={form} onChange={handleFormChange} />
@@ -1235,6 +1291,20 @@ export default function HallBookings() {
 
               </div>
             </div>}
+
+            {/* Remarks (Optional) */}
+            <div className="md:col-span-2">
+              <Label>Remarks (Optional)</Label>
+              <textarea
+                className="w-full p-2 mt-2 border rounded-md resize-none min-h-[60px] text-sm"
+                placeholder="Add notes about this booking update (e.g., reason for changes, refund details, etc.)"
+                value={editForm.remarks || ""}
+                onChange={(e) => handleEditFormChange("remarks", e.target.value)}
+              />
+              <div className="text-xs text-muted-foreground mt-1">
+                These remarks will be stored with the booking record
+              </div>
+            </div>
 
             <HallPaymentSection
               form={editForm}

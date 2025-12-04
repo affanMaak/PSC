@@ -23,7 +23,8 @@ export interface HallBooking {
   paidBy?: "MEMBER" | "GUEST";
   guestName?: "",
   guestContact?: "",
-  
+  remarks?: string;
+
   member?: {
     id: string;
     Name: string;
@@ -87,6 +88,7 @@ export interface HallBookingForm {
   paidBy?: "MEMBER" | "GUEST";
   guestName?: "",
   guestContact?: ""
+  remarks?: string;
 }
 
 export type HallVoucher = Voucher;

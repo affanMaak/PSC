@@ -276,6 +276,24 @@ export const BookingFormComponent = React.memo(({
             />
           </div>
 
+          {/* Remarks (Edit Mode Only) */}
+          {isEdit && (
+            <div className="sm:col-span-2 lg:col-span-1 mt-4">
+              <Label className="text-sm font-medium mb-1 block">
+                Remarks (Optional)
+              </Label>
+              <textarea
+                className="w-full p-2 mt-1 border rounded-md resize-none min-h-[60px] text-sm"
+                placeholder="Add notes about this booking update (e.g., reason for changes, refund details, etc.)"
+                value={form.remarks || ""}
+                onChange={(e) => onChange("remarks", e.target.value)}
+              />
+              <div className="text-xs text-muted-foreground mt-1">
+                These remarks will be stored with the booking record
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 

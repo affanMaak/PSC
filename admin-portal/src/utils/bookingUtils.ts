@@ -57,12 +57,12 @@ export const getDateStatuses = (
       const start = normalizeToPakistanDate(new Date(booking.checkIn));
       const end = normalizeToPakistanDate(new Date(booking.checkOut));
       const currentDate = new Date(start);
-      
+
       console.log(`Booking from ${start.toISOString()} to ${end.toISOString()} (PKT)`);
-      
+
       while (currentDate < end) {
         const dateKey = getPakistanDateString(currentDate);
-        if (!dateStatuses.some(ds => 
+        if (!dateStatuses.some(ds =>
           getPakistanDateString(ds.date) === dateKey
         )) {
           dateStatuses.push({
@@ -83,13 +83,13 @@ export const getDateStatuses = (
       const start = normalizeToPakistanDate(new Date(reservation.reservedFrom));
       const end = normalizeToPakistanDate(new Date(reservation.reservedTo));
       const currentDate = new Date(start);
-      
+
       console.log(`Reservation from ${start.toISOString()} to ${end.toISOString()} (PKT)`);
-      
+
       while (currentDate < end) {
         const dateKey = getPakistanDateString(currentDate);
         // Only mark as reserved if not already booked
-        if (!dateStatuses.some(ds => 
+        if (!dateStatuses.some(ds =>
           getPakistanDateString(ds.date) === dateKey && ds.status === "BOOKED"
         )) {
           dateStatuses.push({
@@ -109,16 +109,16 @@ export const getDateStatuses = (
     const start = normalizeToPakistanDate(new Date(room.outOfOrderFrom));
     const end = normalizeToPakistanDate(new Date(room.outOfOrderTo));
     const currentDate = new Date(start);
-    
+
     console.log(`Out of order from ${start.toISOString()} to ${end.toISOString()} (PKT)`);
-    
+
     while (currentDate <= end) {
       const dateKey = getPakistanDateString(currentDate);
       // Out of order takes highest priority - remove any existing status for this date
-      const existingIndex = dateStatuses.findIndex(ds => 
+      const existingIndex = dateStatuses.findIndex(ds =>
         getPakistanDateString(ds.date) === dateKey
       );
-      
+
       if (existingIndex !== -1) {
         // Replace existing status with OUT_OF_ORDER
         dateStatuses[existingIndex] = {
@@ -213,4 +213,5 @@ export const initialFormState: BookingForm = {
   numberOfAdults: 1,
   numberOfChildren: 0,
   specialRequests: "",
+  remarks: "",
 };

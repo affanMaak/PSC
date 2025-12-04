@@ -105,20 +105,23 @@ export class RoomController {
   }
 
   // rooms //
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN)
+  @UseGuards(JwtAccGuard)
   @Get('get/rooms')
   async getRooms() {
     return await this.room.getRooms();
   }
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN)
+  @UseGuards(JwtAccGuard)
   @Get('get/rooms/categories')
   async getRoomCategories() {
     return await this.room.getRoomCategories();
   }
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN, RolesEnum.ADMIN)
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN, RolesEnum.ADMIN)
+  @UseGuards(JwtAccGuard)
   @Get('get/rooms/available')
   async getAvailRooms(@Query() roomTypeId: { roomTypeId: string }) {
     return await this.room.getAvailRooms(Number(roomTypeId.roomTypeId));

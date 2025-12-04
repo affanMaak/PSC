@@ -25,19 +25,21 @@ import type { Response } from 'express';
 export class HallController {
   constructor(private hall: HallService) {}
 
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN)
+  @UseGuards(JwtAccGuard)
   @Get('get/halls')
   async getHalls() {
     return this.hall.getHalls();
   }
-  @UseGuards(JwtAccGuard, RolesGuard)
-  @Roles(RolesEnum.SUPER_ADMIN)
+  // @UseGuards(JwtAccGuard, RolesGuard)
+  // @Roles(RolesEnum.SUPER_ADMIN)
+  @UseGuards(JwtAccGuard)
   @Get('get/halls/available')
   async getAvailHalls() {
     return this.hall.getAvailHalls();
   }
-
+  
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @UseInterceptors(FilesInterceptor('files'))
@@ -48,7 +50,7 @@ export class HallController {
   ) {
     return this.hall.createHall({...payload, isActive: Boolean(payload.isActive)}, files);
   }
-
+  
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @UseInterceptors(FilesInterceptor('files'))
@@ -57,7 +59,7 @@ export class HallController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body() payload: HallDto,
   ) {
-
+    
     return this.hall.updateHall({...payload, isActive: payload.isActive === 'true' ? true:false}, files);
   }
 
@@ -68,7 +70,8 @@ export class HallController {
   async deleteHall(@Query('hallId') hallId: string) {
     return this.hall.deleteHall(Number(hallId));
   }
-
+  
+  
   // reserve halls
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)

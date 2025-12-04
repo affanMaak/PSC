@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, X, Loader2, Receipt, User, Calendar, Clock } from "lucide-react";
+import { Plus, Edit, Trash2, X, Loader2, Receipt, User, Calendar, Clock, NotepadText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -19,8 +19,9 @@ import { Member } from "@/types/room-booking.type";
 import { cn } from "@/lib/utils";
 import { FormInput } from "@/components/FormInputs";
 import { UnifiedDatePicker } from "@/components/UnifiedDatePicker";
+import { PhotoshootBookingDetailsCard } from "@/components/details/PhotoshootBookingDets";
 
-interface PhotoshootBooking {
+export interface PhotoshootBooking {
   id: number;
   memberId: number;
   photoshootId: number;
@@ -36,11 +37,15 @@ interface PhotoshootBooking {
   paidBy?: string;
   guestName?: string;
   guestContact?: string;
+  createdAt?: string;
   photoshoot: {
     id: number;
     description: string;
     memberCharges: string;
     guestCharges: string;
+    outOfOrders?: any[];
+    isBooked?: any;
+
   };
 }
 
@@ -210,8 +215,12 @@ export default function PhotoshootBookings() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [totalPrice, setTotalPrice] = useState(0);
 
+
+  const [detailBooking, setDetailBooking] = useState<PhotoshootBooking | null>(null);
+  const [openDetails, setOpenDetails] = useState(false)
+
   const [guestSec, setGuestSec] = useState({
-    paidBy: "",
+    paidBy: "MEMBER",
     guestName: "",
     guestContact: ""
   })
@@ -225,6 +234,7 @@ export default function PhotoshootBookings() {
     queryKey: ["bookings", "photoshoots"],
     queryFn: async () => await getBookings("photoshoots"),
   });
+  // console.log(bookings)
 
   const { data: photoshoots = [], isLoading: isLoadingPhotoshoots } = useQuery<PhotoshootService[]>({
     queryKey: ["photoshoots"],
@@ -412,8 +422,8 @@ export default function PhotoshootBookings() {
       // Handle date parsing correctly
       const date = new Date(editBooking.bookingDate);
       // if (editBooking.startTime) {
-        const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-        setSelectedDateTime(local);
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      setSelectedDateTime(local);
       // }
       // setSelectedDateTime(date);
 
@@ -757,6 +767,15 @@ export default function PhotoshootBookings() {
                       {getPaymentBadge(booking.paymentStatus)}
                     </TableCell>
                     <TableCell className="text-right">
+                      <Button variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setDetailBooking(booking)
+                          setOpenDetails(true)
+                        }}
+                        title="Booking Details">
+                        <NotepadText />
+                      </Button>
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="ghost"
@@ -981,6 +1000,18 @@ export default function PhotoshootBookings() {
               {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Update"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* booking details */}
+      <Dialog open={openDetails} onOpenChange={setOpenDetails}>
+        <DialogContent className="p-0 max-w-5xl min-w-4xl overflow-hidden">
+          {detailBooking && (
+            <PhotoshootBookingDetailsCard
+              booking={detailBooking}
+              className="rounded-none border-0 shadow-none"
+            />
+          )}
         </DialogContent>
       </Dialog>
 

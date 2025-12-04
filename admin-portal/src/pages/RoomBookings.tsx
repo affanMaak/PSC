@@ -316,6 +316,7 @@ export default function RoomBookings() {
         numberOfAdults: editBooking.numberOfAdults || 1,
         numberOfChildren: editBooking.numberOfChildren || 0,
         specialRequests: editBooking.specialRequests || "",
+        remarks: editBooking.remarks || "",
       };
 
       setEditForm(newEditForm);
@@ -409,6 +410,10 @@ export default function RoomBookings() {
         if (
           ["roomTypeId", "pricingType", "checkIn", "checkOut"].includes(field)
         ) {
+          const oldTotal = prev.totalPrice || 0;
+          const oldPaid = prev.paidAmount || 0;
+          const oldPaymentStatus = prev.paymentStatus;
+
           const newPrice = calculatePriceForForm(
             field === "roomTypeId" ? value : newForm.roomTypeId,
             field === "pricingType" ? value : newForm.pricingType,
@@ -417,14 +422,49 @@ export default function RoomBookings() {
           );
           newForm.totalPrice = newPrice;
 
-          // Recalculate accounting values
-          const accounting = calculateAccountingValues(
-            newForm.paymentStatus,
-            newPrice,
-            newForm.paidAmount
-          );
-          newForm.paidAmount = accounting.paid;
-          newForm.pendingAmount = accounting.pendingAmount;
+          // AUTO-ADJUST PAYMENT STATUS WHEN DATES CHANGE IN EDIT MODE
+          if (isEdit && ["checkIn", "checkOut"].includes(field)) {
+            // Scenario 1: Charges DECREASED (refund scenario)
+            if (newPrice < oldPaid) {
+              // Keep PAID status - backend will handle refund voucher
+              newForm.paymentStatus = "PAID";
+              newForm.paidAmount = newPrice;
+              newForm.pendingAmount = 0;
+            }
+            // Scenario 2: Charges INCREASED and was previously PAID
+            else if (newPrice > oldPaid && oldPaymentStatus === "PAID") {
+              // Auto-change to HALF_PAID
+              newForm.paymentStatus = "HALF_PAID";
+              newForm.paidAmount = oldPaid; // Keep the amount already paid
+              newForm.pendingAmount = newPrice - oldPaid;
+            }
+            // Scenario 3: Charges INCREASED but was HALF_PAID or UNPAID
+            else if (newPrice > oldTotal && (oldPaymentStatus === "HALF_PAID" || oldPaymentStatus === "UNPAID")) {
+              // Keep current status, just update amounts
+              newForm.paidAmount = oldPaid;
+              newForm.pendingAmount = newPrice - oldPaid;
+            }
+            // Scenario 4: Charges UNCHANGED or other cases
+            else {
+              // Recalculate accounting values normally
+              const accounting = calculateAccountingValues(
+                newForm.paymentStatus,
+                newPrice,
+                newForm.paidAmount
+              );
+              newForm.paidAmount = accounting.paid;
+              newForm.pendingAmount = accounting.pendingAmount;
+            }
+          } else {
+            // For create mode or non-date field changes, use normal accounting
+            const accounting = calculateAccountingValues(
+              newForm.paymentStatus,
+              newPrice,
+              newForm.paidAmount
+            );
+            newForm.paidAmount = accounting.paid;
+            newForm.pendingAmount = accounting.pendingAmount;
+          }
         }
 
         // Handle payment status changes
@@ -558,6 +598,7 @@ export default function RoomBookings() {
       paidBy: form.paidBy,
       guestName: form.guestName,
       guestContact: form.guestContact,
+      remarks: form.remarks,
     };
 
     createMutation.mutate(payload);
@@ -617,6 +658,10 @@ export default function RoomBookings() {
       paidBy: editBooking.paidBy,
       guestContact: editBooking.guestContact,
       guestName: editBooking.guestName,
+      numberOfAdults: editForm.numberOfAdults,
+      numberOfChildren: editForm.numberOfChildren,
+      specialRequests: editForm.specialRequests,
+      remarks: editForm.remarks,
     };
 
     console.log(payload);
