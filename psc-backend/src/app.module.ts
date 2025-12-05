@@ -18,11 +18,12 @@ import { PhotoshootModule } from './photoshoot/photoshoot.module';
 import { SportModule } from './sport/sport.module';
 import { PaymentModule } from './payment/payment.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AffiliationModule } from './affiliation/affiliation.module';
 
 @Module({
   imports: [AuthModule, AdminModule, MemberModule, BookingModule, NotificationModule, PrismaModule, ConfigModule.forRoot({
     isGlobal: true
-  }), MailerModule, SchedularModule, ScheduleModule.forRoot(), CloudinaryModule, RoomModule, HallModule, LawnModule, PhotoshootModule, SportModule, PaymentModule, DashboardModule],
+  }), MailerModule, SchedularModule, ScheduleModule.forRoot(), CloudinaryModule, RoomModule, HallModule, LawnModule, PhotoshootModule, SportModule, PaymentModule, DashboardModule, AffiliationModule],
   controllers: [],
   providers: [MailerService],
 })

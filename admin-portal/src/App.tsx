@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage"; 
 import RoomMemberBooking from "./pages/test/RoomBookingMember.tsx"
 import { userWho } from "../config/apis.ts";
+import ClubRequestForm from "./pages/test/ClubRequestForm.tsx";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="test/booking/room/member" element={<RoomMemberBooking/>}/>
+            <Route path="test/affiliated/request" element={<ClubRequestForm/>}/>
             {/* Public Routes */}
             <Route path="/auth" element={<AuthPage />} />
 

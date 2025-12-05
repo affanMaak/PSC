@@ -1180,3 +1180,183 @@ export const getCalendarRooms = async (): Promise<any> => {
     throw { message, status: error.response?.status || 500 };
   }
 };
+
+// ==================== Affiliated Clubs ====================
+
+export const getAffiliatedClubs = async (): Promise<any> => {
+  try {
+    const response = await axios.get(`${base_url}/affiliation/clubs`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to fetch affiliated clubs";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+export const getAffiliatedClubById = async (id: number): Promise<any> => {
+  try {
+    const response = await axios.get(`${base_url}/affiliation/clubs/${id}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to fetch club details";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+export const createAffiliatedClub = async (data: any): Promise<any> => {
+  try {
+    const response = await axios.post(`${base_url}/affiliation/clubs`, data, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to create club";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+export const updateAffiliatedClub = async (data: any): Promise<any> => {
+  try {
+    const response = await axios.put(`${base_url}/affiliation/clubs`, data, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to update club";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+export const deleteAffiliatedClub = async (id: number): Promise<any> => {
+  try {
+    const response = await axios.delete(`${base_url}/affiliation/clubs/${id}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to delete club";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+// ==================== Affiliated Club Requests ====================
+
+export const getAffiliatedClubRequests = async (status?: string): Promise<any> => {
+  try {
+    const url = status
+      ? `${base_url}/affiliation/requests?status=${status}`
+      : `${base_url}/affiliation/requests`;
+    const response = await axios.get(url, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to fetch requests";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+export const getAffiliatedClubRequestById = async (id: number): Promise<any> => {
+  try {
+    const response = await axios.get(`${base_url}/affiliation/requests/${id}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to fetch request details";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+export const createAffiliatedClubRequest = async (data: any): Promise<any> => {
+  try {
+    const response = await axios.post(`${base_url}/affiliation/requests`, data, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to create request";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+export const updateAffiliatedClubRequestStatus = async (data: {id: number, status: string}): Promise<any> => {
+  try {
+    const response = await axios.patch(
+      `${base_url}/affiliation/request/action?requestId=${data.id}&status=${data.status}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to update request status";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};
+
+export const deleteAffiliatedClubRequest = async (id: number): Promise<any> => {
+  try {
+    const response = await axios.delete(`${base_url}/affiliation/requests/${id}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to delete request";
+
+    throw { message, status: error.response?.status || 500 };
+  }
+};

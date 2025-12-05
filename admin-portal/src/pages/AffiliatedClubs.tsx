@@ -1,26 +1,175 @@
 import { useState } from "react";
-import { mockAffiliatedClubRequests } from "@/lib/mockData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Check, X, Eye } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { Plus, Edit, Trash2, Eye, Check, X } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getAffiliatedClubs,
+  getAffiliatedClubRequests,
+  createAffiliatedClub,
+  updateAffiliatedClub,
+  deleteAffiliatedClub,
+  updateAffiliatedClubRequestStatus,
+} from "../../config/apis";
+import type { AffiliatedClub, CreateAffiliatedClubDto, AffiliatedClubRequest } from "@/types/affiliated-club.type";
 
 export default function AffiliatedClubs() {
-  const [viewRequest, setViewRequest] = useState<any>(null);
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [typeFilter, setTypeFilter] = useState("ALL");
-  const { toast } = useToast();
-
-  const filteredRequests = mockAffiliatedClubRequests.filter(r => {
-    const matchesStatus = statusFilter === "ALL" || r.status === statusFilter;
-    const matchesType = typeFilter === "ALL" || r.requestType === typeFilter;
-    return matchesStatus && matchesType;
+  const [activeTab, setActiveTab] = useState("clubs");
+  const [clubDialog, setClubDialog] = useState(false);
+  const [editingClub, setEditingClub] = useState<AffiliatedClub | null>(null);
+  const [clubForm, setClubForm] = useState<CreateAffiliatedClubDto>({
+    name: "",
+    location: "",
+    contactNo: "",
+    email: "",
+    description: "",
+    isActive: true,
   });
+  const [viewRequest, setViewRequest] = useState<AffiliatedClubRequest | null>(null);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Queries
+  const { data: clubs = [], isLoading: isLoadingClubs } = useQuery<AffiliatedClub[]>({
+    queryKey: ["affiliatedClubs"],
+    queryFn: getAffiliatedClubs,
+    retry: 1
+  });
+
+  const { data: requests = [], isLoading: isLoadingRequests } = useQuery<AffiliatedClubRequest[]>({
+    queryKey: ["affiliatedClubRequests"],
+    queryFn: () => getAffiliatedClubRequests(),
+    retry: 1
+  });
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: createAffiliatedClub,
+    onSuccess: () => {
+      toast({ title: "Club created successfully" });
+      queryClient.invalidateQueries({ queryKey: ["affiliatedClubs"] });
+      setClubDialog(false);
+      resetClubForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to create club",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: updateAffiliatedClub,
+    onSuccess: () => {
+      toast({ title: "Club updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["affiliatedClubs"] });
+      setClubDialog(false);
+      resetClubForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update club",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAffiliatedClub,
+    onSuccess: () => {
+      toast({ title: "Club deleted successfully" });
+      queryClient.invalidateQueries({ queryKey: ["affiliatedClubs"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete club",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateRequestStatusMutation = useMutation({
+    mutationFn: updateAffiliatedClubRequestStatus,
+    onSuccess: () => {
+      toast({ title: "Request status updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["affiliatedClubRequests"] });
+      setViewRequest(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update request status",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handlers
+  const handleCreateClub = () => {
+    createMutation.mutate(clubForm);
+  };
+
+  const handleUpdateClub = () => {
+    if (!editingClub) return;
+    updateMutation.mutate({ ...clubForm, id: editingClub.id });
+  };
+
+  const handleDeleteClub = (id: number) => {
+    if (!confirm("Are you sure you want to delete this club?")) return;
+    deleteMutation.mutate(id);
+  };
+
+  const handleApproveRequest = (id: number) => {
+    updateRequestStatusMutation.mutate({ id, status: "APPROVED" });
+  };
+
+  const handleRejectRequest = (id: number) => {
+    updateRequestStatusMutation.mutate({ id, status: "REJECTED" });
+  };
+
+  const openCreateDialog = () => {
+    resetClubForm();
+    setEditingClub(null);
+    setClubDialog(true);
+  };
+
+  const openEditDialog = (club: AffiliatedClub) => {
+    setEditingClub(club);
+    setClubForm({
+      name: club.name,
+      location: club.location || "",
+      contactNo: club.contactNo || "",
+      email: club.email || "",
+      description: club.description || "",
+      isActive: club.isActive,
+    });
+    setClubDialog(true);
+  };
+
+  const resetClubForm = () => {
+    setClubForm({
+      name: "",
+      location: "",
+      contactNo: "",
+      email: "",
+      description: "",
+      isActive: true,
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -35,169 +184,290 @@ export default function AffiliatedClubs() {
     }
   };
 
-  const handleApprove = (id: number) => {
-    toast({ title: "Request approved successfully" });
-  };
-
-  const handleReject = (id: number) => {
-    toast({ title: "Request rejected", variant: "destructive" });
-  };
+  if (isLoadingClubs) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Affiliated Club Requests</h2>
-          <p className="text-muted-foreground">Manage member requests for affiliated club access</p>
-        </div>
-        <div className="flex gap-2">
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Types</SelectItem>
-              <SelectItem value="PERSONAL">Personal</SelectItem>
-              <SelectItem value="GUEST">Guest</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Status</SelectItem>
-              <SelectItem value="PENDING">Pending</SelectItem>
-              <SelectItem value="APPROVED">Approved</SelectItem>
-              <SelectItem value="REJECTED">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">Affiliated Clubs</h2>
+          <p className="text-muted-foreground">Manage affiliated clubs and member requests</p>
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Membership No</TableHead>
-                <TableHead>Club Name</TableHead>
-                <TableHead>Request Type</TableHead>
-                <TableHead>Request Date</TableHead>
-                <TableHead>Guests</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRequests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell className="font-medium">{request.memberName}</TableCell>
-                  <TableCell>{request.membershipNo}</TableCell>
-                  <TableCell>{request.clubName}</TableCell>
-                  <TableCell>
-                    <Badge variant={request.requestType === "PERSONAL" ? "default" : "secondary"}>
-                      {request.requestType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{request.requestDate}</TableCell>
-                  <TableCell>{request.guestCount}</TableCell>
-                  <TableCell>{getStatusBadge(request.status)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => setViewRequest(request)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {request.status === "PENDING" && (
-                        <>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-success hover:text-success"
-                            onClick={() => handleApprove(request.id)}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleReject(request.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="clubs">Affiliated Clubs</TabsTrigger>
+          <TabsTrigger value="requests">Club Requests</TabsTrigger>
+        </TabsList>
 
+        <TabsContent value="clubs" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Club
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clubs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        No clubs found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    clubs.map((club) => (
+                      <TableRow key={club.id}>
+                        <TableCell className="font-medium">{club.name}</TableCell>
+                        <TableCell>{club.location || "N/A"}</TableCell>
+                        <TableCell>{club.contactNo || "N/A"}</TableCell>
+                        <TableCell>
+                          <Badge variant={club.isActive ? "default" : "secondary"}>
+                            {club.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => openEditDialog(club)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteClub(club.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="requests" className="space-y-4">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Club Name</TableHead>
+                    <TableHead>Membership No</TableHead>
+                    <TableHead>Requested Date</TableHead>
+                    <TableHead>Guests</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {requests.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No requests found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    requests.map((request) => (
+                      <TableRow key={request.id}>
+                        <TableCell className="font-medium">{request.affiliatedClub?.name}</TableCell>
+                        <TableCell>{request.membershipNo}</TableCell>
+                        <TableCell>{new Date(request.requestedDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{request.guestCount || 0}</TableCell>
+                        <TableCell>{getStatusBadge(request.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => setViewRequest(request)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {request.status === "PENDING" && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-success hover:text-success"
+                                  onClick={() => handleApproveRequest(request.id)}
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleRejectRequest(request.id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Club Create/Edit Dialog */}
+      <Dialog open={clubDialog} onOpenChange={setClubDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingClub ? "Edit Club" : "Add New Club"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Club Name *</Label>
+                <Input
+                  id="name"
+                  value={clubForm.name}
+                  onChange={(e) => setClubForm({ ...clubForm, name: e.target.value })}
+                  placeholder="Enter club name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={clubForm.location}
+                  onChange={(e) => setClubForm({ ...clubForm, location: e.target.value })}
+                  placeholder="Enter location"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contactNo">Contact Number</Label>
+                <Input
+                  id="contactNo"
+                  value={clubForm.contactNo}
+                  onChange={(e) => setClubForm({ ...clubForm, contactNo: e.target.value })}
+                  placeholder="Enter contact number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={clubForm.email}
+                  onChange={(e) => setClubForm({ ...clubForm, email: e.target.value })}
+                  placeholder="Enter email"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={clubForm.description}
+                onChange={(e) => setClubForm({ ...clubForm, description: e.target.value })}
+                placeholder="Enter description"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isActive"
+                checked={clubForm.isActive}
+                onCheckedChange={(checked) => setClubForm({ ...clubForm, isActive: checked })}
+              />
+              <Label htmlFor="isActive">Active</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClubDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={editingClub ? handleUpdateClub : handleCreateClub}>
+              {editingClub ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request View Dialog */}
       <Dialog open={!!viewRequest} onOpenChange={() => setViewRequest(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Request Details</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Member Name</p>
-                <p className="font-medium">{viewRequest?.memberName}</p>
+                <p className="text-sm text-muted-foreground">Club Name</p>
+                <p className="font-medium">{viewRequest?.affiliatedClub?.name}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Membership No</p>
                 <p className="font-medium">{viewRequest?.membershipNo}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Club Name</p>
-                <p className="font-medium">{viewRequest?.clubName}</p>
+                <p className="text-sm text-muted-foreground">Status</p>
+                {viewRequest && getStatusBadge(viewRequest.status)}
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Request Type</p>
-                <Badge variant={viewRequest?.requestType === "PERSONAL" ? "default" : "secondary"}>
-                  {viewRequest?.requestType}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Request Date</p>
-                <p className="font-medium">{viewRequest?.requestDate}</p>
+                <p className="text-sm text-muted-foreground">Requested Date</p>
+                <p className="font-medium">
+                  {viewRequest && new Date(viewRequest.requestedDate).toLocaleDateString()}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Guest Count</p>
-                <p className="font-medium">{viewRequest?.guestCount}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                {getStatusBadge(viewRequest?.status)}
+                <p className="font-medium">{viewRequest?.guestCount || 0}</p>
               </div>
             </div>
-            {viewRequest?.requestType === "GUEST" && viewRequest?.guestNames && (
+
+            {viewRequest?.purpose && (
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Guest Names</p>
-                <p className="font-medium">{viewRequest?.guestNames}</p>
+                <p className="text-sm text-muted-foreground mb-2">Purpose</p>
+                <p className="font-medium">{viewRequest.purpose}</p>
               </div>
             )}
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">Purpose</p>
-              <p className="font-medium">{viewRequest?.purpose}</p>
-            </div>
           </div>
           {viewRequest?.status === "PENDING" && (
             <DialogFooter>
-              <Button variant="outline" onClick={() => setViewRequest(null)}>Close</Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => { handleReject(viewRequest.id); setViewRequest(null); }}
+              <Button variant="outline" onClick={() => setViewRequest(null)}>
+                Close
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (viewRequest) handleRejectRequest(viewRequest.id);
+                }}
               >
                 Reject
               </Button>
-              <Button 
-                onClick={() => { handleApprove(viewRequest.id); setViewRequest(null); }}
+              <Button
+                onClick={() => {
+                  if (viewRequest) handleApproveRequest(viewRequest.id);
+                }}
               >
                 Approve
               </Button>
