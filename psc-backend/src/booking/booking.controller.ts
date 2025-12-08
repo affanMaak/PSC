@@ -156,7 +156,11 @@ export class BookingController {
       totalPrice,
       selectedRoomIds,
       roomTypeId,
+      paidBy= "MEMBER",
+      guestName,
+      guestContact,
     } = payload.bookingData;
+    console.log(payload)
 
     if (!membership_no) {
       throw new NotFoundException('Membership number must be provided');
@@ -186,6 +190,9 @@ export class BookingController {
       paidAmount: totalPrice,
       pendingAmount: 0,
       paymentMode: 'ONLINE',
+      paidBy,
+      guestName,
+      guestContact,
     };
 
     return await this.bookingService.cBookingRoomMember(data);
@@ -202,6 +209,10 @@ export class BookingController {
       pricingType,
       specialRequest,
       totalPrice,
+
+      paidBy= "MEMBER",
+      guestName,
+      guestContact,
     } = payload.bookingData;
 
     if (!membership_no) {
@@ -235,7 +246,12 @@ export class BookingController {
       paidAmount: totalPrice,
       pendingAmount: 0,
       paymentMode: 'ONLINE',
+
+      paidBy,
+      guestName,
+      guestContact,
     };
+    console.log("data:", data)
 
     return await this.bookingService.cBookingHallMember(data);
   }
@@ -251,6 +267,10 @@ export class BookingController {
       pricingType,
       specialRequest,
       totalPrice,
+
+      paidBy= "MEMBER",
+      guestName,
+      guestContact,
     } = payload.bookingData;
 
     if (!membership_no) {
@@ -284,6 +304,10 @@ export class BookingController {
       paidAmount: totalPrice,
       pendingAmount: 0,
       paymentMode: 'ONLINE',
+
+      paidBy,
+      guestName,
+      guestContact,
     };
 
     return await this.bookingService.cBookingLawnMember(data);
@@ -299,7 +323,12 @@ export class BookingController {
       pricingType,
       specialRequest,
       totalPrice,
+
+      paidBy= "MEMBER",
+      guestName,
+      guestContact,
     } = payload.bookingData;
+    // console.log(payload)
 
     if (!membership_no) {
       throw new NotFoundException('Membership number must be provided');
@@ -320,7 +349,7 @@ export class BookingController {
       membershipNo: membership_no,
       entityId: photoshootId,
       bookingDate: bookingDate,
-      startTime,
+      timeSlot: startTime,
       pricingType: pricingType,
       specialRequests: specialRequest || '',
       totalPrice: totalPrice,
@@ -328,9 +357,16 @@ export class BookingController {
       paidAmount: totalPrice,
       pendingAmount: 0,
       paymentMode: 'ONLINE',
-    };
 
-    return await this.bookingService.cBookingPhotoshootMember(data);
+      paidBy,
+      guestName,
+      guestContact,
+    };
+    console.log("data:", data)
+
+    const done = await this.bookingService.cBookingPhotoshootMember(data);
+    // console.log(done)
+    return done;
   }
 
 

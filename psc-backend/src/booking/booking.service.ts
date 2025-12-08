@@ -308,7 +308,7 @@ export class BookingService {
       paidBy = 'MEMBER',
       guestContact,
       guestName,
-      remarks,
+      remarks = "",
     } = payload;
 
     // Validate dates
@@ -3305,7 +3305,7 @@ export class BookingService {
       guestName,
       guestContact,
     } = payload;
-
+    console.log("payload:", payload)
     // ── 1. VALIDATE REQUIRED FIELDS ─────────────────────────
     if (!membershipNo)
       throw new BadRequestException('Membership number is required');
@@ -3360,9 +3360,9 @@ export class BookingService {
       }
 
       // Check if hall is on hold
-      if (hall.onHold) {
-        throw new ConflictException('Hall is currently on hold');
-      }
+      // if (hall.onHold) {
+      //   throw new ConflictException('Hall is currently on hold');
+      // }
 
       // ── 6. CHECK OUT-OF-ORDER PERIODS ─────────────────────
       // Check for conflicts with out-of-order periods
@@ -5062,11 +5062,11 @@ export class BookingService {
 
     // Validate time slot is between 9am and 6pm (since booking is 2 hours, last slot ends at 8pm)
     const bookingHour = startTime.getHours();
-    if (bookingHour < 9 && bookingHour > 6) {
-      throw new BadRequestException(
-        'Photoshoot bookings are only available between 9:00 AM and 6:00 PM',
-      );
-    }
+    // if (bookingHour < 9 && bookingHour > 6) {
+    //   throw new BadRequestException(
+    //     'Photoshoot bookings are only available between 9:00 AM and 6:00 PM',
+    //   );
+    // }
 
     // ── 3. VALIDATE MEMBER ─────────────────────────────────
     const member = await this.prismaService.member.findUnique({
@@ -5188,7 +5188,7 @@ export class BookingService {
           },
         });
       }
-
+      console.log(booked)
       return {
         success: true,
         message: `Successfully booked ${photoshoot.description} for ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString()}`,
