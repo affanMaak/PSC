@@ -28,13 +28,46 @@ export class PaymentService {
     // return response.data;
 
     // the kuickpay api will call member booking api once payment is done
-    await fetch('http://localhost:3000/booking/member/booking/room', {
+    paymentData.type === "room" && await fetch('http://localhost:3000/booking/member/booking/room', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(paymentData),
     });
+    const bookHall = async(paymentData)=>{
+      const done= await fetch('http://localhost:3000/booking/member/booking/hall', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+      console.log(done)
+    }
+    paymentData.type === "hall" && bookHall(paymentData)
+    paymentData.type === "lawn" && await fetch('http://localhost:3000/booking/member/booking/lawn', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(paymentData),
+    });
+
+    const bookPhoto = async (paymentData)=>{
+    const done = await fetch('http://localhost:3000/booking/member/booking/photoshoot', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(paymentData),
+    });
+    // console.log(done)
+    }
+    paymentData.type === "photoshoot" && bookPhoto(paymentData);
+
+
+
 
     // Mock successful response
     return {
@@ -52,7 +85,7 @@ export class PaymentService {
       where: { id: roomType },
     });
     if (!typeExists) throw new NotFoundException(`Room type not found`);
-
+    console.log(bookingData)
     // Parse dates
     const checkIn = parsePakistanDate(bookingData.from);
     const checkOut = parsePakistanDate(bookingData.to);
@@ -186,6 +219,7 @@ export class PaymentService {
     // Call payment gateway
     try {
       const invoiceResponse = await this.callPaymentGateway({
+        type: "room",
         amount: totalPrice,
         consumerInfo: {
           membership_no: String(bookingData.membership_no),
@@ -447,6 +481,7 @@ export class PaymentService {
       };
 
       const invoiceResponse = await this.callPaymentGateway({
+        type: "hall",
         amount: totalPrice,
         consumerInfo: {
           membership_no: bookingData.membership_no,
@@ -733,6 +768,7 @@ export class PaymentService {
       };
 
       const invoiceResponse = await this.callPaymentGateway({
+        type: "lawn",
         amount: totalPrice,
         consumerInfo: {
           membership_no: bookingData.membership_no,
@@ -841,7 +877,7 @@ export class PaymentService {
   }
 
   async genInvoicePhotoshoot(photoshootId: number, bookingData: any) {
-    console.log('Photoshoot booking data received:', bookingData);
+    // console.log('Photoshoot booking data received:', bookingData);
 
     // ── 1. VALIDATE PHOTOSHOOT EXISTS ───────────────────────
     const photoshootExists = await this.prismaService.photoshoot.findFirst({
@@ -921,15 +957,19 @@ export class PaymentService {
       totalPrice,
       memberId: member.Sno,
       membershipNo: bookingData.membership_no,
+      paidBy: bookingData.paidBy,
+      guestName: bookingData.guestName,
+      guestContact: bookingData.guestContact,
     };
 
-    console.log('Photoshoot booking record prepared:', bookingRecord);
+    // console.log('Photoshoot booking record prepared:', bookingRecord);
 
     // ── 8. GENERATE INVOICE VIA PAYMENT GATEWAY ─────────────
     try {
       const invoiceDueDate = new Date(Date.now() + 3 * 60 * 1000);
 
       const invoiceResponse = await this.callPaymentGateway({
+        type: "photoshoot",
         amount: totalPrice,
         consumerInfo: {
           membership_no: bookingData.membership_no,

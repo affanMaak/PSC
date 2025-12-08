@@ -171,6 +171,7 @@ export class RoomController {
       reserveTo?: string;
     },
   ) {
+    console.log(payload)
     return await this.room.reserveRooms(
       payload.roomIds.map((id) => Number(id)),
       payload.reserve,

@@ -284,12 +284,12 @@ export class HallService {
       },
     });
 
-    if (bookedHall) {
-      throw new HttpException(
-        `Hall "${bookedHall.name}" is currently on hold`,
-        HttpStatus.CONFLICT,
-      );
-    }
+    // if (bookedHall) {
+    //   throw new HttpException(
+    //     `Hall "${bookedHall.name}" is currently on hold`,
+    //     HttpStatus.CONFLICT,
+    //   );
+    // }
 
     // Validate dates and time slot if reserving
     if (reserve) {

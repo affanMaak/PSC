@@ -21,8 +21,8 @@ export class PhotoshootController {
     constructor(private photo: PhotoshootService){}
 
     // photoshoot
-    @UseGuards(JwtAccGuard, RolesGuard)
-    @Roles(RolesEnum.SUPER_ADMIN)
+    // @UseGuards(JwtAccGuard, RolesGuard)
+    // @Roles(RolesEnum.SUPER_ADMIN)
     @Post('create/photoShoot')
     async createPhotoShoot(@Body() payload: PhotoShootDto) {
         return this.photo.createPhotoShoot(payload);
