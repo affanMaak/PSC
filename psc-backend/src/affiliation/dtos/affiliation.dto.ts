@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsEnum, IsNotEmpty } from 'class-validator';
 
 export class CreateAffiliatedClubDto {
     @IsString()
@@ -74,6 +74,8 @@ export class CreateAffiliatedClubRequestDto {
     @IsOptional()
     @IsString()
     purpose?: string;
+    @IsNotEmpty({message: "requested date must be provided"})
+    requestedDate: string
 }
 
 export class UpdateRequestStatusDto {

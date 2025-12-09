@@ -216,7 +216,7 @@ export class HallService {
           capacity: Number(payload.capacity) || 0,
           chargesMembers: Number(payload.chargesMembers) || 0,
           chargesGuests: Number(payload.chargesGuests) || 0,
-          isActive: shouldBeActive,
+          isActive: payload.isActive == 'true' || payload.isActive === true,
           images: finalImages,
         },
       });

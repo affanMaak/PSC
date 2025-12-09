@@ -59,8 +59,8 @@ export class HallController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body() payload: HallDto,
   ) {
-    
-    return this.hall.updateHall({...payload, isActive: payload.isActive === 'true' ? true:false}, files);
+    console.log(payload.isActive)
+    return this.hall.updateHall({...payload, isActive: payload.isActive = payload.isActive === 'true' || payload.isActive === true}, files);
   }
 
   @UseGuards(JwtAccGuard, RolesGuard)

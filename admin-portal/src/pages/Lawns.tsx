@@ -71,6 +71,7 @@ interface LawnForm {
   memberCharges: string;
   guestCharges: string;
   isOutOfService: boolean;
+  isActive: boolean;
   outOfOrders: LawnOutOfOrder[];
 }
 
@@ -82,6 +83,7 @@ const initialFormState: LawnForm = {
   memberCharges: "",
   guestCharges: "",
   isOutOfService: false,
+  isActive: true,
   outOfOrders: [],
 };
 
@@ -227,10 +229,10 @@ const OutOfOrderPeriods = ({
 // Status Indicator Component
 const StatusIndicator = ({ 
   outOfOrders,
-  isOutOfService 
+  isActive 
 }: { 
   outOfOrders: LawnOutOfOrder[];
-  isOutOfService: boolean;
+  isActive: boolean;
 }) => {
   const currentlyOutOfOrder = isCurrentlyOutOfOrder(outOfOrders);
   const hasFuturePeriods = outOfOrders?.some(period => new Date(period.startDate) > new Date());
@@ -252,7 +254,9 @@ const StatusIndicator = ({
   }
 
   return (
-    <Badge className="bg-emerald-600 text-white font-medium">Active</Badge>
+    <>
+      {isActive ? <Badge className="bg-emerald-600 text-white font-medium">Active</Badge>: <Badge variant="outline" className="bg-gray-500 text-white font-medium">InActive</Badge>}
+    </>
   );
 };
 
@@ -360,6 +364,7 @@ export default function Lawns() {
         guestCharges: editLawn.guestCharges?.toString() || "",
         isOutOfService: editLawn.isOutOfService || false,
         outOfOrders: outOfOrders,
+        isActive: editLawn.isActive,
       });
       setEditNewOutOfOrder(initialOutOfOrderState);
     }
@@ -475,8 +480,8 @@ export default function Lawns() {
       maxGuests: form.maxGuests,
       memberCharges: form.memberCharges || "0",
       guestCharges: form.guestCharges || "0",
-      isOutOfService: form.outOfOrders.length > 0,
       outOfOrders: form.outOfOrders,
+      isActive: form.isActive
     };
 
     createMutation.mutate(payload);
@@ -517,8 +522,8 @@ export default function Lawns() {
       maxGuests: editForm.maxGuests,
       memberCharges: editForm.memberCharges,
       guestCharges: editForm.guestCharges,
-      isOutOfService: editForm.outOfOrders.length > 0,
       outOfOrders: editForm.outOfOrders,
+      isActive: editForm.isActive
     };
 
     updateMutation.mutate(payload);
@@ -658,10 +663,11 @@ export default function Lawns() {
                   <div className="flex items-center gap-3">
                     <Label>Active</Label>
                     <Switch
-                      checked={!form.isOutOfService}
+                      checked={form.isActive}
                       onCheckedChange={(checked) => {
                         setForm(prev => ({ 
                           ...prev, 
+                          isActive: checked,
                           isOutOfService: !checked,
                           outOfOrders: checked ? [] : prev.outOfOrders
                         }));
@@ -730,7 +736,7 @@ export default function Lawns() {
                     <TableCell>
                       <StatusIndicator 
                         outOfOrders={lawn.outOfOrders || []} 
-                        isOutOfService={lawn.isOutOfService} 
+                        isActive={lawn.isActive} 
                       />
                     </TableCell>
                     <TableCell>
@@ -859,10 +865,11 @@ export default function Lawns() {
               <div className="flex items-center gap-3">
                 <Label>Active</Label>
                 <Switch
-                  checked={!editForm.isOutOfService}
+                  checked={editForm.isActive}
                   onCheckedChange={(checked) => {
                     setEditForm(prev => ({ 
                       ...prev, 
+                      isActive: checked,
                       isOutOfService: !checked,
                       outOfOrders: checked ? [] : prev.outOfOrders
                     }));

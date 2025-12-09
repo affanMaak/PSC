@@ -22,7 +22,7 @@ export class LawnService {
   }
   async getLawnNames(id: number) {
     return await this.prismaService.lawn.findMany({
-      where: { lawnCategoryId: id },
+      where: { lawnCategoryId: id, isActive: true },
       orderBy: { memberCharges: 'desc' },
     });
   }
@@ -360,7 +360,7 @@ export class LawnService {
       guestCharges: payload.guestCharges
         ? new Prisma.Decimal(payload.guestCharges)
         : undefined,
-      isActive: payload.isActive === 'true' ? false : true,
+      isActive: payload.isActive,
     };
 
     const updatedLawn = await this.prismaService.lawn.update({
@@ -393,7 +393,6 @@ export class LawnService {
 
   async getLawns() {
     return this.prismaService.lawn.findMany({
-      where: { isBooked: false },
       include: { outOfOrders: {orderBy: {startDate: "asc"}}, lawnCategory: { select: { id: true, category: true } } },
       orderBy: { createdAt: 'desc' },
     });

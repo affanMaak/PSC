@@ -160,6 +160,7 @@ export class AffiliationService {
         affiliatedClubId: payload.affiliatedClubId,
         guestCount: payload.guestCount || 0,
         purpose: payload.purpose,
+        requestedDate: new Date(payload.requestedDate) 
       },
       include: {
         affiliatedClub: true,

@@ -86,31 +86,31 @@ export class SchedularService {
             },
           });
 
-          const roomsToReactivate = allRooms
-            .filter((room) => {
-              // Room should be reactivated if it has NO out-of-order periods covering today
-              const hasActiveOutOfOrderToday = room.outOfOrders.some(
-                (oo) => oo.startDate <= today && oo.endDate >= today,
-              );
-              return !hasActiveOutOfOrderToday;
-            })
-            .map((room) => room.id);
+          // const roomsToReactivate = allRooms
+          //   .filter((room) => {
+          //     // Room should be reactivated if it has NO out-of-order periods covering today
+          //     const hasActiveOutOfOrderToday = room.outOfOrders.some(
+          //       (oo) => oo.startDate <= today && oo.endDate >= today,
+          //     );
+          //     return !hasActiveOutOfOrderToday;
+          //   })
+          //   .map((room) => room.id);
 
-          if (roomsToReactivate.length > 0) {
-            const reactivateResult = await tx.room.updateMany({
-              where: {
-                id: { in: roomsToReactivate },
-                isActive: false,
-              },
-              data: {
-                isActive: true,
-              },
-            });
+          // if (roomsToReactivate.length > 0) {
+          //   const reactivateResult = await tx.room.updateMany({
+          //     where: {
+          //       id: { in: roomsToReactivate },
+          //       isActive: false,
+          //     },
+          //     data: {
+          //       isActive: true,
+          //     },
+          //   });
 
-            this.logger.log(
-              `Reactivated ${reactivateResult.count} rooms (no active out-of-order periods today).`,
-            );
-          }
+          //   this.logger.log(
+          //     `Reactivated ${reactivateResult.count} rooms (no active out-of-order periods today).`,
+          //   );
+          // }
 
           // STEP 3 — Clean up expired out-of-order records (optional, for data cleanup)
           // Remove out-of-order records that ended more than 30 days ago

@@ -8,6 +8,8 @@ import {
     Param,
     Query,
     Patch,
+    UseGuards,
+    Req,
 } from '@nestjs/common';
 import { AffiliationService } from './affiliation.service';
 import {
@@ -16,6 +18,7 @@ import {
     CreateAffiliatedClubRequestDto,
     UpdateRequestStatusDto,
 } from './dtos/affiliation.dto';
+import { JwtAccGuard } from 'src/common/guards/jwt-access.guard';
 
 @Controller('affiliation')
 export class AffiliationController {
@@ -65,9 +68,10 @@ export class AffiliationController {
         return await this.affiliationService.getRequestById(Number(id));
     }
 
+    @UseGuards(JwtAccGuard)
     @Post('requests')
-    async createRequest(@Body() body: CreateAffiliatedClubRequestDto) {
-        return await this.affiliationService.createRequest(body);
+    async createRequest(@Body() body: any, @Req() req: {user: {id: string}}) {
+        return await this.affiliationService.createRequest({...body, membershipNo: req.user.id});
     }
 
     @Put('requests/status')

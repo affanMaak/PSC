@@ -300,7 +300,7 @@ export class RoomService {
   }
   async getAvailRooms(roomTypeId: number) {
     return await this.prismaService.room.findMany({
-      where: { roomTypeId },
+      where: { roomTypeId, isActive: true },
       include: {
         roomType: true,
         outOfOrders: {

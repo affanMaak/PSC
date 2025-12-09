@@ -21,7 +21,7 @@ export class LawnDto {
   @IsNotEmpty() maxGuests: string;
   @IsNotEmpty() memberCharges: string;
   @IsNotEmpty() guestCharges: string;
-  @IsNotEmpty({message: "hall activity must be provided"})
+  @IsNotEmpty({message: "lawn activity must be provided"})
   isActive: boolean | string;
   @IsOptional() outOfOrders?: LawnOutOfOrderDto[];
 }

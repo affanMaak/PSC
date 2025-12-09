@@ -578,7 +578,7 @@ model AffiliatedClubRequest {
   guestCount Int?    @default(0)
   purpose    String? @db.Text
 
-  requestedDate DateTime  @default(now())
+  requestedDate DateTime  
   approvedDate  DateTime?
   rejectedDate  DateTime?
 
