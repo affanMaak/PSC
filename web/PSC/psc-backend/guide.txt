@@ -1,0 +1,46 @@
+
+                    Auth
+
+create super admin
+    http://localhost:3000/auth/create/super-admin
+    Body Params:-> name: string, email: string, password: string, role: SUPER_ADMIN 
+
+create admin
+    http://localhost:3000/auth/create/admin
+    Body Params:-> name: string, email: string, password: string, role: ADMIN 
+
+
+update admin
+    http://localhost:3000/auth/update/admin
+    Query Params:-> adminID: string, newPassword: string
+
+login admin
+    http://localhost:3000/auth/login/admin
+    Body Params: email: string, password: string
+
+logout admin
+    http://localhost:3000/auth/logout/admin
+    nothing to pass
+
+refresh tokens
+    http://localhost:3000/auth/refresh-tokens
+    nothing to pass
+
+
+                    Member
+
+create member
+    http://localhost:3000/admin/create/member
+
+        Body Params:-> memberID: string, name: string, email: string, phone: string
+
+update member -- INACTIVE, SUSPENDED -- 
+    http://localhost:3000/admin/update/member/status
+     
+        Query Params:-> memberID: string, status: INACTIVE, SUSPENDED
+
+
+
+
+
+

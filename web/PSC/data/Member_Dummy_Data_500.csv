@@ -1,0 +1,893 @@
+Sno,Membership_No,Name,Email,Contact_No,Status,Balance,Other_Details
+54,1054,Member 54,member54@gmail.com,03469201484,DEACTIVATED,4290.27,Payment overdue
+55,1055,Member 55,member55@gmail.com,03777087817,ACTIVE,85.99,Payment overdue
+56,1056,Member 56,member56@gmail.com,03198234721,ACTIVE,-46.58,Payment overdue
+57,1057,Member 57,member57@gmail.com,03250063638,ACTIVE,3023.75,Renewal due
+58,1058,Member 58,member58@gmail.com,03895873972,ACTIVE,4929.09,
+59,1059,Member 59,member59@gmail.com,03058798608,ACTIVE,2555.89,
+60,1060,Member 60,member60@gmail.com,03628684218,ACTIVE,-303.66,Payment overdue
+61,1061,Member 61,member61@gmail.com,03605986465,ACTIVE,3524.21,
+62,1062,Member 62,member62@gmail.com,03445836408,ACTIVE,1448.74,Renewal due
+63,1063,Member 63,member63@gmail.com,03915175576,ACTIVE,4288.99,Payment overdue
+64,1064,Member 64,member64@gmail.com,03454782283,ACTIVE,561.47,Payment overdue
+65,1065,Member 65,member65@gmail.com,03060449686,ACTIVE,1579.03,
+66,1066,Member 66,member66@gmail.com,03481498876,ACTIVE,1841.94,
+67,1067,Member 67,member67@gmail.com,03814515068,INACTIVE,2877.44,Renewal due
+68,1068,Member 68,member68@gmail.com,03674126910,INACTIVE,1758.78,
+69,1069,Member 69,member69@gmail.com,03664488795,ACTIVE,785.13,
+70,1070,Member 70,member70@gmail.com,03887540163,INACTIVE,3413.91,
+71,1071,Member 71,member71@gmail.com,03681136046,INACTIVE,2358.22,Payment overdue
+72,1072,Member 72,member72@gmail.com,03060775093,ACTIVE,358.01,Renewal due
+73,1073,Member 73,member73@gmail.com,03186747275,ACTIVE,3786.29,Payment overdue
+74,1074,Member 74,member74@gmail.com,03085311993,ACTIVE,9.05,
+75,1075,Member 75,member75@gmail.com,03557933473,INACTIVE,2421.66,
+76,1076,Member 76,member76@gmail.com,03114298408,ACTIVE,4355.27,
+77,1077,Member 77,member77@gmail.com,03346221253,INACTIVE,2831.27,Renewal due
+78,1078,Member 78,member78@gmail.com,03086523182,ACTIVE,4885.7,Payment overdue
+79,1079,Member 79,member79@gmail.com,03809053681,ACTIVE,696.59,
+80,1080,Member 80,member80@gmail.com,03112385718,ACTIVE,1670.74,
+81,1081,Member 81,member81@gmail.com,03968529666,ACTIVE,2851.95,
+82,1082,Member 82,member82@gmail.com,03100473923,ACTIVE,1283.85,Renewal due
+83,1083,Member 83,member83@gmail.com,03672911719,ACTIVE,776.53,
+84,1084,Member 84,member84@gmail.com,03007090721,ACTIVE,2242.02,
+85,1085,Member 85,member85@gmail.com,03632329024,INACTIVE,349.64,Payment overdue
+86,1086,Member 86,member86@gmail.com,03171317483,ACTIVE,4692,
+87,1087,Member 87,member87@gmail.com,03980572512,ACTIVE,2902.3,Renewal due
+88,1088,Member 88,member88@gmail.com,03407457141,INACTIVE,2543.07,
+89,1089,Member 89,member89@gmail.com,03078141258,ACTIVE,3280.04,
+90,1090,Member 90,member90@gmail.com,03224926919,ACTIVE,246.59,
+91,1091,Member 91,member91@gmail.com,03303084343,INACTIVE,2787.91,
+92,1092,Member 92,member92@gmail.com,03833807700,ACTIVE,2551.61,Renewal due
+93,1093,Member 93,member93@gmail.com,03334830960,ACTIVE,4597.48,Payment overdue
+94,1094,Member 94,member94@gmail.com,03909960807,ACTIVE,1199.13,
+95,1095,Member 95,member95@gmail.com,03527579867,ACTIVE,4561.49,
+96,1096,Member 96,member96@gmail.com,03960147393,INACTIVE,1634.16,Payment overdue
+97,1097,Member 97,member97@gmail.com,03517966119,ACTIVE,2789.77,Renewal due
+98,1098,Member 98,member98@gmail.com,03002356807,ACTIVE,839.01,Payment overdue
+99,1099,Member 99,member99@gmail.com,03326885018,INACTIVE,-370.77,
+100,1100,Member 100,member100@gmail.com,03849061504,ACTIVE,2438.66,
+101,1101,Member 101,member101@gmail.com,03202281196,ACTIVE,1787.28,
+102,1102,Member 102,member102@gmail.com,03920973241,ACTIVE,4080.11,Renewal due
+103,1103,Member 103,member103@gmail.com,03314597588,ACTIVE,1717.42,Payment overdue
+104,1104,Member 104,member104@gmail.com,03048890130,ACTIVE,3966.79,
+105,1105,Member 105,member105@gmail.com,03175744626,INACTIVE,2218.51,
+106,1106,Member 106,member106@gmail.com,03090632807,ACTIVE,-135.51,Payment overdue
+107,1107,Member 107,member107@gmail.com,03267834761,INACTIVE,872.91,Renewal due
+108,1108,Member 108,member108@gmail.com,03494312187,ACTIVE,35.82,
+109,1109,Member 109,member109@gmail.com,03409002657,ACTIVE,2863.62,
+110,1110,Member 110,member110@gmail.com,03341762505,INACTIVE,3423.06,
+111,1111,Member 111,member111@gmail.com,03790406573,ACTIVE,-172.07,
+112,1112,Member 112,member112@gmail.com,03779049911,ACTIVE,2781.44,Renewal due
+113,1113,Member 113,member113@gmail.com,03208224044,ACTIVE,320.67,Payment overdue
+114,1114,Member 114,member114@gmail.com,03890504172,ACTIVE,966.69,
+115,1115,Member 115,member115@gmail.com,03033866445,ACTIVE,1583.39,
+116,1116,Member 116,member116@gmail.com,03883179616,ACTIVE,3273.95,
+117,1117,Member 117,member117@gmail.com,03151085773,ACTIVE,4378.97,Renewal due
+118,1118,Member 118,member118@gmail.com,03382737991,ACTIVE,4302.15,
+119,1119,Member 119,member119@gmail.com,03972140112,ACTIVE,1479.18,
+120,1120,Member 120,member120@gmail.com,03552405526,INACTIVE,3923.33,
+121,1121,Member 121,member121@gmail.com,03365133374,ACTIVE,-0.31,
+122,1122,Member 122,member122@gmail.com,03217503712,ACTIVE,-70.59,Renewal due
+123,1123,Member 123,member123@gmail.com,03031183403,INACTIVE,3407.81,
+124,1124,Member 124,member124@gmail.com,03154095905,ACTIVE,1806.98,
+125,1125,Member 125,member125@gmail.com,03127466728,INACTIVE,2243.99,Payment overdue
+126,1126,Member 126,member126@gmail.com,03388172835,ACTIVE,3403.91,
+127,1127,Member 127,member127@gmail.com,03672958128,ACTIVE,1230.43,Renewal due
+128,1128,Member 128,member128@gmail.com,03653661965,ACTIVE,3670.5,
+129,1129,Member 129,member129@gmail.com,03076476442,ACTIVE,1355.58,Payment overdue
+130,1130,Member 130,member130@gmail.com,03071943038,ACTIVE,4576.23,
+131,1131,Member 131,member131@gmail.com,03067309854,ACTIVE,3513.9,Payment overdue
+132,1132,Member 132,member132@gmail.com,03265262432,ACTIVE,-73.67,Renewal due
+133,1133,Member 133,member133@gmail.com,03539774325,ACTIVE,-78.74,
+134,1134,Member 134,member134@gmail.com,03920293201,ACTIVE,1188.29,
+135,1135,Member 135,member135@gmail.com,03923529656,INACTIVE,1138.25,
+136,1136,Member 136,member136@gmail.com,03354510969,ACTIVE,1340.88,
+137,1137,Member 137,member137@gmail.com,03382858786,ACTIVE,2110.1,Renewal due
+138,1138,Member 138,member138@gmail.com,03132647950,ACTIVE,3474.65,
+139,1139,Member 139,member139@gmail.com,03377451504,ACTIVE,2306.98,
+140,1140,Member 140,member140@gmail.com,03180797882,ACTIVE,301.02,Payment overdue
+141,1141,Member 141,member141@gmail.com,03728568060,ACTIVE,4939.78,
+142,1142,Member 142,member142@gmail.com,03593369151,ACTIVE,2564.07,Renewal due
+143,1143,Member 143,member143@gmail.com,03584761985,ACTIVE,2914.3,
+144,1144,Member 144,member144@gmail.com,03126756449,ACTIVE,3927.59,
+145,1145,Member 145,member145@gmail.com,03841893719,INACTIVE,-39.35,
+146,1146,Member 146,member146@gmail.com,03430283402,INACTIVE,2971.48,
+147,1147,Member 147,member147@gmail.com,03782567487,ACTIVE,-172.54,Renewal due
+148,1148,Member 148,member148@gmail.com,03183461404,ACTIVE,3291.26,
+149,1149,Member 149,member149@gmail.com,03729385844,ACTIVE,3239.57,Payment overdue
+150,1150,Member 150,member150@gmail.com,03079205673,ACTIVE,140.2,
+151,1151,Member 151,member151@gmail.com,03166532476,ACTIVE,131.3,
+152,1152,Member 152,member152@gmail.com,03029907935,ACTIVE,2627.73,Renewal due
+153,1153,Member 153,member153@gmail.com,03221459915,ACTIVE,4798.9,
+154,1154,Member 154,member154@gmail.com,03951164731,ACTIVE,4374.41,Payment overdue
+155,1155,Member 155,member155@gmail.com,03418666118,ACTIVE,4478.36,
+156,1156,Member 156,member156@gmail.com,03191384028,ACTIVE,722.99,
+157,1157,Member 157,member157@gmail.com,03255497844,ACTIVE,3825.63,Renewal due
+158,1158,Member 158,member158@gmail.com,03613306026,ACTIVE,2093.41,
+159,1159,Member 159,member159@gmail.com,03895834851,ACTIVE,4840.77,Payment overdue
+160,1160,Member 160,member160@gmail.com,03776175156,ACTIVE,625.76,
+161,1161,Member 161,member161@gmail.com,03625587520,INACTIVE,4809.42,
+162,1162,Member 162,member162@gmail.com,03651595729,ACTIVE,2591.2,Renewal due
+163,1163,Member 163,member163@gmail.com,03383965852,ACTIVE,2923.11,Payment overdue
+164,1164,Member 164,member164@gmail.com,03046867343,ACTIVE,4492.9,
+165,1165,Member 165,member165@gmail.com,03549823426,INACTIVE,781.27,
+166,1166,Member 166,member166@gmail.com,03299014758,ACTIVE,-327.98,
+167,1167,Member 167,member167@gmail.com,03545598515,ACTIVE,1476.67,Renewal due
+168,1168,Member 168,member168@gmail.com,03733379393,ACTIVE,3715.08,
+169,1169,Member 169,member169@gmail.com,03009704729,ACTIVE,1331.63,Payment overdue
+170,1170,Member 170,member170@gmail.com,03696740302,ACTIVE,1754.48,Payment overdue
+171,1171,Member 171,member171@gmail.com,03737472100,ACTIVE,2247.58,
+172,1172,Member 172,member172@gmail.com,03687028302,ACTIVE,1812.16,Renewal due
+173,1173,Member 173,member173@gmail.com,03183946266,ACTIVE,1247.8,
+174,1174,Member 174,member174@gmail.com,03902407565,ACTIVE,580.2,
+175,1175,Member 175,member175@gmail.com,03002228617,ACTIVE,2507.93,
+176,1176,Member 176,member176@gmail.com,03088992725,ACTIVE,642.39,Payment overdue
+177,1177,Member 177,member177@gmail.com,03014334195,ACTIVE,438.28,Renewal due
+178,1178,Member 178,member178@gmail.com,03563045953,INACTIVE,3225.74,
+179,1179,Member 179,member179@gmail.com,03754407124,ACTIVE,1611.52,Payment overdue
+180,1180,Member 180,member180@gmail.com,03224123926,ACTIVE,4957.4,
+181,1181,Member 181,member181@gmail.com,03553891754,ACTIVE,4114.79,
+182,1182,Member 182,member182@gmail.com,03178665458,ACTIVE,2373.72,Renewal due
+183,1183,Member 183,member183@gmail.com,03802867412,ACTIVE,998.75,
+184,1184,Member 184,member184@gmail.com,03842874639,ACTIVE,4325.5,
+185,1185,Member 185,member185@gmail.com,03376400120,ACTIVE,-410.19,
+186,1186,Member 186,member186@gmail.com,03143704906,ACTIVE,2763.86,
+187,1187,Member 187,member187@gmail.com,03052548588,ACTIVE,4263.44,Renewal due
+188,1188,Member 188,member188@gmail.com,03040059097,ACTIVE,2628.79,
+189,1189,Member 189,member189@gmail.com,03326462318,ACTIVE,2889.06,
+190,1190,Member 190,member190@gmail.com,03697260535,ACTIVE,3579.86,
+191,1191,Member 191,member191@gmail.com,03034185386,ACTIVE,1931.29,
+192,1192,Member 192,member192@gmail.com,03912964928,INACTIVE,3863.94,Renewal due
+193,1193,Member 193,member193@gmail.com,03537484042,ACTIVE,2597.16,
+194,1194,Member 194,member194@gmail.com,03934219157,ACTIVE,2000.41,
+195,1195,Member 195,member195@gmail.com,03510385714,INACTIVE,3466.14,
+196,1196,Member 196,member196@gmail.com,03623741896,INACTIVE,763.56,
+197,1197,Member 197,member197@gmail.com,03996552729,ACTIVE,408.54,Renewal due
+198,1198,Member 198,member198@gmail.com,03161059394,ACTIVE,4220.37,
+199,1199,Member 199,member199@gmail.com,03744119849,ACTIVE,102.74,
+200,1200,Member 200,member200@gmail.com,03347791254,ACTIVE,1552.17,
+201,1201,Member 201,member201@gmail.com,03405156534,ACTIVE,4714.83,
+202,1202,Member 202,member202@gmail.com,03689796575,INACTIVE,2240.53,Renewal due
+203,1203,Member 203,member203@gmail.com,03942389011,ACTIVE,1168.01,
+204,1204,Member 204,member204@gmail.com,03177177872,ACTIVE,2619.46,
+205,1205,Member 205,member205@gmail.com,03799396990,ACTIVE,2503.8,Payment overdue
+206,1206,Member 206,member206@gmail.com,03098475273,ACTIVE,4540.87,Payment overdue
+207,1207,Member 207,member207@gmail.com,03760994482,ACTIVE,2056.99,Renewal due
+208,1208,Member 208,member208@gmail.com,03916145478,INACTIVE,2456.98,
+209,1209,Member 209,member209@gmail.com,03688810929,ACTIVE,-421.97,
+210,1210,Member 210,member210@gmail.com,03907231361,ACTIVE,438.49,Payment overdue
+211,1211,Member 211,member211@gmail.com,03714932370,INACTIVE,3360.74,
+212,1212,Member 212,member212@gmail.com,03917736455,ACTIVE,2440.57,Renewal due
+213,1213,Member 213,member213@gmail.com,03617732886,ACTIVE,2039.8,
+214,1214,Member 214,member214@gmail.com,03951552336,ACTIVE,4481.8,
+215,1215,Member 215,member215@gmail.com,03345756797,ACTIVE,2282.21,Payment overdue
+216,1216,Member 216,member216@gmail.com,03757084151,INACTIVE,1085.73,Payment overdue
+217,1217,Member 217,member217@gmail.com,03337402968,ACTIVE,1206.46,Renewal due
+218,1218,Member 218,member218@gmail.com,03960836576,ACTIVE,1296.58,Payment overdue
+219,1219,Member 219,member219@gmail.com,03233538225,ACTIVE,4446.37,
+220,1220,Member 220,member220@gmail.com,03391087500,ACTIVE,3830.27,Payment overdue
+221,1221,Member 221,member221@gmail.com,03141601670,ACTIVE,1767.95,
+222,1222,Member 222,member222@gmail.com,03779239190,ACTIVE,4696.7,Renewal due
+223,1223,Member 223,member223@gmail.com,03221894459,ACTIVE,1490.23,
+224,1224,Member 224,member224@gmail.com,03943585039,ACTIVE,4128,
+225,1225,Member 225,member225@gmail.com,03189067505,ACTIVE,3237.13,Payment overdue
+226,1226,Member 226,member226@gmail.com,03671421246,ACTIVE,3370.35,Payment overdue
+227,1227,Member 227,member227@gmail.com,03732551864,SUSPENDED,-391.1,Renewal due
+228,1228,Member 228,member228@gmail.com,03793023545,ACTIVE,3413.05,
+229,1229,Member 229,member229@gmail.com,03476566314,ACTIVE,4590.93,Payment overdue
+230,1230,Member 230,member230@gmail.com,03799880912,ACTIVE,4049.03,
+231,1231,Member 231,member231@gmail.com,03564742944,ACTIVE,3085.34,
+232,1232,Member 232,member232@gmail.com,03047535969,ACTIVE,3301.71,Renewal due
+233,1233,Member 233,member233@gmail.com,03749390224,ACTIVE,2622.87,
+234,1234,Member 234,member234@gmail.com,03201034472,ACTIVE,202.27,
+235,1235,Member 235,member235@gmail.com,03732859454,ACTIVE,3381.33,
+236,1236,Member 236,member236@gmail.com,03037436405,ACTIVE,3571.89,Payment overdue
+237,1237,Member 237,member237@gmail.com,03837465018,ACTIVE,3444.39,Renewal due
+238,1238,Member 238,member238@gmail.com,03195413623,SUSPENDED,3643.05,
+239,1239,Member 239,member239@gmail.com,03214991293,INACTIVE,2489.66,
+240,1240,Member 240,member240@gmail.com,03574082544,ACTIVE,2240.97,Payment overdue
+241,1241,Member 241,member241@gmail.com,03547658743,ACTIVE,924.38,
+242,1242,Member 242,member242@gmail.com,03867459814,ACTIVE,1594.14,Renewal due
+243,1243,Member 243,member243@gmail.com,03123526366,ACTIVE,645.57,
+244,1244,Member 244,member244@gmail.com,03980608242,ACTIVE,-104.34,Payment overdue
+245,1245,Member 245,member245@gmail.com,03134080222,ACTIVE,518.77,Payment overdue
+246,1246,Member 246,member246@gmail.com,03440133310,INACTIVE,1080.64,
+247,1247,Member 247,member247@gmail.com,03244688160,ACTIVE,4441.99,Renewal due
+248,1248,Member 248,member248@gmail.com,03677131298,ACTIVE,152.73,
+249,1249,Member 249,member249@gmail.com,03252404711,ACTIVE,1873.8,Payment overdue
+250,1250,Member 250,member250@gmail.com,03274324372,ACTIVE,4463.79,
+251,1251,Member 251,member251@gmail.com,03446585141,INACTIVE,2103.82,
+252,1252,Member 252,member252@gmail.com,03702007911,ACTIVE,4436.86,Renewal due
+253,1253,Member 253,member253@gmail.com,03915328639,ACTIVE,4472.65,Payment overdue
+254,1254,Member 254,member254@gmail.com,03811669720,ACTIVE,3618.78,
+255,1255,Member 255,member255@gmail.com,03101539358,ACTIVE,995.68,
+256,1256,Member 256,member256@gmail.com,03807363882,ACTIVE,2502.82,Payment overdue
+257,1257,Member 257,member257@gmail.com,03665580213,ACTIVE,2720.7,Renewal due
+258,1258,Member 258,member258@gmail.com,03710866230,ACTIVE,3330.41,
+259,1259,Member 259,member259@gmail.com,03596445048,INACTIVE,2233.02,
+260,1260,Member 260,member260@gmail.com,03380288815,ACTIVE,3191.65,
+261,1261,Member 261,member261@gmail.com,03024619047,ACTIVE,1858.84,Payment overdue
+262,1262,Member 262,member262@gmail.com,03591988606,ACTIVE,3053.8,Renewal due
+263,1263,Member 263,member263@gmail.com,03197215936,ACTIVE,-90.02,
+264,1264,Member 264,member264@gmail.com,03471361012,ACTIVE,927.12,
+265,1265,Member 265,member265@gmail.com,03190464764,ACTIVE,1673.92,Payment overdue
+266,1266,Member 266,member266@gmail.com,03110229054,ACTIVE,-22.08,
+267,1267,Member 267,member267@gmail.com,03922054861,ACTIVE,1117.09,Renewal due
+268,1268,Member 268,member268@gmail.com,03365338630,ACTIVE,4988.74,
+269,1269,Member 269,member269@gmail.com,03869187546,ACTIVE,2717.4,
+270,1270,Member 270,member270@gmail.com,03472691261,ACTIVE,1494.67,
+271,1271,Member 271,member271@gmail.com,03974931584,ACTIVE,4728.02,
+272,1272,Member 272,member272@gmail.com,03882624396,INACTIVE,2931.57,Renewal due
+273,1273,Member 273,member273@gmail.com,03582043157,ACTIVE,2232.66,Payment overdue
+274,1274,Member 274,member274@gmail.com,03958030148,ACTIVE,-351.65,
+275,1275,Member 275,member275@gmail.com,03756678393,ACTIVE,2959.68,
+276,1276,Member 276,member276@gmail.com,03584029794,ACTIVE,1506.53,
+277,1277,Member 277,member277@gmail.com,03413123263,ACTIVE,3505.64,Renewal due
+278,1278,Member 278,member278@gmail.com,03783776198,INACTIVE,1755.26,
+279,1279,Member 279,member279@gmail.com,03695246774,ACTIVE,533.63,Payment overdue
+280,1280,Member 280,member280@gmail.com,03188025798,INACTIVE,1876.2,
+281,1281,Member 281,member281@gmail.com,03717392433,ACTIVE,2088.23,
+282,1282,Member 282,member282@gmail.com,03972872274,ACTIVE,-150.99,Renewal due
+283,1283,Member 283,member283@gmail.com,03926712183,ACTIVE,632.13,Payment overdue
+284,1284,Member 284,member284@gmail.com,03103395797,INACTIVE,3045.99,Payment overdue
+285,1285,Member 285,member285@gmail.com,03126713181,ACTIVE,4625.29,Payment overdue
+286,1286,Member 286,member286@gmail.com,03158557011,ACTIVE,210.48,Payment overdue
+287,1287,Member 287,member287@gmail.com,03762955188,INACTIVE,1860.53,Renewal due
+288,1288,Member 288,member288@gmail.com,03507541470,ACTIVE,1993.2,Payment overdue
+289,1289,Member 289,member289@gmail.com,03185970695,INACTIVE,3642.93,
+290,1290,Member 290,member290@gmail.com,03977651251,INACTIVE,4708.91,
+291,1291,Member 291,member291@gmail.com,03807651287,ACTIVE,4248.49,
+292,1292,Member 292,member292@gmail.com,03587868650,ACTIVE,-264.76,Renewal due
+293,1293,Member 293,member293@gmail.com,03059650176,ACTIVE,4816.6,
+294,1294,Member 294,member294@gmail.com,03994225714,ACTIVE,2768.26,Payment overdue
+295,1295,Member 295,member295@gmail.com,03472047275,ACTIVE,3019.36,
+296,1296,Member 296,member296@gmail.com,03667221307,ACTIVE,4395.68,
+297,1297,Member 297,member297@gmail.com,03279058312,ACTIVE,4946.95,Renewal due
+298,1298,Member 298,member298@gmail.com,03294743492,ACTIVE,4152.08,
+299,1299,Member 299,member299@gmail.com,03203963839,ACTIVE,-10.61,
+300,1300,Member 300,member300@gmail.com,03126417245,ACTIVE,2269.63,
+301,1301,Member 301,member301@gmail.com,03920260291,ACTIVE,4561.12,
+302,1302,Member 302,member302@gmail.com,03348041140,ACTIVE,74.15,Renewal due
+303,1303,Member 303,member303@gmail.com,03289807667,INACTIVE,3131.91,
+304,1304,Member 304,member304@gmail.com,03784882729,ACTIVE,4294.45,
+305,1305,Member 305,member305@gmail.com,03938040145,INACTIVE,3737.36,
+306,1306,Member 306,member306@gmail.com,03785219163,ACTIVE,4933.73,
+307,1307,Member 307,member307@gmail.com,03902164670,ACTIVE,3868.37,Renewal due
+308,1308,Member 308,member308@gmail.com,03139435393,ACTIVE,1250.01,
+309,1309,Member 309,member309@gmail.com,03853278690,ACTIVE,1980.91,
+310,1310,Member 310,member310@gmail.com,03498742841,ACTIVE,4165.26,
+311,1311,Member 311,member311@gmail.com,03928458468,INACTIVE,210.77,Payment overdue
+312,1312,Member 312,member312@gmail.com,03612942002,ACTIVE,3374.18,Renewal due
+313,1313,Member 313,member313@gmail.com,03304386788,ACTIVE,3722.58,
+314,1314,Member 314,member314@gmail.com,03509327511,ACTIVE,1617.63,
+315,1315,Member 315,member315@gmail.com,03522415896,ACTIVE,3838.86,
+316,1316,Member 316,member316@gmail.com,03049292618,ACTIVE,1096.76,
+317,1317,Member 317,member317@gmail.com,03636393012,INACTIVE,2972.86,Renewal due
+318,1318,Member 318,member318@gmail.com,03780250738,ACTIVE,445.98,
+319,1319,Member 319,member319@gmail.com,03749948965,ACTIVE,4292.81,
+320,1320,Member 320,member320@gmail.com,03857335672,ACTIVE,4147.24,
+321,1321,Member 321,member321@gmail.com,03712101365,ACTIVE,697.15,
+322,1322,Member 322,member322@gmail.com,03049168733,ACTIVE,362.68,Renewal due
+323,1323,Member 323,member323@gmail.com,03596103371,ACTIVE,1073.43,
+324,1324,Member 324,member324@gmail.com,03869194085,ACTIVE,2691.2,Payment overdue
+325,1325,Member 325,member325@gmail.com,03794792407,ACTIVE,1216.15,Payment overdue
+326,1326,Member 326,member326@gmail.com,03058396001,INACTIVE,1834.47,
+327,1327,Member 327,member327@gmail.com,03192267590,ACTIVE,4586.52,Renewal due
+328,1328,Member 328,member328@gmail.com,03303908423,ACTIVE,3615.78,
+329,1329,Member 329,member329@gmail.com,03213458610,ACTIVE,2352.5,Payment overdue
+330,1330,Member 330,member330@gmail.com,03109559198,ACTIVE,-131.37,
+331,1331,Member 331,member331@gmail.com,03620886921,INACTIVE,3685.81,Payment overdue
+332,1332,Member 332,member332@gmail.com,03998644991,ACTIVE,1226.92,Renewal due
+333,1333,Member 333,member333@gmail.com,03624061831,ACTIVE,577.17,
+334,1334,Member 334,member334@gmail.com,03838532415,ACTIVE,1372.11,
+335,1335,Member 335,member335@gmail.com,03332643811,ACTIVE,958.34,Payment overdue
+336,1336,Member 336,member336@gmail.com,03617489981,ACTIVE,639.47,Payment overdue
+337,1337,Member 337,member337@gmail.com,03866635176,ACTIVE,3844.56,Renewal due
+338,1338,Member 338,member338@gmail.com,03270589352,INACTIVE,3177.69,Payment overdue
+339,1339,Member 339,member339@gmail.com,03093794633,ACTIVE,3698.07,Payment overdue
+340,1340,Member 340,member340@gmail.com,03753376327,ACTIVE,2409.16,
+341,1341,Member 341,member341@gmail.com,03282876888,ACTIVE,4638.44,
+342,1342,Member 342,member342@gmail.com,03279181115,INACTIVE,331.28,Renewal due
+343,1343,Member 343,member343@gmail.com,03760916076,ACTIVE,3494.58,Payment overdue
+344,1344,Member 344,member344@gmail.com,03074486284,ACTIVE,2346.49,
+345,1345,Member 345,member345@gmail.com,03979537460,ACTIVE,4181.91,Payment overdue
+346,1346,Member 346,member346@gmail.com,03219438893,ACTIVE,4016.91,
+347,1347,Member 347,member347@gmail.com,03274250134,ACTIVE,2172.14,Renewal due
+348,1348,Member 348,member348@gmail.com,03651240442,ACTIVE,3663.3,
+349,1349,Member 349,member349@gmail.com,03776078154,ACTIVE,4733.4,
+350,1350,Member 350,member350@gmail.com,03773682064,INACTIVE,4329.69,
+351,1351,Member 351,member351@gmail.com,03265790674,ACTIVE,4529.83,
+352,1352,Member 352,member352@gmail.com,03213425352,INACTIVE,1400.03,Renewal due
+353,1353,Member 353,member353@gmail.com,03982800650,INACTIVE,-392.83,
+354,1354,Member 354,member354@gmail.com,03156988504,ACTIVE,860.83,
+355,1355,Member 355,member355@gmail.com,03711846083,INACTIVE,3121.31,
+356,1356,Member 356,member356@gmail.com,03901541114,ACTIVE,2400.81,
+357,1357,Member 357,member357@gmail.com,03464729752,ACTIVE,380,Renewal due
+358,1358,Member 358,member358@gmail.com,03867263794,INACTIVE,2284.41,
+359,1359,Member 359,member359@gmail.com,03596235529,ACTIVE,2979,
+360,1360,Member 360,member360@gmail.com,03606894407,INACTIVE,1587.74,Payment overdue
+361,1361,Member 361,member361@gmail.com,03866626069,ACTIVE,77.03,
+362,1362,Member 362,member362@gmail.com,03040940782,ACTIVE,7.93,Renewal due
+363,1363,Member 363,member363@gmail.com,03872979131,INACTIVE,1377.11,
+364,1364,Member 364,member364@gmail.com,03983848061,ACTIVE,2697.5,
+365,1365,Member 365,member365@gmail.com,03575966219,ACTIVE,714.31,
+366,1366,Member 366,member366@gmail.com,03822301509,ACTIVE,3365.82,Payment overdue
+367,1367,Member 367,member367@gmail.com,03362359964,ACTIVE,4422.58,Renewal due
+368,1368,Member 368,member368@gmail.com,03947761796,INACTIVE,3687.08,Payment overdue
+369,1369,Member 369,member369@gmail.com,03049322351,INACTIVE,4553.89,
+370,1370,Member 370,member370@gmail.com,03803992501,ACTIVE,-318.79,
+371,1371,Member 371,member371@gmail.com,03420962769,ACTIVE,4143.11,
+372,1372,Member 372,member372@gmail.com,03545014873,ACTIVE,-447.21,Renewal due
+373,1373,Member 373,member373@gmail.com,03005882849,ACTIVE,420.27,Payment overdue
+374,1374,Member 374,member374@gmail.com,03713450540,INACTIVE,4162.16,
+375,1375,Member 375,member375@gmail.com,03341815671,ACTIVE,479.25,
+376,1376,Member 376,member376@gmail.com,03271415430,INACTIVE,1249.19,
+377,1377,Member 377,member377@gmail.com,03432951179,ACTIVE,-319.24,Renewal due
+378,1378,Member 378,member378@gmail.com,03357380158,ACTIVE,4152.32,
+379,1379,Member 379,member379@gmail.com,03622334596,ACTIVE,1934.68,
+380,1380,Member 380,member380@gmail.com,03035602770,ACTIVE,361.9,
+381,1381,Member 381,member381@gmail.com,03677115111,ACTIVE,3314.42,Payment overdue
+382,1382,Member 382,member382@gmail.com,03124876643,ACTIVE,3525.84,Renewal due
+383,1383,Member 383,member383@gmail.com,03613875936,INACTIVE,-62.75,
+384,1384,Member 384,member384@gmail.com,03591187922,ACTIVE,662.61,
+385,1385,Member 385,member385@gmail.com,03131721496,INACTIVE,1453.25,
+386,1386,Member 386,member386@gmail.com,03567682145,ACTIVE,-437.28,
+387,1387,Member 387,member387@gmail.com,03318868347,ACTIVE,4977.47,Renewal due
+388,1388,Member 388,member388@gmail.com,03849793094,ACTIVE,2391.22,
+389,1389,Member 389,member389@gmail.com,03998883748,ACTIVE,-217.42,
+390,1390,Member 390,member390@gmail.com,03722889491,ACTIVE,1696.91,Payment overdue
+391,1391,Member 391,member391@gmail.com,03845546662,ACTIVE,-8.99,
+392,1392,Member 392,member392@gmail.com,03247659745,INACTIVE,3158.53,Renewal due
+393,1393,Member 393,member393@gmail.com,03414166088,INACTIVE,4834.82,
+394,1394,Member 394,member394@gmail.com,03739682147,ACTIVE,4614.41,Payment overdue
+395,1395,Member 395,member395@gmail.com,03556078606,ACTIVE,4878.86,
+396,1396,Member 396,member396@gmail.com,03361683595,ACTIVE,3394.54,
+397,1397,Member 397,member397@gmail.com,03614949631,ACTIVE,2640.33,Renewal due
+398,1398,Member 398,member398@gmail.com,03476787908,ACTIVE,2354.17,
+399,1399,Member 399,member399@gmail.com,03918208933,ACTIVE,190.88,
+400,1400,Member 400,member400@gmail.com,03122898721,INACTIVE,921.39,
+401,1401,Member 401,member401@gmail.com,03663420186,ACTIVE,1541.37,
+402,1402,Member 402,member402@gmail.com,03766578918,ACTIVE,151.25,Renewal due
+403,1403,Member 403,member403@gmail.com,03826595788,INACTIVE,1843.78,
+404,1404,Member 404,member404@gmail.com,03685065875,ACTIVE,3044.16,Payment overdue
+405,1405,Member 405,member405@gmail.com,03521215519,ACTIVE,-383.25,
+406,1406,Member 406,member406@gmail.com,03150499143,ACTIVE,315.1,Payment overdue
+407,1407,Member 407,member407@gmail.com,03645988870,ACTIVE,4127.92,Renewal due
+408,1408,Member 408,member408@gmail.com,03844668249,ACTIVE,3409.34,Payment overdue
+409,1409,Member 409,member409@gmail.com,03888287318,ACTIVE,4015.73,
+410,1410,Member 410,member410@gmail.com,03771961267,ACTIVE,3474.97,
+411,1411,Member 411,member411@gmail.com,03597005485,ACTIVE,1858.34,Payment overdue
+412,1412,Member 412,member412@gmail.com,03646833773,INACTIVE,351.66,Renewal due
+413,1413,Member 413,member413@gmail.com,03471734448,ACTIVE,294.46,Payment overdue
+414,1414,Member 414,member414@gmail.com,03754562420,ACTIVE,4847.62,
+415,1415,Member 415,member415@gmail.com,03236356958,ACTIVE,4510.03,
+416,1416,Member 416,member416@gmail.com,03868189315,INACTIVE,1666.28,
+417,1417,Member 417,member417@gmail.com,03725299081,ACTIVE,4046.56,Renewal due
+418,1418,Member 418,member418@gmail.com,03832662885,ACTIVE,232.57,
+419,1419,Member 419,member419@gmail.com,03449815501,INACTIVE,3780.87,
+420,1420,Member 420,member420@gmail.com,03248535851,INACTIVE,3631.45,
+421,1421,Member 421,member421@gmail.com,03757914613,ACTIVE,1314.14,Payment overdue
+422,1422,Member 422,member422@gmail.com,03968966234,ACTIVE,712.4,Renewal due
+423,1423,Member 423,member423@gmail.com,03514480590,ACTIVE,2390.64,
+424,1424,Member 424,member424@gmail.com,03213848962,ACTIVE,1818.7,
+425,1425,Member 425,member425@gmail.com,03358409871,INACTIVE,1283.25,Payment overdue
+426,1426,Member 426,member426@gmail.com,03455093272,ACTIVE,4671.73,
+427,1427,Member 427,member427@gmail.com,03717688896,INACTIVE,1539.95,Renewal due
+428,1428,Member 428,member428@gmail.com,03048565643,ACTIVE,4240.01,
+429,1429,Member 429,member429@gmail.com,03408755157,ACTIVE,2415.02,Payment overdue
+430,1430,Member 430,member430@gmail.com,03509795236,ACTIVE,2620.3,
+431,1431,Member 431,member431@gmail.com,03642753204,ACTIVE,4662.82,Payment overdue
+432,1432,Member 432,member432@gmail.com,03549924998,ACTIVE,240.69,Renewal due
+433,1433,Member 433,member433@gmail.com,03735387185,ACTIVE,817.08,
+434,1434,Member 434,member434@gmail.com,03872337144,ACTIVE,4535.37,
+435,1435,Member 435,member435@gmail.com,03366663158,ACTIVE,-382.47,
+436,1436,Member 436,member436@gmail.com,03434866572,ACTIVE,4585.99,
+437,1437,Member 437,member437@gmail.com,03636662116,ACTIVE,2807.22,Renewal due
+438,1438,Member 438,member438@gmail.com,03507025425,ACTIVE,383.85,Payment overdue
+439,1439,Member 439,member439@gmail.com,03209558135,ACTIVE,3723.34,
+440,1440,Member 440,member440@gmail.com,03911998919,SUSPENDED,3090.79,Payment overdue
+441,1441,Member 441,member441@gmail.com,03122583045,INACTIVE,-73.76,
+442,1442,Member 442,member442@gmail.com,03691474191,ACTIVE,1927.47,Renewal due
+443,1443,Member 443,member443@gmail.com,03510973585,ACTIVE,4339.37,
+444,1444,Member 444,member444@gmail.com,03056190126,INACTIVE,3416.61,Payment overdue
+445,1445,Member 445,member445@gmail.com,03770679925,ACTIVE,2839.49,Payment overdue
+446,1446,Member 446,member446@gmail.com,03978355901,ACTIVE,294.39,
+447,1447,Member 447,member447@gmail.com,03491030081,ACTIVE,497.74,Renewal due
+448,1448,Member 448,member448@gmail.com,03702759666,ACTIVE,610.99,
+449,1449,Member 449,member449@gmail.com,03517631188,ACTIVE,1460.9,Payment overdue
+450,1450,Member 450,member450@gmail.com,03695761719,ACTIVE,2340.84,
+451,1451,Member 451,member451@gmail.com,03812203709,ACTIVE,403.35,
+452,1452,Member 452,member452@gmail.com,03490178176,ACTIVE,2235.81,Renewal due
+453,1453,Member 453,member453@gmail.com,03825145501,ACTIVE,523.82,Payment overdue
+454,1454,Member 454,member454@gmail.com,03371355488,ACTIVE,1083.22,
+455,1455,Member 455,member455@gmail.com,03173945753,INACTIVE,3044.15,Payment overdue
+456,1456,Member 456,member456@gmail.com,03369745823,ACTIVE,912.32,
+457,1457,Member 457,member457@gmail.com,03866945972,INACTIVE,4634.33,Renewal due
+458,1458,Member 458,member458@gmail.com,03961342155,ACTIVE,2728.04,
+459,1459,Member 459,member459@gmail.com,03947001142,INACTIVE,3993.43,
+460,1460,Member 460,member460@gmail.com,03244247785,INACTIVE,788.22,
+461,1461,Member 461,member461@gmail.com,03505315302,ACTIVE,196.58,
+462,1462,Member 462,member462@gmail.com,03347237733,ACTIVE,4385.91,Renewal due
+463,1463,Member 463,member463@gmail.com,03116455118,ACTIVE,3537.03,
+464,1464,Member 464,member464@gmail.com,03163805785,INACTIVE,2121.87,
+465,1465,Member 465,member465@gmail.com,03918993737,ACTIVE,-38.79,
+466,1466,Member 466,member466@gmail.com,03205960741,INACTIVE,2768.34,Payment overdue
+467,1467,Member 467,member467@gmail.com,03019303391,ACTIVE,156.26,Renewal due
+468,1468,Member 468,member468@gmail.com,03360748882,ACTIVE,1749.49,
+469,1469,Member 469,member469@gmail.com,03839680031,ACTIVE,164.48,
+470,1470,Member 470,member470@gmail.com,03213704199,ACTIVE,2515.22,
+471,1471,Member 471,member471@gmail.com,03716962133,ACTIVE,4080.3,Payment overdue
+472,1472,Member 472,member472@gmail.com,03652607710,ACTIVE,482.16,Renewal due
+473,1473,Member 473,member473@gmail.com,03040286113,INACTIVE,4677.59,Payment overdue
+474,1474,Member 474,member474@gmail.com,03229983490,ACTIVE,2965.98,
+475,1475,Member 475,member475@gmail.com,03489762684,ACTIVE,3290.66,
+476,1476,Member 476,member476@gmail.com,03501208392,ACTIVE,4587.42,Payment overdue
+477,1477,Member 477,member477@gmail.com,03750910626,INACTIVE,2102.53,Renewal due
+478,1478,Member 478,member478@gmail.com,03537009726,ACTIVE,-134.94,Payment overdue
+479,1479,Member 479,member479@gmail.com,03666923597,ACTIVE,3826.41,
+480,1480,Member 480,member480@gmail.com,03605780065,ACTIVE,367.71,
+481,1481,Member 481,member481@gmail.com,03357670168,ACTIVE,-227.57,
+482,1482,Member 482,member482@gmail.com,03424951672,ACTIVE,3222.56,Renewal due
+483,1483,Member 483,member483@gmail.com,03972786811,ACTIVE,3489.32,
+484,1484,Member 484,member484@gmail.com,03577595804,ACTIVE,458.11,
+485,1485,Member 485,member485@gmail.com,03000500283,ACTIVE,4665.4,
+486,1486,Member 486,member486@gmail.com,03600623040,ACTIVE,2579.24,
+487,1487,Member 487,member487@gmail.com,03843512426,ACTIVE,494.61,Renewal due
+488,1488,Member 488,member488@gmail.com,03561027929,ACTIVE,3627.25,
+489,1489,Member 489,member489@gmail.com,03711826899,ACTIVE,3360.02,
+490,1490,Member 490,member490@gmail.com,03382909470,ACTIVE,623.89,
+491,1491,Member 491,member491@gmail.com,03237284241,ACTIVE,1062.62,Payment overdue
+492,1492,Member 492,member492@gmail.com,03793824016,ACTIVE,952.47,Renewal due
+493,1493,Member 493,member493@gmail.com,03401987796,ACTIVE,4499.41,
+494,1494,Member 494,member494@gmail.com,03320737301,ACTIVE,3436.09,
+495,1495,Member 495,member495@gmail.com,03678362628,INACTIVE,4266.59,
+496,1496,Member 496,member496@gmail.com,03191745974,ACTIVE,-466.32,
+497,1497,Member 497,member497@gmail.com,03331544718,ACTIVE,1510.49,Renewal due
+498,1498,Member 498,member498@gmail.com,03643724102,ACTIVE,3138.76,
+499,1499,Member 499,member499@gmail.com,03835476828,ACTIVE,4725.72,Payment overdue
+500,1500,Member 500,member500@gmail.com,03604287733,INACTIVE,3754.67,Payment overdue
+501,1501,Member 501,member501@gmail.com,03445260944,ACTIVE,4830.61,
+502,1502,Member 502,member502@gmail.com,03711916045,INACTIVE,2208.88,Renewal due
+503,1503,Member 503,member503@gmail.com,03137044812,ACTIVE,-120.78,
+504,1504,Member 504,member504@gmail.com,03233971688,ACTIVE,4954.61,
+505,1505,Member 505,member505@gmail.com,03511472866,ACTIVE,4419.94,
+506,1506,Member 506,member506@gmail.com,03861160509,ACTIVE,3831.42,
+507,1507,Member 507,member507@gmail.com,03812538084,ACTIVE,3635.66,Renewal due
+508,1508,Member 508,member508@gmail.com,03534778267,ACTIVE,2332.67,
+509,1509,Member 509,member509@gmail.com,03116899860,ACTIVE,-371.69,
+510,1510,Member 510,member510@gmail.com,03103806146,ACTIVE,4132.81,
+511,1511,Member 511,member511@gmail.com,03795561076,ACTIVE,2568.01,Payment overdue
+512,1512,Member 512,member512@gmail.com,03326746422,ACTIVE,-16.02,Renewal due
+513,1513,Member 513,member513@gmail.com,03914128493,INACTIVE,1205.84,Payment overdue
+514,1514,Member 514,member514@gmail.com,03578939516,ACTIVE,4784.01,
+515,1515,Member 515,member515@gmail.com,03004627993,ACTIVE,1038.88,
+516,1516,Member 516,member516@gmail.com,03070592161,ACTIVE,-396.41,
+517,1517,Member 517,member517@gmail.com,03721340820,ACTIVE,194.1,Renewal due
+518,1518,Member 518,member518@gmail.com,03573515556,ACTIVE,3538.27,Payment overdue
+519,1519,Member 519,member519@gmail.com,03528172592,ACTIVE,-170.06,Payment overdue
+520,1520,Member 520,member520@gmail.com,03649269036,INACTIVE,4068.76,
+521,1521,Member 521,member521@gmail.com,03583961746,ACTIVE,80.91,Payment overdue
+522,1522,Member 522,member522@gmail.com,03689092595,ACTIVE,3509.22,Renewal due
+523,1523,Member 523,member523@gmail.com,03570205893,ACTIVE,2016.06,
+524,1524,Member 524,member524@gmail.com,03596611614,INACTIVE,1782.25,
+525,1525,Member 525,member525@gmail.com,03632951553,ACTIVE,2937.54,Payment overdue
+526,1526,Member 526,member526@gmail.com,03533611661,ACTIVE,1963.72,
+527,1527,Member 527,member527@gmail.com,03447881449,ACTIVE,563.62,Renewal due
+528,1528,Member 528,member528@gmail.com,03893000800,ACTIVE,101.97,
+529,1529,Member 529,member529@gmail.com,03328504981,ACTIVE,482.71,
+530,1530,Member 530,member530@gmail.com,03450789094,INACTIVE,4217.21,
+531,1531,Member 531,member531@gmail.com,03738593299,SUSPENDED,4560.39,
+532,1532,Member 532,member532@gmail.com,03836021305,ACTIVE,4225.22,Renewal due
+533,1533,Member 533,member533@gmail.com,03292972745,ACTIVE,618.24,Payment overdue
+534,1534,Member 534,member534@gmail.com,03224699564,ACTIVE,3630.13,
+535,1535,Member 535,member535@gmail.com,03121017034,ACTIVE,4022.78,Payment overdue
+536,1536,Member 536,member536@gmail.com,03126203894,ACTIVE,345.01,Payment overdue
+537,1537,Member 537,member537@gmail.com,03895546255,INACTIVE,3755.47,Renewal due
+538,1538,Member 538,member538@gmail.com,03396158177,ACTIVE,2997.56,Payment overdue
+539,1539,Member 539,member539@gmail.com,03615827822,ACTIVE,1849.04,
+540,1540,Member 540,member540@gmail.com,03016471220,ACTIVE,3688.75,Payment overdue
+541,1541,Member 541,member541@gmail.com,03851524084,ACTIVE,1045.09,
+542,1542,Member 542,member542@gmail.com,03347947520,ACTIVE,-81.33,Renewal due
+543,1543,Member 543,member543@gmail.com,03542780371,ACTIVE,540.14,Payment overdue
+544,1544,Member 544,member544@gmail.com,03219483950,INACTIVE,4618.32,
+545,1545,Member 545,member545@gmail.com,03007976204,ACTIVE,3667.93,
+546,1546,Member 546,member546@gmail.com,03013282990,ACTIVE,3452.63,
+547,1547,Member 547,member547@gmail.com,03070380316,ACTIVE,1168.71,Renewal due
+548,1548,Member 548,member548@gmail.com,03306312371,ACTIVE,1057.85,
+549,1549,Member 549,member549@gmail.com,03846209173,ACTIVE,4028.06,Payment overdue
+550,1550,Member 550,member550@gmail.com,03440407322,ACTIVE,1053.83,
+551,1551,Member 551,member551@gmail.com,03311216877,ACTIVE,931.58,
+552,1552,Member 552,member552@gmail.com,03660860696,ACTIVE,-404.88,Renewal due
+553,1553,Member 553,member553@gmail.com,03922994089,ACTIVE,3487.49,
+554,1554,Member 554,member554@gmail.com,03442720781,ACTIVE,4296.18,Payment overdue
+555,1555,Member 555,member555@gmail.com,03508672655,ACTIVE,1953.91,Payment overdue
+556,1556,Member 556,member556@gmail.com,03249991563,ACTIVE,4872.08,
+557,1557,Member 557,member557@gmail.com,03748322598,ACTIVE,2537.77,Renewal due
+558,1558,Member 558,member558@gmail.com,03731363773,INACTIVE,4980.88,
+559,1559,Member 559,member559@gmail.com,03048981728,ACTIVE,3673.25,Payment overdue
+560,1560,Member 560,member560@gmail.com,03171102258,ACTIVE,132.92,
+561,1561,Member 561,member561@gmail.com,03768559430,ACTIVE,568.39,
+562,1562,Member 562,member562@gmail.com,03156874959,ACTIVE,3992,Renewal due
+563,1563,Member 563,member563@gmail.com,03776818431,ACTIVE,2732.97,
+564,1564,Member 564,member564@gmail.com,03618562814,ACTIVE,4132.59,Payment overdue
+565,1565,Member 565,member565@gmail.com,03121874617,ACTIVE,4761.69,Payment overdue
+566,1566,Member 566,member566@gmail.com,03532689786,ACTIVE,2742.91,
+567,1567,Member 567,member567@gmail.com,03565112467,ACTIVE,4705.41,Renewal due
+568,1568,Member 568,member568@gmail.com,03230226550,ACTIVE,241.94,
+569,1569,Member 569,member569@gmail.com,03704854671,ACTIVE,2276.67,
+570,1570,Member 570,member570@gmail.com,03611156230,ACTIVE,396.58,
+571,1571,Member 571,member571@gmail.com,03125931864,ACTIVE,3747.59,Payment overdue
+572,1572,Member 572,member572@gmail.com,03131328090,ACTIVE,661.33,Renewal due
+573,1573,Member 573,member573@gmail.com,03731150401,INACTIVE,1172.59,Payment overdue
+574,1574,Member 574,member574@gmail.com,03993197494,ACTIVE,4941.7,Payment overdue
+575,1575,Member 575,member575@gmail.com,03349039987,INACTIVE,1756.49,Payment overdue
+576,1576,Member 576,member576@gmail.com,03828379313,ACTIVE,2927.13,
+577,1577,Member 577,member577@gmail.com,03566066215,ACTIVE,629.48,Renewal due
+578,1578,Member 578,member578@gmail.com,03912512338,ACTIVE,-131.37,
+579,1579,Member 579,member579@gmail.com,03580138034,ACTIVE,1757.37,
+580,1580,Member 580,member580@gmail.com,03784518892,ACTIVE,2901.05,Payment overdue
+581,1581,Member 581,member581@gmail.com,03776828180,ACTIVE,-379.87,
+582,1582,Member 582,member582@gmail.com,03571117754,ACTIVE,189.6,Renewal due
+583,1583,Member 583,member583@gmail.com,03770934186,ACTIVE,4292.75,
+584,1584,Member 584,member584@gmail.com,03446622814,ACTIVE,3537.29,
+585,1585,Member 585,member585@gmail.com,03070451758,INACTIVE,2749.73,
+586,1586,Member 586,member586@gmail.com,03406273965,ACTIVE,-400.2,
+587,1587,Member 587,member587@gmail.com,03130877343,ACTIVE,4187.17,Renewal due
+588,1588,Member 588,member588@gmail.com,03254474340,ACTIVE,1458.34,
+589,1589,Member 589,member589@gmail.com,03708980666,ACTIVE,3068.92,
+590,1590,Member 590,member590@gmail.com,03449076828,INACTIVE,-385.14,
+591,1591,Member 591,member591@gmail.com,03234582133,ACTIVE,2517.96,Payment overdue
+592,1592,Member 592,member592@gmail.com,03695723213,ACTIVE,3106.21,Renewal due
+593,1593,Member 593,member593@gmail.com,03487938451,ACTIVE,2134.8,
+594,1594,Member 594,member594@gmail.com,03890323620,ACTIVE,3159.48,
+595,1595,Member 595,member595@gmail.com,03886729964,INACTIVE,46.97,
+596,1596,Member 596,member596@gmail.com,03168266822,ACTIVE,4995.14,
+597,1597,Member 597,member597@gmail.com,03020971910,ACTIVE,-316.9,Renewal due
+598,1598,Member 598,member598@gmail.com,03070068118,ACTIVE,4357.98,
+599,1599,Member 599,member599@gmail.com,03294216161,ACTIVE,758.62,
+600,1600,Member 600,member600@gmail.com,03488460891,ACTIVE,-17.83,
+601,1601,Member 601,member601@gmail.com,03423387622,INACTIVE,4706.82,
+602,1602,Member 602,member602@gmail.com,03461634551,ACTIVE,3366.27,Renewal due
+603,1603,Member 603,member603@gmail.com,03108002136,ACTIVE,752.47,
+604,1604,Member 604,member604@gmail.com,03512435642,INACTIVE,597.78,
+605,1605,Member 605,member605@gmail.com,03024693082,ACTIVE,4245.35,
+606,1606,Member 606,member606@gmail.com,03851754109,ACTIVE,3380.09,Payment overdue
+607,1607,Member 607,member607@gmail.com,03079480709,ACTIVE,98.65,Renewal due
+608,1608,Member 608,member608@gmail.com,03664982972,ACTIVE,4924.07,Payment overdue
+609,1609,Member 609,member609@gmail.com,03898710932,ACTIVE,2105.3,Payment overdue
+610,1610,Member 610,member610@gmail.com,03384611317,ACTIVE,4792.77,
+611,1611,Member 611,member611@gmail.com,03540760890,ACTIVE,1421.75,Payment overdue
+612,1612,Member 612,member612@gmail.com,03075060572,ACTIVE,-400.72,Renewal due
+613,1613,Member 613,member613@gmail.com,03846020379,ACTIVE,1453.56,
+614,1614,Member 614,member614@gmail.com,03521597439,INACTIVE,2866.83,Payment overdue
+615,1615,Member 615,member615@gmail.com,03648617459,ACTIVE,2912.42,
+616,1616,Member 616,member616@gmail.com,03781986902,ACTIVE,4921.54,Payment overdue
+617,1617,Member 617,member617@gmail.com,03448001596,INACTIVE,2039.28,Renewal due
+618,1618,Member 618,member618@gmail.com,03210863401,ACTIVE,4805.88,
+619,1619,Member 619,member619@gmail.com,03832039493,INACTIVE,1871.41,
+620,1620,Member 620,member620@gmail.com,03947457055,ACTIVE,1183.7,
+621,1621,Member 621,member621@gmail.com,03081906231,ACTIVE,2497.65,
+622,1622,Member 622,member622@gmail.com,03496740257,ACTIVE,1474.13,Renewal due
+623,1623,Member 623,member623@gmail.com,03134436426,ACTIVE,2786.14,Payment overdue
+624,1624,Member 624,member624@gmail.com,03738126201,INACTIVE,2474.13,
+625,1625,Member 625,member625@gmail.com,03471412663,ACTIVE,3745.7,
+626,1626,Member 626,member626@gmail.com,03440810233,ACTIVE,4459.25,
+627,1627,Member 627,member627@gmail.com,03811920914,ACTIVE,-133.09,Renewal due
+628,1628,Member 628,member628@gmail.com,03253904197,ACTIVE,4405.22,
+629,1629,Member 629,member629@gmail.com,03029664405,INACTIVE,-200.23,
+630,1630,Member 630,member630@gmail.com,03660068559,ACTIVE,4264.64,
+631,1631,Member 631,member631@gmail.com,03700833280,ACTIVE,1092.02,Payment overdue
+632,1632,Member 632,member632@gmail.com,03011291922,INACTIVE,4209.01,Renewal due
+633,1633,Member 633,member633@gmail.com,03233258661,ACTIVE,-13.62,
+634,1634,Member 634,member634@gmail.com,03074348505,ACTIVE,521.46,Payment overdue
+635,1635,Member 635,member635@gmail.com,03112074938,INACTIVE,711.37,
+636,1636,Member 636,member636@gmail.com,03224152504,ACTIVE,1667.99,
+637,1637,Member 637,member637@gmail.com,03571111967,ACTIVE,4396.9,Renewal due
+638,1638,Member 638,member638@gmail.com,03411941815,INACTIVE,270.34,Payment overdue
+639,1639,Member 639,member639@gmail.com,03028808425,ACTIVE,1565.99,
+640,1640,Member 640,member640@gmail.com,03046751327,INACTIVE,-72.4,
+641,1641,Member 641,member641@gmail.com,03191491103,INACTIVE,4108.62,
+642,1642,Member 642,member642@gmail.com,03751889954,ACTIVE,236.76,Renewal due
+643,1643,Member 643,member643@gmail.com,03294648071,ACTIVE,1327.42,
+644,1644,Member 644,member644@gmail.com,03781711648,ACTIVE,4379.22,Payment overdue
+645,1645,Member 645,member645@gmail.com,03164913912,ACTIVE,2671.91,
+646,1646,Member 646,member646@gmail.com,03411380547,ACTIVE,1929.81,Payment overdue
+647,1647,Member 647,member647@gmail.com,03575587892,ACTIVE,3164.13,Renewal due
+648,1648,Member 648,member648@gmail.com,03234887058,INACTIVE,2330.97,
+649,1649,Member 649,member649@gmail.com,03980459864,ACTIVE,257.84,
+650,1650,Member 650,member650@gmail.com,03625779159,INACTIVE,1022.24,
+651,1651,Member 651,member651@gmail.com,03083117652,ACTIVE,314.53,Payment overdue
+652,1652,Member 652,member652@gmail.com,03982952734,ACTIVE,-486.35,Renewal due
+653,1653,Member 653,member653@gmail.com,03412055843,ACTIVE,3304.54,
+654,1654,Member 654,member654@gmail.com,03728250832,INACTIVE,114.89,
+655,1655,Member 655,member655@gmail.com,03561826626,ACTIVE,-185.37,Payment overdue
+656,1656,Member 656,member656@gmail.com,03277455792,ACTIVE,1058,
+657,1657,Member 657,member657@gmail.com,03288080333,ACTIVE,3814.97,Renewal due
+658,1658,Member 658,member658@gmail.com,03245052780,ACTIVE,2365.69,Payment overdue
+659,1659,Member 659,member659@gmail.com,03637315223,ACTIVE,2109.31,Payment overdue
+660,1660,Member 660,member660@gmail.com,03852633852,ACTIVE,1599.97,Payment overdue
+661,1661,Member 661,member661@gmail.com,03847395506,INACTIVE,1870.85,Payment overdue
+662,1662,Member 662,member662@gmail.com,03624572411,INACTIVE,2028.95,Renewal due
+663,1663,Member 663,member663@gmail.com,03051312330,ACTIVE,3104.8,
+664,1664,Member 664,member664@gmail.com,03172136806,INACTIVE,2569.04,Payment overdue
+665,1665,Member 665,member665@gmail.com,03360820189,ACTIVE,1546.72,
+666,1666,Member 666,member666@gmail.com,03238048184,ACTIVE,3065.8,
+667,1667,Member 667,member667@gmail.com,03003423066,ACTIVE,4304.88,Renewal due
+668,1668,Member 668,member668@gmail.com,03742780644,ACTIVE,4948.63,
+669,1669,Member 669,member669@gmail.com,03963987060,ACTIVE,249.05,
+670,1670,Member 670,member670@gmail.com,03794075537,ACTIVE,1515.98,Payment overdue
+671,1671,Member 671,member671@gmail.com,03030760787,INACTIVE,1146.26,Payment overdue
+672,1672,Member 672,member672@gmail.com,03583755961,ACTIVE,4159.94,Renewal due
+673,1673,Member 673,member673@gmail.com,03818819464,INACTIVE,2177.35,
+674,1674,Member 674,member674@gmail.com,03143541014,INACTIVE,2033.36,
+675,1675,Member 675,member675@gmail.com,03227833052,ACTIVE,3015.62,
+676,1676,Member 676,member676@gmail.com,03128074951,ACTIVE,-78.16,
+677,1677,Member 677,member677@gmail.com,03070270379,ACTIVE,1435.77,Renewal due
+678,1678,Member 678,member678@gmail.com,03066379704,ACTIVE,1602.13,
+679,1679,Member 679,member679@gmail.com,03581390352,ACTIVE,2285.16,Payment overdue
+680,1680,Member 680,member680@gmail.com,03174232946,ACTIVE,574.2,
+681,1681,Member 681,member681@gmail.com,03279114564,ACTIVE,2822.26,
+682,1682,Member 682,member682@gmail.com,03142609753,INACTIVE,3942.36,Renewal due
+683,1683,Member 683,member683@gmail.com,03094102383,ACTIVE,-316.82,Payment overdue
+684,1684,Member 684,member684@gmail.com,03877218831,ACTIVE,529.65,Payment overdue
+685,1685,Member 685,member685@gmail.com,03901888697,INACTIVE,126.91,Payment overdue
+686,1686,Member 686,member686@gmail.com,03061929138,ACTIVE,1241.35,
+687,1687,Member 687,member687@gmail.com,03476817095,ACTIVE,4730.83,Renewal due
+688,1688,Member 688,member688@gmail.com,03156734531,INACTIVE,1745.06,
+689,1689,Member 689,member689@gmail.com,03468899497,ACTIVE,420,Payment overdue
+690,1690,Member 690,member690@gmail.com,03765311384,ACTIVE,1701.88,Payment overdue
+691,1691,Member 691,member691@gmail.com,03199764006,ACTIVE,-111.39,
+692,1692,Member 692,member692@gmail.com,03633011215,INACTIVE,4222.34,Renewal due
+693,1693,Member 693,member693@gmail.com,03326697054,ACTIVE,2325.08,
+694,1694,Member 694,member694@gmail.com,03397692181,ACTIVE,2040.75,Payment overdue
+695,1695,Member 695,member695@gmail.com,03512925286,ACTIVE,-253.84,
+696,1696,Member 696,member696@gmail.com,03261568060,INACTIVE,3099.03,
+697,1697,Member 697,member697@gmail.com,03762937864,ACTIVE,1183.6,Renewal due
+698,1698,Member 698,member698@gmail.com,03624809838,INACTIVE,2106.44,
+699,1699,Member 699,member699@gmail.com,03872593757,ACTIVE,1425.69,Payment overdue
+700,1700,Member 700,member700@gmail.com,03747317059,ACTIVE,3030.08,Payment overdue
+701,1701,Member 701,member701@gmail.com,03852020191,ACTIVE,4166.19,
+702,1702,Member 702,member702@gmail.com,03617094452,ACTIVE,2260.91,Renewal due
+703,1703,Member 703,member703@gmail.com,03950916954,ACTIVE,3571.5,
+704,1704,Member 704,member704@gmail.com,03088112348,ACTIVE,851.28,
+705,1705,Member 705,member705@gmail.com,03538734651,ACTIVE,1363.75,
+706,1706,Member 706,member706@gmail.com,03896873248,ACTIVE,2228.4,Payment overdue
+707,1707,Member 707,member707@gmail.com,03305895608,ACTIVE,1986.83,Renewal due
+708,1708,Member 708,member708@gmail.com,03080524203,ACTIVE,4208.08,Payment overdue
+709,1709,Member 709,member709@gmail.com,03021927570,INACTIVE,3526.52,
+710,1710,Member 710,member710@gmail.com,03024169483,INACTIVE,786.12,
+711,1711,Member 711,member711@gmail.com,03410948100,INACTIVE,15.81,
+712,1712,Member 712,member712@gmail.com,03916979525,ACTIVE,2273.99,Renewal due
+713,1713,Member 713,member713@gmail.com,03659179278,ACTIVE,4204.89,
+714,1714,Member 714,member714@gmail.com,03359129343,ACTIVE,1335.74,
+715,1715,Member 715,member715@gmail.com,03830015826,ACTIVE,682.98,
+716,1716,Member 716,member716@gmail.com,03709173965,ACTIVE,3069.94,
+717,1717,Member 717,member717@gmail.com,03325581686,ACTIVE,3563.71,Renewal due
+718,1718,Member 718,member718@gmail.com,03201060321,ACTIVE,4965.4,
+719,1719,Member 719,member719@gmail.com,03342962859,INACTIVE,1626.57,Payment overdue
+720,1720,Member 720,member720@gmail.com,03337239844,ACTIVE,3060.52,Payment overdue
+721,1721,Member 721,member721@gmail.com,03271824464,ACTIVE,4895.26,
+722,1722,Member 722,member722@gmail.com,03040664181,INACTIVE,-317.99,Renewal due
+723,1723,Member 723,member723@gmail.com,03035855920,ACTIVE,3258.11,
+724,1724,Member 724,member724@gmail.com,03238102844,ACTIVE,2323.31,
+725,1725,Member 725,member725@gmail.com,03917771543,INACTIVE,2315.84,
+726,1726,Member 726,member726@gmail.com,03622406942,ACTIVE,223.64,Payment overdue
+727,1727,Member 727,member727@gmail.com,03140862253,ACTIVE,-388.44,Renewal due
+728,1728,Member 728,member728@gmail.com,03947589607,ACTIVE,3222.35,
+729,1729,Member 729,member729@gmail.com,03337096259,ACTIVE,2049.8,
+730,1730,Member 730,member730@gmail.com,03059174251,ACTIVE,1614.85,
+731,1731,Member 731,member731@gmail.com,03000441576,ACTIVE,-103.74,
+732,1732,Member 732,member732@gmail.com,03319731528,ACTIVE,3097.87,Renewal due
+733,1733,Member 733,member733@gmail.com,03861128666,INACTIVE,578.56,
+734,1734,Member 734,member734@gmail.com,03099922208,ACTIVE,910.49,Payment overdue
+735,1735,Member 735,member735@gmail.com,03302113804,ACTIVE,-118.41,Payment overdue
+736,1736,Member 736,member736@gmail.com,03406173583,ACTIVE,1179.52,
+737,1737,Member 737,member737@gmail.com,03894288392,INACTIVE,-170.01,Renewal due
+738,1738,Member 738,member738@gmail.com,03817100024,INACTIVE,339.46,Payment overdue
+739,1739,Member 739,member739@gmail.com,03282221883,INACTIVE,1210.65,
+740,1740,Member 740,member740@gmail.com,03967788777,ACTIVE,2196.46,
+741,1741,Member 741,member741@gmail.com,03995484974,ACTIVE,-443.9,
+742,1742,Member 742,member742@gmail.com,03060989665,ACTIVE,3721.31,Renewal due
+743,1743,Member 743,member743@gmail.com,03575972020,INACTIVE,2520.06,
+744,1744,Member 744,member744@gmail.com,03340434146,ACTIVE,1389.12,
+745,1745,Member 745,member745@gmail.com,03627581638,ACTIVE,1050.21,
+746,1746,Member 746,member746@gmail.com,03372010030,INACTIVE,4177.13,
+747,1747,Member 747,member747@gmail.com,03183600810,ACTIVE,2100.39,Renewal due
+748,1748,Member 748,member748@gmail.com,03390622790,ACTIVE,1479.68,
+749,1749,Member 749,member749@gmail.com,03519594823,ACTIVE,2050.64,Payment overdue
+750,1750,Member 750,member750@gmail.com,03166983012,ACTIVE,4694.32,
+751,1751,Member 751,member751@gmail.com,03630399402,ACTIVE,3473.1,Payment overdue
+752,1752,Member 752,member752@gmail.com,03578161456,INACTIVE,1823.67,Renewal due
+753,1753,Member 753,member753@gmail.com,03373002430,INACTIVE,2342.78,
+754,1754,Member 754,member754@gmail.com,03193252374,ACTIVE,1955.42,
+755,1755,Member 755,member755@gmail.com,03164089160,ACTIVE,2439.59,
+756,1756,Member 756,member756@gmail.com,03030943089,INACTIVE,862.47,
+757,1757,Member 757,member757@gmail.com,03024955130,ACTIVE,277.06,Renewal due
+758,1758,Member 758,member758@gmail.com,03919916194,ACTIVE,3374.1,
+759,1759,Member 759,member759@gmail.com,03977435329,ACTIVE,-4.13,Payment overdue
+760,1760,Member 760,member760@gmail.com,03356213367,ACTIVE,3364.78,Payment overdue
+761,1761,Member 761,member761@gmail.com,03334409720,ACTIVE,4496.2,
+762,1762,Member 762,member762@gmail.com,03658413093,ACTIVE,3439.49,Renewal due
+763,1763,Member 763,member763@gmail.com,03710746544,ACTIVE,3616.88,Payment overdue
+764,1764,Member 764,member764@gmail.com,03312932778,ACTIVE,-455.66,Payment overdue
+765,1765,Member 765,member765@gmail.com,03332176465,ACTIVE,1368.54,
+766,1766,Member 766,member766@gmail.com,03840991567,ACTIVE,4997.89,Payment overdue
+767,1767,Member 767,member767@gmail.com,03168454223,ACTIVE,4533.89,Renewal due
+768,1768,Member 768,member768@gmail.com,03405732506,ACTIVE,2016.19,Payment overdue
+769,1769,Member 769,member769@gmail.com,03126321663,INACTIVE,2481.17,
+770,1770,Member 770,member770@gmail.com,03048213212,ACTIVE,304.22,
+771,1771,Member 771,member771@gmail.com,03171134125,ACTIVE,4700.85,
+772,1772,Member 772,member772@gmail.com,03641188292,ACTIVE,2222.95,Renewal due
+773,1773,Member 773,member773@gmail.com,03612637131,ACTIVE,4649.27,Payment overdue
+774,1774,Member 774,member774@gmail.com,03518606361,ACTIVE,4457.66,
+775,1775,Member 775,member775@gmail.com,03705936229,ACTIVE,3234.24,
+776,1776,Member 776,member776@gmail.com,03045498453,ACTIVE,4563.02,
+777,1777,Member 777,member777@gmail.com,03069066266,ACTIVE,1911.63,Renewal due
+778,1778,Member 778,member778@gmail.com,03522791559,INACTIVE,1694.98,
+779,1779,Member 779,member779@gmail.com,03210098885,ACTIVE,4761.27,
+780,1780,Member 780,member780@gmail.com,03755820773,ACTIVE,2922.15,Payment overdue
+781,1781,Member 781,member781@gmail.com,03390223357,ACTIVE,3555.63,Payment overdue
+782,1782,Member 782,member782@gmail.com,03751845922,ACTIVE,4365.21,Renewal due
+783,1783,Member 783,member783@gmail.com,03931031447,ACTIVE,814.6,Payment overdue
+784,1784,Member 784,member784@gmail.com,03228756374,ACTIVE,-422.06,Payment overdue
+785,1785,Member 785,member785@gmail.com,03153522803,ACTIVE,627.73,Payment overdue
+786,1786,Member 786,member786@gmail.com,03647006706,ACTIVE,4192.8,Payment overdue
+787,1787,Member 787,member787@gmail.com,03362723188,ACTIVE,191.15,Renewal due
+788,1788,Member 788,member788@gmail.com,03030592045,ACTIVE,2613,
+789,1789,Member 789,member789@gmail.com,03912172192,ACTIVE,1486.76,
+790,1790,Member 790,member790@gmail.com,03996027070,ACTIVE,500.88,
+791,1791,Member 791,member791@gmail.com,03936361547,ACTIVE,2180.01,
+792,1792,Member 792,member792@gmail.com,03191043287,ACTIVE,61.77,Renewal due
+793,1793,Member 793,member793@gmail.com,03543880102,INACTIVE,4594.18,
+794,1794,Member 794,member794@gmail.com,03682503990,ACTIVE,4953.7,
+795,1795,Member 795,member795@gmail.com,03837214390,ACTIVE,4681.79,
+796,1796,Member 796,member796@gmail.com,03131435268,INACTIVE,-185.6,Payment overdue
+797,1797,Member 797,member797@gmail.com,03355582711,INACTIVE,4637.53,Renewal due
+798,1798,Member 798,member798@gmail.com,03038535781,ACTIVE,4061.73,
+799,1799,Member 799,member799@gmail.com,03629948223,INACTIVE,3981.51,Payment overdue
+800,1800,Member 800,member800@gmail.com,03150764281,ACTIVE,595.49,Payment overdue
+801,1801,Member 801,member801@gmail.com,03336058650,ACTIVE,3165.65,
+802,1802,Member 802,member802@gmail.com,03326657472,ACTIVE,1781.17,Renewal due
+803,1803,Member 803,member803@gmail.com,03170834611,ACTIVE,418.68,
+804,1804,Member 804,member804@gmail.com,03735016861,INACTIVE,2946.05,
+805,1805,Member 805,member805@gmail.com,03914015177,ACTIVE,2683.5,Payment overdue
+806,1806,Member 806,member806@gmail.com,03137671433,INACTIVE,1639.25,
+807,1807,Member 807,member807@gmail.com,03545486945,ACTIVE,4163.76,Renewal due
+808,1808,Member 808,member808@gmail.com,03050855128,ACTIVE,-239.23,
+809,1809,Member 809,member809@gmail.com,03216783788,ACTIVE,3828.64,
+810,1810,Member 810,member810@gmail.com,03119672234,ACTIVE,-242.1,
+811,1811,Member 811,member811@gmail.com,03094225605,ACTIVE,65.71,
+812,1812,Member 812,member812@gmail.com,03392170036,ACTIVE,3331.23,Renewal due
+813,1813,Member 813,member813@gmail.com,03424694271,INACTIVE,4412.4,
+814,1814,Member 814,member814@gmail.com,03358671234,ACTIVE,119.15,
+815,1815,Member 815,member815@gmail.com,03211796429,ACTIVE,2626.52,
+816,1816,Member 816,member816@gmail.com,03731336433,ACTIVE,2450.96,
+817,1817,Member 817,member817@gmail.com,03019732744,ACTIVE,2218.1,Renewal due
+818,1818,Member 818,member818@gmail.com,03792246906,ACTIVE,156.12,
+819,1819,Member 819,member819@gmail.com,03599358871,ACTIVE,4079.95,
+820,1820,Member 820,member820@gmail.com,03407568835,ACTIVE,4635.83,Payment overdue
+821,1821,Member 821,member821@gmail.com,03691498217,ACTIVE,1360.58,
+822,1822,Member 822,member822@gmail.com,03847481780,ACTIVE,1625.01,Renewal due
+823,1823,Member 823,member823@gmail.com,03677890041,ACTIVE,1959.62,Payment overdue
+824,1824,Member 824,member824@gmail.com,03936005176,ACTIVE,312.59,Payment overdue
+825,1825,Member 825,member825@gmail.com,03673947832,ACTIVE,4079.12,
+826,1826,Member 826,member826@gmail.com,03182516466,ACTIVE,294.15,Payment overdue
+827,1827,Member 827,member827@gmail.com,03629469914,ACTIVE,4138.44,Renewal due
+828,1828,Member 828,member828@gmail.com,03024217697,ACTIVE,1106.05,Payment overdue
+829,1829,Member 829,member829@gmail.com,03184138213,INACTIVE,1021.64,Payment overdue
+830,1830,Member 830,member830@gmail.com,03632001737,ACTIVE,2094.75,
+831,1831,Member 831,member831@gmail.com,03560982521,INACTIVE,4639.13,
+832,1832,Member 832,member832@gmail.com,03896191530,INACTIVE,1861.29,Renewal due
+833,1833,Member 833,member833@gmail.com,03283195204,INACTIVE,2534.51,Payment overdue
+834,1834,Member 834,member834@gmail.com,03252530133,ACTIVE,3440.61,
+835,1835,Member 835,member835@gmail.com,03601139782,INACTIVE,1535.07,Payment overdue
+836,1836,Member 836,member836@gmail.com,03325129184,ACTIVE,4620.01,
+837,1837,Member 837,member837@gmail.com,03114290959,INACTIVE,197.09,Renewal due
+838,1838,Member 838,member838@gmail.com,03933605731,ACTIVE,3407.92,
+839,1839,Member 839,member839@gmail.com,03820714469,ACTIVE,2359.02,Payment overdue
+840,1840,Member 840,member840@gmail.com,03364421365,ACTIVE,3245.68,
+841,1841,Member 841,member841@gmail.com,03065363944,ACTIVE,2145.07,
+842,1842,Member 842,member842@gmail.com,03276007609,ACTIVE,-310.54,Renewal due
+843,1843,Member 843,member843@gmail.com,03675971471,ACTIVE,2634.9,
+844,1844,Member 844,member844@gmail.com,03582695156,ACTIVE,1974.51,
+845,1845,Member 845,member845@gmail.com,03830875389,ACTIVE,2698.92,Payment overdue
+846,1846,Member 846,member846@gmail.com,03238721493,ACTIVE,2386.51,
+847,1847,Member 847,member847@gmail.com,03806221484,ACTIVE,4176.62,Renewal due
+848,1848,Member 848,member848@gmail.com,03606406936,ACTIVE,4219.97,Payment overdue
+849,1849,Member 849,member849@gmail.com,03155644418,ACTIVE,3926.02,
+850,1850,Member 850,member850@gmail.com,03275539135,ACTIVE,2891.41,Payment overdue
+851,1851,Member 851,member851@gmail.com,03545381515,ACTIVE,3875.46,
+852,1852,Member 852,member852@gmail.com,03231487786,ACTIVE,388.82,Renewal due
+853,1853,Member 853,member853@gmail.com,03643039711,ACTIVE,2352.34,
+854,1854,Member 854,member854@gmail.com,03350337640,INACTIVE,381.93,
+855,1855,Member 855,member855@gmail.com,03412379475,ACTIVE,2240.34,
+856,1856,Member 856,member856@gmail.com,03944513417,ACTIVE,184,Payment overdue
+857,1857,Member 857,member857@gmail.com,03459401100,INACTIVE,2656.59,Renewal due
+858,1858,Member 858,member858@gmail.com,03057651246,ACTIVE,4655.37,
+859,1859,Member 859,member859@gmail.com,03492678103,ACTIVE,3779.2,
+860,1860,Member 860,member860@gmail.com,03370594574,ACTIVE,576.31,Payment overdue
+861,1861,Member 861,member861@gmail.com,03079555177,ACTIVE,513.83,
+862,1862,Member 862,member862@gmail.com,03051417946,ACTIVE,2954.63,Renewal due
+863,1863,Member 863,member863@gmail.com,03902628726,INACTIVE,2378.67,Payment overdue
+864,1864,Member 864,member864@gmail.com,03276592970,ACTIVE,161.2,
+865,1865,Member 865,member865@gmail.com,03922237617,ACTIVE,708.5,
+866,1866,Member 866,member866@gmail.com,03209931616,ACTIVE,2582.74,
+867,1867,Member 867,member867@gmail.com,03071955777,INACTIVE,274.97,Renewal due
+868,1868,Member 868,member868@gmail.com,03410101530,ACTIVE,4094.75,
+869,1869,Member 869,member869@gmail.com,03673976217,ACTIVE,2163.12,
+870,1870,Member 870,member870@gmail.com,03349733943,ACTIVE,1223.68,
+871,1871,Member 871,member871@gmail.com,03851842104,ACTIVE,2292.77,Payment overdue
+872,1872,Member 872,member872@gmail.com,03472554918,ACTIVE,1753.28,Renewal due
+873,1873,Member 873,member873@gmail.com,03327447930,ACTIVE,1508.52,Payment overdue
+874,1874,Member 874,member874@gmail.com,03336102384,ACTIVE,543.16,Payment overdue
+875,1875,Member 875,member875@gmail.com,03506464097,ACTIVE,4492.79,
+876,1876,Member 876,member876@gmail.com,03511559958,ACTIVE,2358.1,
+877,1877,Member 877,member877@gmail.com,03263691864,ACTIVE,4011.75,Renewal due
+878,1878,Member 878,member878@gmail.com,03550741922,ACTIVE,-471.58,Payment overdue
+879,1879,Member 879,member879@gmail.com,03233187033,ACTIVE,4424.68,
+880,1880,Member 880,member880@gmail.com,03862170003,ACTIVE,3903.71,
+881,1881,Member 881,member881@gmail.com,03836108906,ACTIVE,828.29,
+882,1882,Member 882,member882@gmail.com,03028105388,ACTIVE,2165.5,Renewal due
+883,1883,Member 883,member883@gmail.com,03008108002,ACTIVE,903.67,Payment overdue
+884,1884,Member 884,member884@gmail.com,03013705353,ACTIVE,4998.22,
+885,1885,Member 885,member885@gmail.com,03999217758,ACTIVE,4066.52,Payment overdue
+886,1886,Member 886,member886@gmail.com,03958540794,ACTIVE,283.26,
+887,1887,Member 887,member887@gmail.com,03866105408,ACTIVE,907.59,Renewal due
+888,1888,Member 888,member888@gmail.com,03977163808,ACTIVE,1045.33,
+889,1889,Member 889,member889@gmail.com,03605952145,ACTIVE,1203.45,
+890,1890,Member 890,member890@gmail.com,03917748094,ACTIVE,2528.36,
+891,1891,Member 891,member891@gmail.com,03284867370,ACTIVE,2184.24,
+892,1892,Member 892,member892@gmail.com,03563071249,ACTIVE,2040.67,Renewal due
+893,1893,Member 893,member893@gmail.com,03650262838,ACTIVE,2034.65,
+894,1894,Member 894,member894@gmail.com,03066804061,INACTIVE,4028.64,
+895,1895,Member 895,member895@gmail.com,03571877497,INACTIVE,2301.27,
+896,1896,Member 896,member896@gmail.com,03125578404,ACTIVE,965.84,Payment overdue
+897,1897,Member 897,member897@gmail.com,03553153061,ACTIVE,-497.93,Renewal due
+898,1898,Member 898,member898@gmail.com,03862814741,ACTIVE,2153.55,Payment overdue
+899,1899,Member 899,member899@gmail.com,03733212426,ACTIVE,4456.1,Payment overdue
+900,1900,Member 900,member900@gmail.com,03042213401,ACTIVE,4970.21,
+901,1901,Member 901,member901@gmail.com,03100641593,INACTIVE,3101.64,
+902,1902,Member 902,member902@gmail.com,03588320728,INACTIVE,4264.79,Renewal due
+903,1903,Member 903,member903@gmail.com,03436103768,ACTIVE,378.51,
+904,1904,Member 904,member904@gmail.com,03050641990,INACTIVE,347.1,Payment overdue
+905,1905,Member 905,member905@gmail.com,03095683327,ACTIVE,895.85,Payment overdue
+906,1906,Member 906,member906@gmail.com,03306378093,ACTIVE,2552.63,
+907,1907,Member 907,member907@gmail.com,03977959966,INACTIVE,781.48,Renewal due
+908,1908,Member 908,member908@gmail.com,03806164059,ACTIVE,1138.54,Payment overdue
+909,1909,Member 909,member909@gmail.com,03352078086,ACTIVE,3783.53,
+910,1910,Member 910,member910@gmail.com,03475475063,INACTIVE,3231.63,Payment overdue
+911,1911,Member 911,member911@gmail.com,03806030420,ACTIVE,3667.38,Payment overdue
+912,1912,Member 912,member912@gmail.com,03747846249,ACTIVE,2760.01,Renewal due
+913,1913,Member 913,member913@gmail.com,03190510287,ACTIVE,3344.05,
+914,1914,Member 914,member914@gmail.com,03385460234,INACTIVE,2124.88,
+915,1915,Member 915,member915@gmail.com,03279180983,ACTIVE,321.65,
+916,1916,Member 916,member916@gmail.com,03240047319,ACTIVE,3634.45,
+917,1917,Member 917,member917@gmail.com,03243159114,ACTIVE,3956,Renewal due
+918,1918,Member 918,member918@gmail.com,03491170276,ACTIVE,2135.48,Payment overdue
+919,1919,Member 919,member919@gmail.com,03054539786,ACTIVE,-81.17,
+920,1920,Member 920,member920@gmail.com,03131810664,INACTIVE,314.83,
+921,1921,Member 921,member921@gmail.com,03985088846,ACTIVE,3802.84,
+922,1922,Member 922,member922@gmail.com,03455542482,INACTIVE,-44.56,Renewal due
+923,1923,Member 923,member923@gmail.com,03358389878,ACTIVE,4749.81,
+924,1924,Member 924,member924@gmail.com,03641271207,ACTIVE,1977.93,
+925,1925,Member 925,member925@gmail.com,03939111395,ACTIVE,2912.67,
+926,1926,Member 926,member926@gmail.com,03593876029,ACTIVE,-107.41,
+927,1927,Member 927,member927@gmail.com,03065711290,INACTIVE,1857.65,Renewal due
+928,1928,Member 928,member928@gmail.com,03728246912,ACTIVE,1095.34,
+929,1929,Member 929,member929@gmail.com,03630968393,ACTIVE,1476.54,
+930,1930,Member 930,member930@gmail.com,03432266319,ACTIVE,711.39,
+931,1931,Member 931,member931@gmail.com,03512293480,ACTIVE,2238.83,Payment overdue
+932,1932,Member 932,member932@gmail.com,03552389275,ACTIVE,1434.71,Renewal due
+933,1933,Member 933,member933@gmail.com,03524345780,ACTIVE,2782.06,
+934,1934,Member 934,member934@gmail.com,03928823531,ACTIVE,1393.77,
+935,1935,Member 935,member935@gmail.com,03359692529,ACTIVE,1418.23,Payment overdue
+936,1936,Member 936,member936@gmail.com,03873515829,ACTIVE,4116.59,
+937,1937,Member 937,member937@gmail.com,03880981484,INACTIVE,3079.37,Renewal due
+938,1938,Member 938,member938@gmail.com,03771485181,INACTIVE,2488.88,
+939,1939,Member 939,member939@gmail.com,03719731788,ACTIVE,-147.27,Payment overdue
+940,1940,Member 940,member940@gmail.com,03674727834,ACTIVE,-249.33,
+941,1941,Member 941,member941@gmail.com,03313432062,ACTIVE,1955.88,
+942,1942,Member 942,member942@gmail.com,03808296575,ACTIVE,772.23,Renewal due
+943,1943,Member 943,member943@gmail.com,03860609133,ACTIVE,4514.76,Payment overdue
+944,1944,Member 944,member944@gmail.com,03783033161,ACTIVE,3716.72,
+945,1945,Member 945,member945@gmail.com,03244495319,INACTIVE,233.43,

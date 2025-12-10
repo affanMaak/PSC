@@ -1,0 +1,144 @@
+
+Role-Base Access Control
+    super_admin, admin, member
+
+    @Roles(Role.ADMIN, Role.SUPER_ADMIN) <----- decorator to design
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Get('members')
+    getAllMembers() { ... }
+
+    1. define role enum
+    common/constants/roles.enum.ts
+    export enum Role {
+        SUPER_ADMIN = "super_admin",
+        ADMIN = "admin",
+        MEMBER = "member"
+    }
+
+    2. create role decorator
+    common/decorators/roles.decorator.ts
+    export const ROLES_KEY = "roles"
+    export const Roles = (...roles: Role[])=> SetMetadata(ROLES_KEY, roles)
+
+
+Auth System (ADMIN/SUPER_ADMIN)
+
+    AuthService.validateUser(email, password)
+    ===> access_token (15–30 min)
+    ===> refresh_token (7–30 days)
+        Send tokens in JSON response       <----
+
+    Token Storage
+    For web: store in localStorage.
+    For mobile: store in Secure Storage (e.g., Expo SecureStore or Keychain).
+    Token Refresh Endpoint
+    /auth/refresh to issue new tokens via refresh_token.
+    All requests go through JwtAuthGuard
+
+Auth System (Member)
+    AuthService.validateUser(unique_number, OTP)
+    Member enters their unique number.
+    Server generates an OTP → stores a hash in DB or (cache ✔).
+    Sends OTP via SMS.
+    Member enters OTP.
+    Server verifies OTP and issues JWT tokens (same as admins).
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------
+
++----------------------+-----------------------------+---------------------------------------------------------------+
+|      Module          | Accessible By               | Description                                                   |
++----------------------+-----------------------------+---------------------------------------------------------------+
+| AuthModule           | All                         | Handles JWT login/signup, refresh tokens                      |
+| AdminModule          | Super Admin, Admin          | Admin dashboard logic (manage members, services, bookings)    |
+| MemberModule         | Member                      | Member actions (view data, make bookings)                     |
+| BookingModule        | All                         | Booking CRUD (rooms, services, etc.)                          |
+| NotificationModule   | All                         | Handles SMS, and push notifications                           |
++----------------------+-----------------------------+---------------------------------------------------------------+
+
+
+
+
+Admin/Super Admin 
+
+    === note: super admin can only be created by developer ===
+
+step 1:
+    normal login via email + password
+    then, app ask "want to enable biometric login?"
+step 2:
+    save the biometric key
+    private key never leaves the device while public key is sent to backend.
+step 3:
+    the next time again admin asks for biometric
+    device signs a message using the secret key and sends to backend
+    backend checks it with the public key stored
+    if match -> return Jwt
+    if not -> reject
+    
+
+
+access_token & refresh_token
+
+    User logs in → gets access + refresh tokens (stored in cookies)
+    Every API request sends access token (via cookie --web-- or bearer header --mobile--)
+    If API returns 401 (token expired), frontend silently calls /auth/refresh
+    /auth/refresh route reads the refresh_token cookie and issues new access + refresh tokens
+    New tokens replace old ones in cookies — user continues without re-login
+
+
+==========================================================================================================
+create super admin ✔
+    -> create admin via super admin ✔
+    -> manage admin via super admin  ✔
+        -> create member(s) via admin and super admin ✔
+            -> manage member via admin and super admin (inactive/suspend) ✔
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+gen invoice response
+{
+    "ResponseCode": "00",
+    "ResponseMessage": "Invoice Created Successfully",
+    "Data": {
+        "ConsumerNumber": "7701234567",
+        "InvoiceNumber": "INV-UO20EJIMS",
+        "DueDate": "2025-11-21T12:01:09.373Z",
+        "Amount": "80000",
+        "Instructions": "Complete payment within 3 minutes to confirm your booking",
+        "PaymentChannels": [
+            "JazzCash",
+            "Easypaisa",
+            "HBL",
+            "Meezan",
+            "UBL",
+            "ATM",
+            "Internet Banking"
+        ],
+        "BookingSummary": {
+            "RoomType": "Suite",
+            "CheckIn": "2025-11-23",
+            "CheckOut": "2025-11-24",
+            "Nights": 1,
+            "Rooms": 2,
+            "Adults": 1,
+            "Children": 0,
+            "PricePerNight": "40000",
+            "TotalAmount": "80000",
+            "HoldExpiresAt": "2025-11-21T12:01:09.373Z"
+        }
+    },
+    "TemporaryData": {
+        "reservationIds": [
+            8,
+            10
+        ],
+        "holdExpiry": "2025-11-21T12:01:09.373Z",
+        "roomIds": [
+            8,
+            10
+        ]
+    }
+}

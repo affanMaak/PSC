@@ -1,0 +1,51 @@
+Sno,Membership_No,Name,Email,Contact_No,Status,Balance,Other_Details
+1,1001,Member 1,member1@example.com,03001834334,ACTIVE,1146.72,Renewal due
+2,1002,Member 2,member2@example.com,03009161204,BLOCKED,52647.95,Late payment
+3,1003,Member 3,member3@example.com,03007274040,ACTIVE,87211.73,VIP
+4,1004,Member 4,member4@example.com,03001789786,BLOCKED,44252.19,Regular member
+5,1005,Member 5,member5@example.com,03001806165,ACTIVE,52315.16,Late payment
+6,1006,Member 6,member6@example.com,03003157679,BLOCKED,68530.44,Renewal due
+7,1007,Member 7,member7@example.com,03002293969,BLOCKED,28609.65,Late payment
+8,1008,Member 8,member8@example.com,03001719480,ACTIVE,83342.81,Late payment
+9,1009,Member 9,member9@example.com,03005603593,DEACTIVATED,44849.38,Regular member
+10,1010,Member 10,member10@example.com,03007159813,DEACTIVATED,54358.02,Regular member
+11,1011,Member 11,member11@example.com,03008089245,BLOCKED,46305.9,Renewal due
+12,1012,Member 12,member12@example.com,03004126052,BLOCKED,82824.69,Renewal due
+13,1013,Member 13,member13@example.com,03006015755,DEACTIVATED,40996.11,Late payment
+14,1014,Member 14,member14@example.com,03004674580,BLOCKED,57026.98,New registration
+15,1015,Member 15,member15@example.com,03001206959,BLOCKED,55631.45,Late payment
+16,1016,Member 16,member16@example.com,03002300356,DEACTIVATED,74104.87,VIP
+17,1017,Member 17,member17@example.com,03002408100,BLOCKED,38469.21,Regular member
+18,1018,Member 18,member18@example.com,03006112230,DEACTIVATED,34550.27,Renewal due
+19,1019,Member 19,member19@example.com,03006345116,ACTIVE,35303.32,Late payment
+20,1020,Member 20,member20@example.com,03008100717,BLOCKED,45111.31,Regular member
+21,1021,Member 21,member21@example.com,03003857942,BLOCKED,61896.67,Regular member
+22,1022,Member 22,member22@example.com,03005026095,BLOCKED,79608.16,New registration
+23,1023,Member 23,member23@example.com,03001100864,BLOCKED,84045.78,Regular member
+24,1024,Member 24,member24@example.com,03004083459,DEACTIVATED,23239.29,New registration
+25,1025,Member 25,member25@example.com,03008638619,BLOCKED,60705.32,Renewal due
+26,1026,Member 26,member26@example.com,03003063317,ACTIVE,14325.16,Late payment
+27,1027,Member 27,member27@example.com,03005807426,DEACTIVATED,19694.23,New registration
+28,1028,Member 28,member28@example.com,03004815975,BLOCKED,29090.98,Late payment
+29,1029,Member 29,member29@example.com,03009093300,ACTIVE,76092.52,Regular member
+30,1030,Member 30,member30@example.com,03005616179,DEACTIVATED,97439.75,Regular member
+31,1031,Member 31,member31@example.com,03007286023,BLOCKED,41627.21,New registration
+32,1032,Member 32,member32@example.com,03003436393,DEACTIVATED,68856.28,Late payment
+33,1033,Member 33,member33@example.com,03006066021,ACTIVE,69096.27,VIP
+34,1034,Member 34,member34@example.com,03005666486,DEACTIVATED,45223.34,Regular member
+35,1035,Member 35,member35@example.com,03005238477,ACTIVE,32428.21,New registration
+36,1036,Member 36,member36@example.com,03004266403,BLOCKED,1229.11,Late payment
+37,1037,Member 37,member37@example.com,03007920216,ACTIVE,83208.06,Late payment
+38,1038,Member 38,member38@example.com,03007036535,ACTIVE,52896.16,New registration
+39,1039,Member 39,member39@example.com,03005182995,ACTIVE,28273.34,Regular member
+40,1040,Member 40,member40@example.com,03001055466,BLOCKED,4868.8,Late payment
+41,1041,Member 41,member41@example.com,03007739244,ACTIVE,6547.01,Late payment
+42,1042,Member 42,member42@example.com,03008101430,DEACTIVATED,33063.99,VIP
+43,1043,Member 43,member43@example.com,03009719029,DEACTIVATED,22936.48,Late payment
+44,1044,Member 44,member44@example.com,03001626523,DEACTIVATED,79796.92,New registration
+45,1045,Member 45,member45@example.com,03005838466,BLOCKED,53289.35,Renewal due
+46,1046,Member 46,member46@example.com,03002414196,BLOCKED,26118.14,New registration
+47,1047,Member 47,member47@example.com,03002060628,ACTIVE,10850.35,Regular member
+48,1048,Member 48,member48@example.com,03001954063,BLOCKED,15575.54,VIP
+49,1049,Member 49,member49@example.com,03005693201,DEACTIVATED,11507.3,Renewal due
+50,1050,Member 50,member50@example.com,03009033105,ACTIVE,81824.98,New registration

@@ -1,0 +1,11 @@
+### super admin ###
+pscsuper47@gmail.com
+superadmin1
+
+app:
+id: 32001
+pass: 1234
+
+### admin ###
+
+
