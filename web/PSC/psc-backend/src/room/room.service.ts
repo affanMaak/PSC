@@ -22,7 +22,7 @@ export class RoomService {
   constructor(
     private prismaService: PrismaService,
     private cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   // ─────────────────────────── ROOM TYPES ───────────────────────────
 
@@ -596,6 +596,7 @@ export class RoomService {
     adminId: string,
     reserveFrom?: string,
     reserveTo?: string,
+    remarks?: string,
   ) {
     const heldRooms = await this.prismaService.roomHoldings.findMany({
       where: {
@@ -794,6 +795,7 @@ export class RoomService {
           reservedFrom: fromDate,
           reservedTo: toDate,
           reservedBy: Number(adminId),
+          remarks: remarks || null,
         }));
 
         await prisma.roomReservation.createMany({ data: reservations });
@@ -950,5 +952,45 @@ export class RoomService {
         outOfOrders: true,
       },
     });
+  }
+
+  async getRoomLogs(roomId: number, from: string, to: string) {
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+
+    const [reservations, bookings, outOfOrders] = await Promise.all([
+      this.prismaService.roomReservation.findMany({
+        where: {
+          roomId,
+          reservedFrom: { lt: toDate },
+          reservedTo: { gt: fromDate },
+        },
+        include: { admin: { select: { name: true } } },
+        orderBy: { reservedFrom: 'asc' },
+      }),
+      this.prismaService.roomBooking.findMany({
+        where: {
+          roomId,
+          checkIn: { lt: toDate },
+          checkOut: { gt: fromDate },
+        },
+        include: { member: { select: { Name: true, Membership_No: true } } },
+        orderBy: { checkIn: 'asc' },
+      }),
+      this.prismaService.roomOutOfOrder.findMany({
+        where: {
+          roomId,
+          startDate: { lt: toDate },
+          endDate: { gt: fromDate },
+        },
+        orderBy: { startDate: 'asc' },
+      }),
+    ]);
+
+    return {
+      reservations,
+      bookings,
+      outOfOrders,
+    };
   }
 }

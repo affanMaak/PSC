@@ -1,197 +1,263 @@
 import React from 'react';
 import {
+  SafeAreaView,
   StyleSheet,
   Text,
   View,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
   StatusBar,
+  ScrollView,
+  ImageBackground,
+  Image,
+  TouchableOpacity,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/AntDesign'; // For back arrow
-import BellIcon from 'react-native-vector-icons/Feather'; // For notification bell
-// Import other icons needed for the features grid
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'; 
-import Feather from 'react-native-vector-icons/Feather'; 
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; 
+import Swiper from 'react-native-swiper';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-// Data for the feature grid
-const features = [
-  { icon: 'dollar-sign', label: 'Best Rate', library: Feather },
-  { icon: 'wind', label: 'Air Conditioned', library: Feather },
-  { icon: 'wifi', label: 'WiFi', library: Feather },
-  { icon: 'parking', label: 'Parking', library: FontAwesome5 },
-  { icon: 'silverware-fork-knife', label: 'Refreshments Availlible', library: MaterialCommunityIcons },
-  { icon: 'laptop', label: 'Multimedia Availlible', library: Feather },
-];
+const ConferenceRoomScreen = ({ navigation, route }) => {
+  const { venue, venueType } = route.params || {};
 
-// Component for a single feature tile
-const FeatureTile = ({ icon, label, library: Library }) => (
-  <TouchableOpacity style={styles.featureTile} disabled={true}>
-    <Library name={icon} size={30} color="#B8860B" />
-    <Text style={styles.featureLabel}>{label}</Text>
-  </TouchableOpacity>
-);
-
-const ConferenceRoomDetailsScreen = ({ navigation }) => {
-  // Assuming 'navigation' prop is passed to switch to the booking screen
   const handleBookNow = () => {
-    // Replace with actual navigation logic
-    console.log('Navigate to Conference Room Booking Screen');
-    navigation.navigate('ConferenceRoomBooking'); 
+    navigation.navigate('BHBooking', {
+      venue: venue,
+      venueType: venueType || 'hall',
+      selectedMenu: null
+    });
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#D2B48C" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.container}>
 
-        {/* --- Header Section --- */}
-        <View style={styles.headerBackground}>
-          <View style={styles.headerBar}>
-            <Icon name="arrowleft" size={24} color="black" onPress={() => console.log('Go Back')} />
-            <Text style={styles.headerTitle}>Conference Room</Text>
-            <BellIcon name="bell" size={20} color="black" />
+        {/* 🔹 Notch Header */}
+        <ImageBackground
+          source={require('../assets/notch.jpg')}
+          style={styles.notch}
+          imageStyle={styles.notchImage}
+        >
+          <View style={styles.notchContent}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Icon name="arrow-back" size={28} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.headerText}>Conference Room</Text>
+            <TouchableOpacity
+              style={styles.notificationButton}
+              activeOpacity={0.7}
+            >
+              <Icon name="notifications-outline" size={26} color="#000" />
+            </TouchableOpacity>
           </View>
-          {/* Placeholder for the large image/tabs below the header */}
-          <View style={styles.largeTabContainer}>
-            <View style={styles.largeTabPlaceholder}></View>
-            <View style={styles.largeTabPlaceholder}></View>
-          </View>
-        </View>
+        </ImageBackground>
 
-        {/* --- Features Card --- */}
-        <View style={styles.featuresCard}>
-          <View style={styles.whyHeader}>
-            <Text style={styles.whyHeaderTextActive}>WHY OUR </Text>
-            <Text style={styles.whyHeaderTextInactive}>CONFERENCE ROOM</Text>
-          </View>
-          
-          <View style={styles.featuresGrid}>
-            {features.map((feature, index) => (
-              <FeatureTile 
-                key={index}
-                icon={feature.icon}
-                label={feature.label}
-                library={feature.library}
-              />
-            ))}
-          </View>
-        </View>
-        
-      </ScrollView>
-      
-      {/* --- Book Now Button (Fixed to bottom) --- */}
-      <TouchableOpacity style={styles.bookNowButton} onPress={handleBookNow}>
-        <Text style={styles.bookNowButtonText}>Book Now</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+        {/* 🔹 Main Scrollable Content */}
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+
+            {/* 🔹 Image Slider */}
+            <View style={styles.sliderContainer}>
+              <Swiper
+                autoplay
+                autoplayTimeout={4}
+                loop
+                showsPagination
+                activeDotColor="#A3834C"
+                dotColor="rgba(255,255,255,0.5)"
+              >
+                <Image source={require('../assets/confrence_room.jpg')} style={styles.sliderImage} />
+                <Image source={require('../assets/confrence_room.jpg')} style={styles.sliderImage} />
+                <Image source={require('../assets/confrence_room.jpg')} style={styles.sliderImage} />
+              </Swiper>
+            </View>
+
+            {/* 🔹 Why Our Conference Room Section */}
+            <View style={styles.whySection}>
+              <Text style={styles.whyTitle}>
+                WHY OUR <Text style={styles.whyTitleGold}>CONFERENCE ROOM</Text>
+              </Text>
+
+              {/* 🔹 Features Grid */}
+              <View style={styles.featuresGrid}>
+                {/* Row 1 */}
+                <View style={styles.featureRow}>
+                  <View style={styles.featureBox}>
+                    <Icon name="pricetag-outline" size={36} color="#A3834C" />
+                    <Text style={styles.featureText}>Best Rate</Text>
+                  </View>
+                  <View style={styles.featureBox}>
+                    <Icon name="snow-outline" size={36} color="#A3834C" />
+                    <Text style={styles.featureText}>Air Conditioned</Text>
+                  </View>
+                  <View style={styles.featureBox}>
+                    <Icon name="wifi-outline" size={36} color="#A3834C" />
+                    <Text style={styles.featureText}>WiFi</Text>
+                  </View>
+                </View>
+
+                {/* Row 2 */}
+                <View style={styles.featureRow}>
+                  <View style={styles.featureBox}>
+                    <Icon name="car-outline" size={36} color="#A3834C" />
+                    <Text style={styles.featureText}>Parking</Text>
+                  </View>
+                  <View style={styles.featureBox}>
+                    <Icon name="restaurant-outline" size={36} color="#A3834C" />
+                    <Text style={styles.featureText}>Refreshments{'\n'}Available</Text>
+                  </View>
+                  <View style={styles.featureBox}>
+                    <Icon name="desktop-outline" size={36} color="#A3834C" />
+                    <Text style={styles.featureText}>Multimedia{'\n'}Available</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* 🔹 Book Now Button */}
+            <TouchableOpacity
+              style={styles.bookButton}
+              onPress={handleBookNow}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.bookButtonText}>Book Now</Text>
+            </TouchableOpacity>
+
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FEF9F3',
   },
-  scrollContent: {
-    paddingBottom: 20, // Space above the fixed button
-  },
-  // Header Styles
-  headerBackground: {
-    backgroundColor: '#D2B48C',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    paddingTop: 10,
+  notch: {
+    paddingTop: 50,
     paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomEndRadius: 30,
+    borderBottomStartRadius: 30,
+    overflow: 'hidden',
+    minHeight: 120,
   },
-  headerBar: {
+  notchImage: {
+    resizeMode: 'cover',
+  },
+  notchContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    marginBottom: 20,
   },
-  headerTitle: {
-    fontSize: 20,
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerText: {
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#000',
+    textAlign: 'center',
+    flex: 1,
   },
-  // Large Tabs/Image Placeholders
-  largeTabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 15,
-  },
-  largeTabPlaceholder: {
-    width: '45%',
-    height: 120, 
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 15,
-  },
-  // Features Card
-  featuresCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 15,
-    marginTop: -30, 
-    borderRadius: 15,
-    paddingVertical: 20,
-    paddingHorizontal: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 4,
-  },
-  whyHeader: {
-    flexDirection: 'row',
+  notificationButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  sliderContainer: {
+    height: 250,
+    width: '100%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 30,
+  },
+  sliderImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  whySection: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 25,
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  whyHeaderTextActive: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
+  whyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    textAlign: 'center',
+    marginBottom: 30,
   },
-  whyHeaderTextInactive: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#B8860B',
+  whyTitleGold: {
+    color: '#A3834C',
+    fontWeight: 'bold',
   },
   featuresGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
+    width: '100%',
   },
-  featureTile: {
-    width: '30%', // Three tiles per row
-    height: 100,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#eee',
+  featureRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  featureBox: {
+    width: '31%',
+    aspectRatio: 1,
+    borderWidth: 2,
+    borderColor: '#A3834C',
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 8,
-    marginHorizontal: 4,
+    backgroundColor: '#FFF',
+    padding: 10,
   },
-  featureLabel: {
-    marginTop: 5,
+  featureText: {
     fontSize: 12,
+    color: '#000',
     textAlign: 'center',
-    color: '#555',
+    fontWeight: '500',
+    marginTop: 8,
   },
-  // Book Now Button
-  bookNowButton: {
+  bookButton: {
+    backgroundColor: '#A3834C',
     paddingVertical: 18,
-    backgroundColor: '#B8860B', 
+    borderRadius: 10,
     alignItems: 'center',
+    // marginTop: 4,
   },
-  bookNowButtonText: {
-    color: '#fff',
+  bookButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#FFF',
   },
 });
 
-export default ConferenceRoomDetailsScreen;
+export default ConferenceRoomScreen;

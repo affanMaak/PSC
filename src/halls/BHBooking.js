@@ -39,7 +39,7 @@
 // const BHBooking = ({ route, navigation }) => {
 //   const { venue } = route.params || {};
 //   const { user, isAuthenticated } = useAuth();
-  
+
 //   // State variables
 //   const [selectedDate, setSelectedDate] = useState('');
 //   const [eventTypeOpen, setEventTypeOpen] = useState(false);
@@ -59,7 +59,7 @@
 //   const [calendarModalVisible, setCalendarModalVisible] = useState(false);
 //   const [calendarType, setCalendarType] = useState('from');
 //   const [loading, setLoading] = useState(false);
-  
+
 //   // Member Booking States
 //   const [showBookingModal, setShowBookingModal] = useState(false);
 //   const [bookingLoading, setBookingLoading] = useState(false);
@@ -69,19 +69,19 @@
 //   // Extract membership number from user object for display only
 //   const extractMembershipNo = () => {
 //     if (!user) return null;
-    
+
 //     const possibleFields = [
 //       'membershipNo', 'membership_no', 'Membership_No', 'membershipNumber',
 //       'membershipID', 'memberNo', 'memberNumber', 'membershipId',
 //       'id', 'userId', 'user_id', 'userID'
 //     ];
-    
+
 //     for (const field of possibleFields) {
 //       if (user[field]) {
 //         return user[field].toString();
 //       }
 //     }
-    
+
 //     if (user.data && typeof user.data === 'object') {
 //       for (const field of possibleFields) {
 //         if (user.data[field]) {
@@ -89,7 +89,7 @@
 //         }
 //       }
 //     }
-    
+
 //     return null;
 //   };
 
@@ -99,11 +99,11 @@
 
 //   useEffect(() => {
 //     checkUserStatus();
-    
+
 //     if (venue) {
 //       setNumberOfGuests(venue.capacity?.toString() || '');
 //     }
-    
+
 //     const today = new Date();
 //     const formattedDate = today.toISOString().split('T')[0];
 //     setSelectedDate(formattedDate);
@@ -113,9 +113,9 @@
 //     try {
 //       const userData = await getUserData();
 //       setUserData(userData);
-      
+
 //       const currentUser = user || userData;
-      
+
 //       if (!currentUser) {
 //         setIsAdmin(false);
 //         return;
@@ -132,7 +132,7 @@
 //         extractedUserRole.toLowerCase() === 'super_admin' || 
 //         extractedUserRole.toLowerCase() === 'superadmin'
 //       );
-      
+
 //       setIsAdmin(isAdminUser);
 
 //     } catch (error) {
@@ -199,10 +199,10 @@
 //       };
 
 //       const response = await banquetAPI.reserveHalls(payload);
-      
+
 //       // Disable reserve button after successful reservation
 //       setReservationCompleted(true);
-      
+
 //       Alert.alert(
 //         'Success', 
 //         response.data?.message || 'Hall reserved successfully',
@@ -248,7 +248,7 @@
 //       };
 
 //       const response = await banquetAPI.reserveHalls(payload);
-      
+
 //       Alert.alert(
 //         'Success', 
 //         response.data?.message || 'Hall unreserved successfully',
@@ -320,7 +320,7 @@
 
 //     try {
 //       setBookingLoading(true);
-      
+
 //       // FIXED: Correct payload structure for the backend
 //       const payload = {
 //         bookingDate: selectedDate,
@@ -340,7 +340,7 @@
 
 //       // FIXED: Call the API with hallId as query parameter and payload as body
 //       const response = await banquetAPI.memberBookingHall(venue.id, payload);
-      
+
 //       if (response.data.ResponseCode === '00') {
 //         Alert.alert(
 //           'Invoice Generated Successfully!',
@@ -377,9 +377,9 @@
 
 //     } catch (error) {
 //       console.error('❌ Member booking error:', error);
-      
+
 //       let errorMessage = 'Failed to process booking. Please try again.';
-      
+
 //       if (error.response?.status === 401) {
 //         errorMessage = 'Authentication failed. Please log in again.';
 //       } else if (error.response?.status === 400) {
@@ -397,7 +397,7 @@
 //       } else if (error.message?.includes('timeout')) {
 //         errorMessage = 'Request timeout. Please try again.';
 //       }
-      
+
 //       Alert.alert('Booking Failed', errorMessage);
 //     } finally {
 //       setBookingLoading(false);
@@ -449,7 +449,7 @@
 //                 From: {formatDate(reserveFrom)}
 //               </Text>
 //             </TouchableOpacity>
-            
+
 //             <TouchableOpacity 
 //               style={styles.dateInput}
 //               onPress={() => openCalendar('to')}
@@ -520,7 +520,7 @@
 //               <Feather name="refresh-cw" size={16} color="#B8860B" />
 //             </TouchableOpacity>
 //           </View>
-          
+
 //           <View style={styles.memberInfoDisplay}>
 //             <View style={styles.infoRow}>
 //               <Text style={styles.infoLabel}>Name:</Text>
@@ -541,7 +541,7 @@
 //               </Text>
 //             </View>
 //           </View>
-          
+
 //           {!isAuthenticated && (
 //             <View style={styles.warningBox}>
 //               <MaterialIcons name="error" size={16} color="#DC3545" />
@@ -782,36 +782,36 @@
 //                 <ScrollView style={styles.modalContent}>
 //                   <View style={styles.bookingSummary}>
 //                     <Text style={styles.summaryTitle}>Booking Details</Text>
-                    
+
 //                     <View style={styles.summaryRow}>
 //                       <Text style={styles.summaryLabel}>Hall:</Text>
 //                       <Text style={styles.summaryValue}>{venue?.name || venue?.title}</Text>
 //                     </View>
-                    
+
 //                     <View style={styles.summaryRow}>
 //                       <Text style={styles.summaryLabel}>Date:</Text>
 //                       <Text style={styles.summaryValue}>{formatDateForDisplay(selectedDate)}</Text>
 //                     </View>
-                    
+
 //                     <View style={styles.summaryRow}>
 //                       <Text style={styles.summaryLabel}>Event Type:</Text>
 //                       <Text style={styles.summaryValue}>
 //                         {eventTypeOptions.find(opt => opt.value === selectedEventType)?.label || selectedEventType}
 //                       </Text>
 //                     </View>
-                    
+
 //                     <View style={styles.summaryRow}>
 //                       <Text style={styles.summaryLabel}>Time Slot:</Text>
 //                       <Text style={styles.summaryValue}>
 //                         {timeSlotOptions.find(opt => opt.value === selectedTimeSlot)?.label || selectedTimeSlot}
 //                       </Text>
 //                     </View>
-                    
+
 //                     <View style={styles.summaryRow}>
 //                       <Text style={styles.summaryLabel}>Guests:</Text>
 //                       <Text style={styles.summaryValue}>{numberOfGuests} people</Text>
 //                     </View>
-                    
+
 //                     <View style={styles.summaryRow}>
 //                       <Text style={styles.summaryLabel}>Total Amount:</Text>
 //                       <Text style={styles.summaryValue}>{calculateTotalAmount()}</Text>
@@ -859,7 +859,7 @@
 //           <View style={styles.modalOverlay}>
 //             <View style={styles.modalContainer}>
 //               <Text style={styles.modalTitle}>Confirm Reservation</Text>
-              
+
 //               <View style={styles.reservationDetails}>
 //                 <Text style={styles.detailLabel}>Hall: {venue?.name || venue?.title}</Text>
 //                 <Text style={styles.detailLabel}>From: {formatDate(reserveFrom)}</Text>
@@ -874,7 +874,7 @@
 //                 >
 //                   <Text style={styles.cancelButtonText}>Cancel</Text>
 //                 </TouchableOpacity>
-                
+
 //                 <TouchableOpacity 
 //                   style={[styles.modalButton, styles.confirmButton, reservationCompleted && styles.buttonDisabled]}
 //                   onPress={handleAdminReserve}
@@ -902,7 +902,7 @@
 //           <View style={styles.modalOverlay}>
 //             <View style={styles.modalContainer}>
 //               <Text style={styles.modalTitle}>Confirm Unreserve</Text>
-              
+
 //               <View style={styles.reservationDetails}>
 //                 <Text style={styles.detailLabel}>Hall: {venue?.name || venue?.title}</Text>
 //                 <Text style={styles.detailLabel}>From: {formatDate(reserveFrom)}</Text>
@@ -921,7 +921,7 @@
 //                 >
 //                   <Text style={styles.cancelButtonText}>Cancel</Text>
 //                 </TouchableOpacity>
-                
+
 //                 <TouchableOpacity 
 //                   style={[styles.modalButton, styles.unreserveConfirmButton]}
 //                   onPress={handleAdminUnreserve}
@@ -949,7 +949,7 @@
 //               <Text style={styles.calendarTitle}>
 //                 Select {calendarType === 'from' ? 'Start' : 'End'} Date
 //               </Text>
-              
+
 //               <Calendar
 //                 onDayPress={handleDateSelect}
 //                 markedDates={{
@@ -964,7 +964,7 @@
 //                   selectedDayTextColor: '#FFF',
 //                 }}
 //               />
-              
+
 //               <TouchableOpacity 
 //                 style={styles.closeCalendarButton}
 //                 onPress={() => setCalendarModalVisible(false)}
@@ -1038,7 +1038,7 @@
 //   scrollContent: {
 //     paddingVertical: 15,
 //   },
-  
+
 //   // Venue Info
 //   venueInfoCard: {
 //     backgroundColor: '#FFF',
@@ -1082,7 +1082,7 @@
 //     color: '#4A5568',
 //     fontWeight: '500',
 //   },
-  
+
 //   // Member Info Card
 //   memberInfoCard: {
 //     backgroundColor: '#FFF',
@@ -1109,7 +1109,7 @@
 //     fontWeight: 'bold',
 //     color: '#2D3748',
 //   },
-  
+
 //   memberInfo: {
 //     marginTop: 10,
 //     padding: 10,
@@ -1535,7 +1535,7 @@
 //     fontSize: 14,
 //     fontWeight: 'bold',
 //   },
-  
+
 //   // Modal Footer
 //   modalFooter: {
 //     flexDirection: 'row',
@@ -1594,7 +1594,7 @@ const timeSlotOptions = [
 const BHBooking = ({ route, navigation }) => {
   const { venue } = route.params || {};
   const { user, isAuthenticated } = useAuth();
-  
+
   // State variables
   const [selectedDate, setSelectedDate] = useState('');
   const [eventTypeOpen, setEventTypeOpen] = useState(false);
@@ -1603,9 +1603,9 @@ const BHBooking = ({ route, navigation }) => {
   const [timeSlotOpen, setTimeSlotOpen] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [specialRequests, setSpecialRequests] = useState('');
-  
+
   // Guest Booking States
-  const [isGuest, setIsGuest] = useState(false);
+  const [isGuest, setIsGuest] = useState(true); // Guest selected by default
   const [guestName, setGuestName] = useState('');
   const [guestContact, setGuestContact] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1619,7 +1619,7 @@ const BHBooking = ({ route, navigation }) => {
   const [unreserveModalVisible, setUnreserveModalVisible] = useState(false);
   const [calendarModalVisible, setCalendarModalVisible] = useState(false);
   const [calendarType, setCalendarType] = useState('from');
-  
+
   // Booking Modal State
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -1627,18 +1627,18 @@ const BHBooking = ({ route, navigation }) => {
   // Extract membership number from user object
   const extractMembershipNo = () => {
     if (!user) return null;
-    
+
     const possibleFields = [
       'membershipNo', 'membership_no', 'Membership_No', 'membershipNumber',
       'membershipID', 'memberNo', 'memberNumber', 'membershipId'
     ];
-    
+
     for (const field of possibleFields) {
       if (user[field]) {
         return user[field].toString();
       }
     }
-    
+
     if (user.data && typeof user.data === 'object') {
       for (const field of possibleFields) {
         if (user.data[field]) {
@@ -1646,7 +1646,7 @@ const BHBooking = ({ route, navigation }) => {
         }
       }
     }
-    
+
     return null;
   };
 
@@ -1655,11 +1655,11 @@ const BHBooking = ({ route, navigation }) => {
 
   useEffect(() => {
     checkUserStatus();
-    
+
     if (venue) {
       setNumberOfGuests(venue.capacity?.toString() || '');
     }
-    
+
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0];
     setSelectedDate(formattedDate);
@@ -1668,26 +1668,26 @@ const BHBooking = ({ route, navigation }) => {
   const checkUserStatus = async () => {
     try {
       const userData = await getUserData();
-      
+
       const currentUser = user || userData;
-      
+
       if (!currentUser) {
         setIsAdmin(false);
         return;
       }
 
-      const extractedUserRole = 
-        currentUser.role || 
-        currentUser.Role || 
+      const extractedUserRole =
+        currentUser.role ||
+        currentUser.Role ||
         currentUser.userRole ||
         currentUser.user_role;
 
       const isAdminUser = extractedUserRole && (
-        extractedUserRole.toLowerCase() === 'admin' || 
-        extractedUserRole.toLowerCase() === 'super_admin' || 
+        extractedUserRole.toLowerCase() === 'admin' ||
+        extractedUserRole.toLowerCase() === 'super_admin' ||
         extractedUserRole.toLowerCase() === 'superadmin'
       );
-      
+
       setIsAdmin(isAdminUser);
 
     } catch (error) {
@@ -1754,9 +1754,9 @@ const BHBooking = ({ route, navigation }) => {
       };
 
       const response = await banquetAPI.reserveHalls(payload);
-      
+
       Alert.alert(
-        'Success', 
+        'Success',
         response.data?.message || 'Hall reserved successfully',
         [
           {
@@ -1773,7 +1773,7 @@ const BHBooking = ({ route, navigation }) => {
     } catch (error) {
       console.error('Reservation error:', error);
       Alert.alert(
-        'Error', 
+        'Error',
         error.response?.data?.message || 'Failed to reserve hall'
       );
     } finally {
@@ -1798,9 +1798,9 @@ const BHBooking = ({ route, navigation }) => {
       };
 
       const response = await banquetAPI.reserveHalls(payload);
-      
+
       Alert.alert(
-        'Success', 
+        'Success',
         response.data?.message || 'Hall unreserved successfully',
         [
           {
@@ -1817,7 +1817,7 @@ const BHBooking = ({ route, navigation }) => {
     } catch (error) {
       console.error('Unreservation error:', error);
       Alert.alert(
-        'Error', 
+        'Error',
         error.response?.data?.message || 'Failed to unreserve hall'
       );
     } finally {
@@ -1864,9 +1864,12 @@ const BHBooking = ({ route, navigation }) => {
         'Please login to book a hall.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Go to Login', 
-            onPress: () => navigation.navigate('LoginScr')
+          {
+            text: 'Go to Login',
+            onPress: () => navigation.reset({
+              index: 0,
+              routes: [{ name: 'LoginScr' }],
+            })
           }
         ]
       );
@@ -1883,7 +1886,7 @@ const BHBooking = ({ route, navigation }) => {
     }
 
     setBookingLoading(true);
-    
+
     try {
       // Prepare booking data
       const bookingData = {
@@ -1912,10 +1915,10 @@ const BHBooking = ({ route, navigation }) => {
 
       // Use the API call
       const response = await banquetAPI.memberBookingHall(venue.id, bookingData);
-      
+
       setBookingLoading(false);
       setShowBookingModal(false);
-      
+
       if (response.data.ResponseCode === '00') {
         Alert.alert(
           'Invoice Generated Successfully!',
@@ -1962,9 +1965,9 @@ const BHBooking = ({ route, navigation }) => {
     } catch (error) {
       setBookingLoading(false);
       console.error('❌ Hall booking error:', error);
-      
+
       let errorMessage = 'Failed to process booking. Please try again.';
-      
+
       if (error.response?.status === 401) {
         errorMessage = 'Authentication failed. Please log in again.';
       } else if (error.response?.status === 400) {
@@ -1978,7 +1981,7 @@ const BHBooking = ({ route, navigation }) => {
       } else if (error.message?.includes('timeout')) {
         errorMessage = 'Request timeout. Please try again.';
       }
-      
+
       Alert.alert('Booking Failed', errorMessage);
     }
   };
@@ -2002,8 +2005,8 @@ const BHBooking = ({ route, navigation }) => {
 
   const calculateTotalAmount = () => {
     if (!venue) return '0';
-    const price = isGuest ? 
-      (venue.guestPrice || venue.chargesGuests || venue.memberPrice * 1.2 || 0) : 
+    const price = isGuest ?
+      (venue.guestPrice || venue.chargesGuests || venue.memberPrice * 1.2 || 0) :
       (venue.memberPrice || venue.chargesMembers || 0);
     return `Rs. ${price.toLocaleString()}/-`;
   };
@@ -2020,7 +2023,7 @@ const BHBooking = ({ route, navigation }) => {
         <View style={styles.dateSection}>
           <Text style={styles.sectionLabel}>Reservation Period</Text>
           <View style={styles.dateInputs}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.dateInput}
               onPress={() => openCalendar('from')}
             >
@@ -2029,8 +2032,8 @@ const BHBooking = ({ route, navigation }) => {
                 From: {formatDate(reserveFrom)}
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.dateInput}
               onPress={() => openCalendar('to')}
             >
@@ -2053,15 +2056,19 @@ const BHBooking = ({ route, navigation }) => {
             placeholder="Select Time Slot"
             style={styles.dropdown}
             dropDownContainerStyle={styles.dropdownContainer}
+            listMode="SCROLLVIEW"
+            scrollViewProps={{
+              nestedScrollEnabled: true,
+            }}
             zIndex={3000}
             zIndexInverse={1000}
           />
         </View>
 
         <View style={styles.adminActionButtons}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
-              styles.adminButton, 
+              styles.adminButton,
               styles.reserveButton,
               (!reserveFrom || !reserveTo || !timeSlot) && styles.buttonDisabled
             ]}
@@ -2071,9 +2078,9 @@ const BHBooking = ({ route, navigation }) => {
             <Text style={styles.adminButtonText}>Reserve Hall</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
-              styles.adminButton, 
+              styles.adminButton,
               styles.unreserveButton,
               (!reserveFrom || !reserveTo || !timeSlot) && styles.buttonDisabled
             ]}
@@ -2095,34 +2102,34 @@ const BHBooking = ({ route, navigation }) => {
     return (
       <>
         {/* Member Info Card (only if authenticated and not guest) */}
-        {!isGuest && isAuthenticated && (
-          <View style={styles.memberInfoCard}>
-            <View style={styles.memberInfoHeader}>
-              <Text style={styles.memberInfoTitle}>Member Information</Text>
-            </View>
-            
-            <View style={styles.memberInfoDisplay}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Name:</Text>
-                <Text style={styles.infoValue}>
-                  {userName || 'Member'}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Membership No:</Text>
-                <Text style={styles.infoValue}>
-                  {membershipNo || 'Auto-detected from login'}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Status:</Text>
-                <Text style={[styles.infoValue, styles.sessionStatus]}>
-                  {isAuthenticated ? '✅ Authenticated' : '❌ Not Authenticated'}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
+        {/* {!isGuest && isAuthenticated && (
+          // <View style={styles.memberInfoCard}>
+          //   <View style={styles.memberInfoHeader}>
+          //     <Text style={styles.memberInfoTitle}>Member Information</Text>
+          //   </View>
+
+          //   <View style={styles.memberInfoDisplay}>
+          //     <View style={styles.infoRow}>
+          //       <Text style={styles.infoLabel}>Name:</Text>
+          //       <Text style={styles.infoValue}>
+          //         {userName || 'Member'}
+          //       </Text>
+          //     </View>
+          //     <View style={styles.infoRow}>
+          //       <Text style={styles.infoLabel}>Membership No:</Text>
+          //       <Text style={styles.infoValue}>
+          //         {membershipNo || 'Auto-detected from login'}
+          //       </Text>
+          //     </View>
+          //     <View style={styles.infoRow}>
+          //       <Text style={styles.infoLabel}>Status:</Text>
+          //       <Text style={[styles.infoValue, styles.sessionStatus]}>
+          //         {isAuthenticated ? '✅ Authenticated' : '❌ Not Authenticated'}
+          //       </Text>
+          //     </View>
+          //   </View>
+          // </View>
+        )} */}
 
         {/* Authentication Warning for Member Booking */}
         {!isGuest && !isAuthenticated && (
@@ -2171,22 +2178,46 @@ const BHBooking = ({ route, navigation }) => {
         {/* Guest Details (Conditional) */}
         {isGuest && (
           <View style={styles.guestContainer}>
-            <Text style={styles.sectionTitle}>Guest Details</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Guest Name *"
-              value={guestName}
-              onChangeText={setGuestName}
-              placeholderTextColor="#999"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Guest Contact Number *"
-              value={guestContact}
-              onChangeText={setGuestContact}
-              keyboardType="phone-pad"
-              placeholderTextColor="#999"
-            />
+            <View style={styles.guestHeader}>
+              <MaterialIcons name="person-outline" size={22} color="#B8860B" />
+              <Text style={styles.guestTitle}>Guest Details</Text>
+            </View>
+
+            <View style={styles.guestInputGroup}>
+              <View style={styles.guestInputWrapper}>
+                <MaterialIcons name="person" size={20} color="#B8860B" style={styles.guestInputIcon} />
+                <TextInput
+                  style={styles.guestInput}
+                  placeholder="Guest Full Name *"
+                  value={guestName}
+                  onChangeText={setGuestName}
+                  placeholderTextColor="#999"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            <View style={styles.guestInputGroup}>
+              <View style={styles.guestInputWrapper}>
+                <MaterialIcons name="phone" size={20} color="#B8860B" style={styles.guestInputIcon} />
+                <TextInput
+                  style={styles.guestInput}
+                  placeholder="Guest Contact Number *"
+                  value={guestContact}
+                  onChangeText={setGuestContact}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#999"
+                  maxLength={15}
+                />
+              </View>
+            </View>
+
+            <View style={styles.guestInfoNote}>
+              <MaterialIcons name="info-outline" size={16} color="#B8860B" />
+              <Text style={styles.guestInfoText}>
+                Guest pricing will be applied. Guest details are required for booking.
+              </Text>
+            </View>
           </View>
         )}
 
@@ -2196,7 +2227,7 @@ const BHBooking = ({ route, navigation }) => {
           <Text style={styles.selectedDate}>
             {selectedDate ? formatDateForDisplay(selectedDate) : 'Select a date'}
           </Text>
-          
+
           <Calendar
             current={selectedDate || new Date().toISOString().split('T')[0]}
             minDate={new Date().toISOString().split('T')[0]}
@@ -2226,7 +2257,7 @@ const BHBooking = ({ route, navigation }) => {
         </View>
 
         {/* Event Details */}
-        <View style={styles.sectionCard}>
+        <View style={[styles.sectionCard, { zIndex: (eventTypeOpen || timeSlotOpen) ? 10 : 1 }]}>
           <Text style={styles.sectionTitle}>Event Details</Text>
 
           <View style={styles.inputGroup}>
@@ -2252,6 +2283,10 @@ const BHBooking = ({ route, navigation }) => {
               placeholder="Select Event Type"
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
+              listMode="SCROLLVIEW"
+              scrollViewProps={{
+                nestedScrollEnabled: true,
+              }}
               zIndex={4000}
               zIndexInverse={1000}
             />
@@ -2268,6 +2303,10 @@ const BHBooking = ({ route, navigation }) => {
               placeholder="Select Time Slot"
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
+              listMode="SCROLLVIEW"
+              scrollViewProps={{
+                nestedScrollEnabled: true,
+              }}
               zIndex={3000}
               zIndexInverse={2000}
             />
@@ -2302,21 +2341,21 @@ const BHBooking = ({ route, navigation }) => {
         </View>
 
         {/* Book Now Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.submitButton,
             styles[isGuest ? 'guestSubmitButton' : 'memberSubmitButton'],
-            (!selectedDate || !numberOfGuests || !selectedEventType || !selectedTimeSlot) && 
+            (!selectedDate || !numberOfGuests || !selectedEventType || !selectedTimeSlot) &&
             styles.submitButtonDisabled,
             (!isGuest && !isAuthenticated) && styles.submitButtonDisabled,
             (isGuest && (!guestName || !guestContact)) && styles.submitButtonDisabled
           ]}
           onPress={() => setShowBookingModal(true)}
           disabled={
-            !selectedDate || 
-            !numberOfGuests || 
-            !selectedEventType || 
-            !selectedTimeSlot || 
+            !selectedDate ||
+            !numberOfGuests ||
+            !selectedEventType ||
+            !selectedTimeSlot ||
             (!isGuest && !isAuthenticated) ||
             (isGuest && (!guestName || !guestContact))
           }
@@ -2360,15 +2399,15 @@ const BHBooking = ({ route, navigation }) => {
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#B8860B" />
+      <StatusBar barStyle="light-content" backgroundColor="black" />
       <SafeAreaView style={styles.container}>
         <ImageBackground
-          source={require('../../assets/psc_home.jpeg')}
+          source={require('../../assets/notch.jpg')}
           style={styles.headerBackground}
           imageStyle={styles.headerImage}
         >
           <View style={styles.header}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
@@ -2386,7 +2425,7 @@ const BHBooking = ({ route, navigation }) => {
           </View>
         </ImageBackground>
 
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -2415,14 +2454,14 @@ const BHBooking = ({ route, navigation }) => {
                 <ScrollView style={styles.modalContent}>
                   <View style={styles.bookingSummary}>
                     <Text style={styles.summaryTitle}>Booking Details</Text>
-                    
+
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Booking Type:</Text>
                       <Text style={styles.summaryValue}>
                         {isGuest ? 'Guest Booking' : 'Member Booking'}
                       </Text>
                     </View>
-                    
+
                     {isGuest && (
                       <>
                         <View style={styles.summaryRow}>
@@ -2435,7 +2474,7 @@ const BHBooking = ({ route, navigation }) => {
                         </View>
                       </>
                     )}
-                    
+
                     {!isGuest && (
                       <>
                         <View style={styles.summaryRow}>
@@ -2448,41 +2487,41 @@ const BHBooking = ({ route, navigation }) => {
                         </View>
                       </>
                     )}
-                    
+
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Hall:</Text>
                       <Text style={styles.summaryValue}>{venue?.name || venue?.title}</Text>
                     </View>
-                    
+
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Date:</Text>
                       <Text style={styles.summaryValue}>{formatDateForDisplay(selectedDate)}</Text>
                     </View>
-                    
+
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Event Type:</Text>
                       <Text style={styles.summaryValue}>
                         {eventTypeOptions.find(opt => opt.value === selectedEventType)?.label || selectedEventType}
                       </Text>
                     </View>
-                    
+
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Time Slot:</Text>
                       <Text style={styles.summaryValue}>
                         {timeSlotOptions.find(opt => opt.value === selectedTimeSlot)?.label || selectedTimeSlot}
                       </Text>
                     </View>
-                    
+
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Guests:</Text>
                       <Text style={styles.summaryValue}>{numberOfGuests} people</Text>
                     </View>
-                    
+
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Total Amount:</Text>
                       <Text style={styles.summaryValue}>{calculateTotalAmount()}</Text>
                     </View>
-                    
+
                     {specialRequests && (
                       <View style={styles.summaryRow}>
                         <Text style={styles.summaryLabel}>Special Requests:</Text>
@@ -2494,7 +2533,7 @@ const BHBooking = ({ route, navigation }) => {
                   <View style={styles.infoBox}>
                     <MaterialIcons name="info" size={16} color="#B8860B" />
                     <Text style={styles.infoText}>
-                      {isGuest 
+                      {isGuest
                         ? 'You will be redirected to payment after confirmation. Please ensure your contact details are correct.'
                         : 'You will be redirected to payment after confirmation. Your member ID will be automatically detected from your login session.'}
                     </Text>
@@ -2502,13 +2541,13 @@ const BHBooking = ({ route, navigation }) => {
                 </ScrollView>
 
                 <View style={styles.modalFooter}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.cancelButton}
                     onPress={() => setShowBookingModal(false)}
                   >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.confirmButton, bookingLoading && styles.buttonDisabled]}
                     onPress={handleGenerateInvoice}
                     disabled={bookingLoading}
@@ -2534,7 +2573,7 @@ const BHBooking = ({ route, navigation }) => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Confirm Reservation</Text>
-              
+
               <View style={styles.reservationDetails}>
                 <Text style={styles.detailLabel}>Hall: {venue?.name || venue?.title}</Text>
                 <Text style={styles.detailLabel}>From: {formatDate(reserveFrom)}</Text>
@@ -2543,14 +2582,14 @@ const BHBooking = ({ route, navigation }) => {
               </View>
 
               <View style={styles.modalActions}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={() => setReserveModalVisible(false)}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.modalButton, styles.confirmButton]}
                   onPress={handleAdminReserve}
                   disabled={loading}
@@ -2575,7 +2614,7 @@ const BHBooking = ({ route, navigation }) => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Confirm Unreserve</Text>
-              
+
               <View style={styles.reservationDetails}>
                 <Text style={styles.detailLabel}>Hall: {venue?.name || venue?.title}</Text>
                 <Text style={styles.detailLabel}>From: {formatDate(reserveFrom)}</Text>
@@ -2588,14 +2627,14 @@ const BHBooking = ({ route, navigation }) => {
               </Text>
 
               <View style={styles.modalActions}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={() => setUnreserveModalVisible(false)}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.modalButton, styles.unreserveConfirmButton]}
                   onPress={handleAdminUnreserve}
                   disabled={loading}
@@ -2622,7 +2661,7 @@ const BHBooking = ({ route, navigation }) => {
               <Text style={styles.calendarTitle}>
                 Select {calendarType === 'from' ? 'Start' : 'End'} Date
               </Text>
-              
+
               <Calendar
                 onDayPress={handleDateSelect}
                 markedDates={{
@@ -2637,8 +2676,8 @@ const BHBooking = ({ route, navigation }) => {
                   selectedDayTextColor: '#FFF',
                 }}
               />
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.closeCalendarButton}
                 onPress={() => setCalendarModalVisible(false)}
               >
@@ -2655,7 +2694,7 @@ const BHBooking = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7FAFC',
+    backgroundColor: '#FEF9F3',
   },
   headerBackground: {
     paddingTop: 50,
@@ -2710,7 +2749,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingVertical: 15,
   },
-  
+
   // Venue Info
   venueInfoCard: {
     backgroundColor: '#FFF',
@@ -2770,7 +2809,7 @@ const styles = StyleSheet.create({
     color: '#dc3545',
     fontWeight: '600',
   },
-  
+
   // Member Info Card
   memberInfoCard: {
     backgroundColor: '#FFF',
@@ -2797,7 +2836,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2D3748',
   },
-  
+
   memberInfo: {
     marginTop: 10,
     padding: 10,
@@ -2901,6 +2940,61 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: '#E8DCC8',
+  },
+  guestHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0E6D8',
+  },
+  guestTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D3748',
+    marginLeft: 10,
+  },
+  guestInputGroup: {
+    marginBottom: 15,
+  },
+  guestInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F5F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2D9CC',
+    paddingHorizontal: 15,
+    height: 55,
+  },
+  guestInputIcon: {
+    marginRight: 12,
+  },
+  guestInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2D3748',
+    height: '100%',
+  },
+  guestInfoNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FDF8F3',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 5,
+    borderWidth: 1,
+    borderColor: '#E8DCC8',
+  },
+  guestInfoText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#8B7355',
+    marginLeft: 8,
+    lineHeight: 18,
   },
 
   // Package Card
@@ -3050,7 +3144,7 @@ const styles = StyleSheet.create({
   },
   dateInputs: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
   },
   dateInput: {
     flex: 1,
@@ -3061,7 +3155,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     backgroundColor: '#F9F9F9',
-    gap: 8,
+    // spacing handled by parent and child margins
   },
   dateInputText: {
     fontSize: 14,
@@ -3069,7 +3163,7 @@ const styles = StyleSheet.create({
   },
   adminActionButtons: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
   },
   adminButton: {
     flex: 1,
@@ -3137,10 +3231,10 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   memberSubmitButton: {
-    backgroundColor: '#B8860B',
+    backgroundColor: '#b48a64',
   },
   guestSubmitButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#b48a64',
   },
   submitButtonDisabled: {
     backgroundColor: '#CBD5E0',
@@ -3161,33 +3255,38 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   modalContainer: {
     backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    padding: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 30,
   },
   calendarModalContent: {
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 20,
+    paddingBottom: 30,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9ECEF',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 20,
+    color: '#2D3748',
   },
   calendarTitle: {
     fontSize: 18,
@@ -3197,29 +3296,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   modalContent: {
-    flex: 1,
+    flexGrow: 1,
   },
 
   // Booking Summary
   bookingSummary: {
     backgroundColor: '#F8F9FA',
-    padding: 15,
-    borderRadius: 8,
+    padding: 18,
+    borderRadius: 12,
     marginBottom: 20,
   },
   summaryTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+    color: '#2D3748',
+    marginBottom: 16,
     textAlign: 'center',
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
-    paddingVertical: 5,
+    marginBottom: 12,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9ECEF',
   },
   summaryLabel: {
     fontSize: 14,
@@ -3229,7 +3330,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 14,
-    color: '#333',
+    color: '#2D3748',
     fontWeight: '500',
     textAlign: 'right',
     width: '60%',
@@ -3239,14 +3340,15 @@ const styles = StyleSheet.create({
   // Reservation Details
   reservationDetails: {
     backgroundColor: '#F8F9FA',
-    padding: 15,
-    borderRadius: 8,
+    padding: 18,
+    borderRadius: 12,
     marginBottom: 20,
   },
   detailLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#333',
-    marginBottom: 5,
+    marginBottom: 8,
+    fontWeight: '500',
   },
 
   // Info Box
@@ -3290,19 +3392,30 @@ const styles = StyleSheet.create({
   // Modal Actions
   modalActions: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 12,
   },
   modalButton: {
     flex: 1,
-    padding: 15,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
   },
   cancelButton: {
     backgroundColor: '#6c757d',
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginRight: 8,
   },
   confirmButton: {
-    backgroundColor: '#B8860B',
+    backgroundColor: '#b48a64',
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginLeft: 8,
   },
   unreserveConfirmButton: {
     backgroundColor: '#dc3545',
@@ -3320,23 +3433,24 @@ const styles = StyleSheet.create({
 
   // Calendar Close Button
   closeCalendarButton: {
-    marginTop: 15,
-    padding: 12,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#B8860B',
+    borderRadius: 12,
     alignItems: 'center',
   },
   closeCalendarText: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  
+
   // Modal Footer
   modalFooter: {
     flexDirection: 'row',
-    gap: 10,
     marginTop: 20,
+    justifyContent: 'space-between',
+    gap: 12,
   },
 
   // Session Status

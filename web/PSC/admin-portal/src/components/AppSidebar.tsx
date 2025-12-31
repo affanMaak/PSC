@@ -15,7 +15,9 @@ import {
   Building,
   CalendarDays,
   Bell,
-  Lock
+  Lock,
+  NotebookTabsIcon,
+  Text
 } from "lucide-react";
 
 import {
@@ -35,6 +37,29 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery } from "@tanstack/react-query";
 import { userWho } from "../../config/apis";
+
+// Map routes to permission titles (must match your API's permission names)
+const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
+  "/": "Dashboard",
+  "/dashboard": "Dashboard",
+  "/members": "Members",
+  "/accounts": "Accounts",
+  "/admins": "Admins",
+  "/rooms/types": "Room Types",
+  "/rooms": "Rooms",
+  "/bookings/rooms": "Room Bookings",
+  "/halls": "Halls",
+  "/bookings/halls": "Hall Bookings",
+  "/lawns/categories": "Lawn Categories",
+  "/lawns": "Lawns",
+  "/bookings/lawns": "Lawn Bookings",
+  "/photoshoot": "Photoshoot",
+  "/bookings/photoshoot": "Photoshoot Bookings",
+  "/sports": "Sports",
+  "/affiliated-clubs": "Affiliated Clubs",
+  "/notifications": "Notifications",
+  "/calendar": "Calendar",
+};
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -75,10 +100,12 @@ const menuItems = [
       { title: "Photoshoot Bookings", url: "/bookings/photoshoot" },
     ],
   },
+  { title: "Bookings", url: "/bookings", icon: NotebookTabsIcon },
   { title: "Sports", url: "/sports", icon: Trophy },
   { title: "Affiliated Clubs", url: "/affiliated-clubs", icon: Building },
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Calendar", url: "/calendar", icon: CalendarDays },
+  { title: "Contents", url: "/contents", icon: Text },
 ];
 
 export function AppSidebar() {
@@ -93,9 +120,22 @@ export function AppSidebar() {
 
   if (!currentUser) return null;
 
-  const hasPermission = (title: string) => {
-    if (currentUser.role === "SUPER_ADMIN") return true;
-    return currentUser.permissions?.includes(title);
+  const userRole = currentUser.role;
+  const permissions = currentUser.permissions || [];
+
+  // Check if user can access a route based on permissions
+  const canAccessRoute = (route: string): boolean => {
+    // SUPER_ADMIN has access to everything
+    if (userRole === "SUPER_ADMIN") return true;
+    
+    // Get the permission title for this route
+    const requiredPermission = ROUTE_TO_PERMISSION_MAP[route];
+    
+    // If no permission mapping exists, deny access
+    if (!requiredPermission) return false;
+    
+    // Check if user has this permission
+    return permissions.includes(requiredPermission);
   };
 
   return (
@@ -118,7 +158,10 @@ export function AppSidebar() {
                     <Collapsible key={item.title} defaultOpen={isActive} className="group/collapsible">
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton tooltip={item.title} className={`py-2 ${isActive ? "bg-sidebar-accent" : ""}`}>
+                          <SidebarMenuButton 
+                            tooltip={item.title} 
+                            className={`py-2 ${isActive ? "bg-sidebar-accent" : ""}`}
+                          >
                             {item.icon && <item.icon className="h-5 w-5" />}
                             <span>{item.title}</span>
                             <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
@@ -127,7 +170,7 @@ export function AppSidebar() {
                         <CollapsibleContent>
                           <SidebarMenuSub className="ml-4 space-y-1">
                             {item.items.map(subItem => {
-                              const allowed = hasPermission(subItem.title);
+                              const allowed = canAccessRoute(subItem.url);
                               return (
                                 <SidebarMenuSubItem key={subItem.title}>
                                   <SidebarMenuSubButton asChild>
@@ -135,6 +178,11 @@ export function AppSidebar() {
                                       to={allowed ? subItem.url : "#"}
                                       className={`hover:bg-sidebar-accent/50 flex items-center justify-between py-1 ${!allowed ? "opacity-50 cursor-not-allowed" : ""}`}
                                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                      onClick={(e) => {
+                                        if (!allowed) {
+                                          e.preventDefault();
+                                        }
+                                      }}
                                     >
                                       <span>{subItem.title}</span>
                                       {!allowed && <Lock className="h-4 w-4 ml-2" />}
@@ -150,7 +198,7 @@ export function AppSidebar() {
                   );
                 }
 
-                const allowed = hasPermission(item.title);
+                const allowed = canAccessRoute(item.url);
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild tooltip={item.title}>
@@ -158,6 +206,11 @@ export function AppSidebar() {
                         to={allowed ? item.url : "#"}
                         className={`hover:bg-sidebar-accent/50 py-2 flex items-center ${!allowed ? "opacity-50 cursor-not-allowed" : ""}`}
                         activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        onClick={(e) => {
+                          if (!allowed) {
+                            e.preventDefault();
+                          }
+                        }}
                       >
                         {item.icon && <item.icon className="h-5 w-5" />}
                         <span>{item.title}</span>

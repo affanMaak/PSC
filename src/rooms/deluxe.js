@@ -7,12 +7,14 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
-  Alert, // 👈 Imported Alert
+  Alert, // 👈 Importe Alert
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons'; 
+import Icon from 'react-native-vector-icons/Ionicons';
+
+import { useAuth } from '../auth/contexts/AuthContext';
 
 // Placeholder image source (REPLACE THIS)
-const ROOM_IMAGE_URI = 'https://via.placeholder.com/350x250/d8c7aa/808080?text=Studio+Room'; 
+const ROOM_IMAGE_URI = 'https://via.placeholder.com/350x250/d8c7aa/808080?text=Studio+Room';
 
 const features = [
   'Single room',
@@ -26,18 +28,31 @@ const features = [
 ];
 
 export default function deluxe({ navigation }) {
-  
+  const { user } = useAuth();
+
   const handleBookNow = () => {
-    // 1. Show the alert
-   
-    // Alternatively, you could navigate *before* the alert if you prefer:
+    console.log('📖 Book Now clicked - Deluxe');
+    console.log('👤 User object:', JSON.stringify(user, null, 2));
+    console.log('📊 User status:', user?.status, user?.Status, user?.memberStatus);
+
+    // Check if member is deactivated - handle multiple possible field names and casing
+    const userStatus = user?.status || user?.Status || user?.memberStatus || '';
+    if (userStatus.toUpperCase() === 'DEACTIVATED') {
+      Alert.alert(
+        'Account Deactivated',
+        'You cannot book room. Please contact PSC for assistance.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     navigation.navigate("booking");
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={styles.headerBackground.backgroundColor} />
-      
+      <StatusBar backgroundColor="#fffaf2" barStyle="dark-content" />
+
       {/* Header Section (Back Button & Title) */}
       <View style={styles.headerBackground}>
         <View style={styles.headerContent}>
@@ -49,7 +64,7 @@ export default function deluxe({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
+
         {/* Room Image */}
         <View style={styles.imageContainer}>
           <Image
@@ -63,7 +78,7 @@ export default function deluxe({ navigation }) {
         <View style={styles.featuresCard}>
           <Text style={styles.featuresHeading}>Features</Text>
           <Text style={styles.featuresSubText}>Studio room comprise of:</Text>
-          
+
           {features.map((feature, index) => (
             <View key={index} style={styles.featureItem}>
               <Text style={styles.bullet}>•</Text>
@@ -71,15 +86,15 @@ export default function deluxe({ navigation }) {
             </View>
           ))}
         </View>
-        
+
         {/* Spacer to lift content above the fixed Book Now button */}
-        <View style={{ height: 100 }} /> 
+        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* --- Book Now Button --- */}
       <View style={styles.bookNowContainer}>
-        <TouchableOpacity 
-          style={styles.bookNowButton} 
+        <TouchableOpacity
+          style={styles.bookNowButton}
           onPress={handleBookNow} // 👈 Calls the new handler
         >
           <Text style={styles.bookNowText}>Book Now</Text>
@@ -95,7 +110,7 @@ const styles = StyleSheet.create({
   headerBackground: {
     paddingTop: 10,
     paddingBottom: 20,
-    backgroundColor: '#dbc9a5', 
+    backgroundColor: '#dbc9a5',
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     overflow: 'hidden',

@@ -6,8 +6,14 @@ import { FormInput, SpecialRequestsInput } from "./FormInputs";
 import { PaymentSection } from "./PaymentSection";
 import { MemberSearchComponent } from "./MemberSearch";
 import { Member } from "@/types/room-booking.type";
-import { UnifiedDatePicker } from "@/components/UnifiedDatePicker";
 import { format } from "date-fns";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar, Info } from "lucide-react";
+import { DateRange } from "react-day-picker";
+import { cn } from "@/lib/utils";
+import { getPakistanDateString, parsePakistanDate } from "@/utils/pakDate";
+import { Button } from "./ui/button";
 
 interface BookingFormProps {
   form: BookingForm;
@@ -51,7 +57,7 @@ export const BookingFormComponent = React.memo(({
   isEdit = false,
 }: BookingFormProps) => {
   return (
-    <div className="space-y-8 py-4">
+    <div className="space-y-8">
 
       {/* MEMBER SEARCH CARD */}
       {!isEdit && <div className="p-4 rounded-xl border bg-white shadow-sm">
@@ -301,44 +307,119 @@ export const BookingFormComponent = React.memo(({
       <div className="p-4 rounded-xl border bg-white shadow-sm">
         <h3 className="text-lg font-semibold mb-4">Stay Dates</h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
+            Stay Period *
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal h-12 bg-muted/30 border-none shadow-none",
+                  !form.checkIn && "text-muted-foreground"
+                )}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                {form.checkIn ? (
+                  form.checkOut && form.checkOut !== form.checkIn ? (
+                    <>
+                      {format(new Date(form.checkIn), "LLL dd, y")} -{" "}
+                      {format(new Date(form.checkOut), "LLL dd, y")}
+                    </>
+                  ) : (
+                    format(new Date(form.checkIn), "LLL dd, y")
+                  )
+                ) : (
+                  <span>Pick a date range</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                initialFocus
+                mode="range"
+                defaultMonth={form.checkIn ? new Date(form.checkIn) : new Date()}
+                selected={{
+                  from: form.checkIn ? new Date(form.checkIn) : undefined,
+                  to: form.checkOut ? new Date(form.checkOut) : undefined,
+                }}
+                onSelect={(range: DateRange | undefined) => {
+                  if (range?.from) {
+                    onChange("checkIn", format(range.from, "yyyy-MM-dd'T'HH:mm"));
+                    onChange("checkOut", range.to ? format(range.to, "yyyy-MM-dd'T'HH:mm") : format(range.from, "yyyy-MM-dd'T'HH:mm"));
+                  } else {
+                    onChange("checkIn", "");
+                    onChange("checkOut", "");
+                  }
+                }}
+                numberOfMonths={2}
+                modifiers={{
+                  today: new Date(),
+                  booked: dateStatuses?.filter(ds => ds.status === "BOOKED").map(ds => ds.date) || [],
+                  reserved: dateStatuses?.filter(ds => ds.status === "RESERVED").map(ds => ds.date) || [],
+                  outOfOrder: dateStatuses?.filter(ds => ds.status === "OUT_OF_ORDER").map(ds => ds.date) || [],
+                }}
+                modifiersClassNames={{
+                  today: "border-2 border-primary bg-transparent text-primary hover:bg-transparent hover:text-primary",
+                  booked: "bg-blue-100 border-blue-200 text-blue-900 font-semibold rounded-none",
+                  reserved: "bg-amber-100 border-amber-200 text-amber-900 font-semibold rounded-none",
+                  outOfOrder: "bg-red-100 border-red-200 text-red-900 font-semibold rounded-none",
+                }}
+                classNames={{
+                  day_today: "border-2 border-primary bg-transparent text-primary hover:bg-transparent hover:text-primary",
+                }}
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  if (date < today) return true;
 
-          <div>
-            <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
-              Check-in *
-            </Label>
-            <UnifiedDatePicker
-              value={form.checkIn}
-              onChange={(date) => onChange("checkIn", date ? format(date, "yyyy-MM-dd'T'HH:mm") : "")}
-              rooms={
-                form.roomId
-                  ? availableRooms.filter((room: Room) => room.id.toString() === form.roomId)
-                  : []
-              }
-              placeholder="Select check-in date"
-              mode="date"
-            />
+                  // Find status for this date
+                  const status = dateStatuses?.find(ds => {
+                    const d = new Date(ds.date);
+                    return d.getFullYear() === date.getFullYear() &&
+                      d.getMonth() === date.getMonth() &&
+                      d.getDate() === date.getDate();
+                  });
+
+                  if (!status) return false;
+
+                  // Allow OOS start date as checkout if it's the start date
+                  // This is tricky without knowing if it's the first or second click.
+                  // For now, let's NOT disable OOS dates completely if they can be checkouts.
+                  // But usually OOS means totally unavailable.
+                  // Let's just block them and see if the user complains.
+                  // Actually, if I block them, they can't select them as checkout.
+                  // So let's NOT block them in the 'disabled' function, just highlight them.
+                  // This way they can select them, and my checkConflicts will catch it if they try to book an interval that contains them.
+
+                  // RETURN false to NOT disable them so they can be selected as checkout.
+                  // (The conflict check on Save will handle the logic)
+                  return false;
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+          <div className="flex flex-wrap gap-4 mt-2">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-blue-100 border border-blue-200 rounded-sm" />
+              <span className="text-[10px] text-muted-foreground uppercase font-medium">Booked</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-amber-100 border border-amber-200 rounded-sm" />
+              <span className="text-[10px] text-muted-foreground uppercase font-medium">Reserved</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-red-100 border border-red-200 rounded-sm" />
+              <span className="text-[10px] text-muted-foreground uppercase font-medium">Out of Service</span>
+            </div>
           </div>
-
-          {/* Check-out Date */}
-          <div>
-            <Label className="text-sm font-medium mb-1 block whitespace-nowrap">
-              Check-out *
-            </Label>
-            <UnifiedDatePicker
-              value={form.checkOut}
-              onChange={(date) => onChange("checkOut", date ? format(date, "yyyy-MM-dd'T'HH:mm") : "")}
-              rooms={
-                form.roomId
-                  ? availableRooms.filter((room: Room) => room.id.toString() === form.roomId)
-                  : []
-              }
-              placeholder="Select check-out date"
-              isCheckout={true}
-              mode="date"
-            />
-          </div>
-
+          {form.checkIn && form.checkOut && (
+            <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              Total duration: {Math.ceil((new Date(form.checkOut).getTime() - new Date(form.checkIn).getTime()) / (1000 * 60 * 60 * 24))} nights
+            </p>
+          )}
         </div>
       </div>
 

@@ -103,24 +103,48 @@ export const getDateStatuses = (
     });
   }
 
-  // Mark out-of-order dates
-  if (room.isOutOfOrder && room.outOfOrderFrom && room.outOfOrderTo) {
-    console.log('Processing out-of-order dates');
+  // Mark out-of-order dates from room.outOfOrders array
+  if (room.outOfOrders && room.outOfOrders.length > 0) {
+    room.outOfOrders.forEach((oo: any) => {
+      const start = normalizeToPakistanDate(new Date(oo.startDate));
+      const end = normalizeToPakistanDate(new Date(oo.endDate));
+      const currentDate = new Date(start);
+
+      while (currentDate <= end) {
+        const dateKey = getPakistanDateString(currentDate);
+        const existingIndex = dateStatuses.findIndex(ds =>
+          getPakistanDateString(ds.date) === dateKey
+        );
+
+        if (existingIndex !== -1) {
+          dateStatuses[existingIndex] = {
+            date: new Date(currentDate),
+            status: "OUT_OF_ORDER",
+          };
+        } else {
+          dateStatuses.push({
+            date: new Date(currentDate),
+            status: "OUT_OF_ORDER",
+          });
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+  }
+
+  // Fallback for legacy fields if array is empty
+  if ((!room.outOfOrders || room.outOfOrders.length === 0) && room.isOutOfOrder && room.outOfOrderFrom && room.outOfOrderTo) {
     const start = normalizeToPakistanDate(new Date(room.outOfOrderFrom));
     const end = normalizeToPakistanDate(new Date(room.outOfOrderTo));
     const currentDate = new Date(start);
 
-    console.log(`Out of order from ${start.toISOString()} to ${end.toISOString()} (PKT)`);
-
     while (currentDate <= end) {
       const dateKey = getPakistanDateString(currentDate);
-      // Out of order takes highest priority - remove any existing status for this date
       const existingIndex = dateStatuses.findIndex(ds =>
         getPakistanDateString(ds.date) === dateKey
       );
 
       if (existingIndex !== -1) {
-        // Replace existing status with OUT_OF_ORDER
         dateStatuses[existingIndex] = {
           date: new Date(currentDate),
           status: "OUT_OF_ORDER",

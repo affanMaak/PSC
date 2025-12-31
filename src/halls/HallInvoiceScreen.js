@@ -18,15 +18,15 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { paymentAPI, banquetAPI } from '../config/apis';
 
 const HallInvoiceScreen = ({ route, navigation }) => {
-  const { 
-    invoiceData, 
-    bookingData, 
-    venue, 
+  const {
+    invoiceData,
+    bookingData,
+    venue,
     isGuest,
     memberDetails,
-    guestDetails 
+    guestDetails
   } = route.params || {};
-  
+
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
@@ -88,7 +88,7 @@ Thank you for choosing our banquet hall services!
     let paymentInstructions = '';
     let contactNumber = '';
 
-    switch(method) {
+    switch (method) {
       case 'bank':
         paymentInstructions = `
 🏦 Bank Transfer Instructions:
@@ -103,7 +103,7 @@ Please include the invoice number as reference.
         `;
         contactNumber = '091-1234567';
         break;
-      
+
       case 'cash':
         paymentInstructions = `
 💵 Cash Payment Instructions:
@@ -115,7 +115,7 @@ Bring this invoice with you.
         `;
         contactNumber = '091-1234567';
         break;
-      
+
       case 'card':
         paymentInstructions = `
 💳 Card Payment Instructions:
@@ -146,7 +146,7 @@ A 2% processing fee applies for credit cards.
   };
 
   const getPaymentMethodName = (method) => {
-    switch(method) {
+    switch (method) {
       case 'bank': return 'Bank Transfer';
       case 'cash': return 'Cash';
       case 'card': return 'Card';
@@ -178,7 +178,7 @@ A 2% processing fee applies for credit cards.
     setLoading(true);
     try {
       console.log('🔍 Verifying payment with transaction ID:', transactionId);
-      
+
       const result = await paymentAPI.verifyPayment(
         invoiceData.InvoiceNumber || invoiceData.invoiceNumber,
         transactionId,
@@ -281,7 +281,7 @@ A 2% processing fee applies for credit cards.
         <View style={styles.errorContainer}>
           <Icon name="exclamationcircleo" size={64} color="#ff6b6b" />
           <Text style={styles.errorText}>Invoice data not found</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -294,8 +294,8 @@ A 2% processing fee applies for credit cards.
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
+      <StatusBar backgroundColor="#fffaf2" barStyle="dark-content" />
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrowleft" size={24} color="#000" />
@@ -351,7 +351,7 @@ A 2% processing fee applies for credit cards.
           <Text style={styles.sectionTitle}>
             {isGuest ? 'Guest Information' : 'Member Information'}
           </Text>
-          
+
           {isGuest ? (
             <>
               <View style={styles.detailRow}>
@@ -360,21 +360,21 @@ A 2% processing fee applies for credit cards.
                   {guestDetails?.guestName || 'N/A'}
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Email:</Text>
                 <Text style={styles.detailValue}>
                   {guestDetails?.guestEmail || 'N/A'}
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Phone:</Text>
                 <Text style={styles.detailValue}>
                   {guestDetails?.guestPhone || 'N/A'}
                 </Text>
               </View>
-              
+
               {guestDetails?.guestAddress && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Address:</Text>
@@ -392,14 +392,14 @@ A 2% processing fee applies for credit cards.
                   {memberDetails?.memberName || 'N/A'}
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Membership No:</Text>
                 <Text style={styles.detailValue}>
                   {memberDetails?.membershipNo || 'N/A'}
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Booking Type:</Text>
                 <Text style={styles.detailValue}>
@@ -413,49 +413,49 @@ A 2% processing fee applies for credit cards.
         {/* Hall Booking Summary */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Hall Booking Summary</Text>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Hall Name:</Text>
             <Text style={styles.detailValue}>
               {venue?.name || bookingData?.hallName || 'N/A'}
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Booking Date:</Text>
             <Text style={styles.detailValue}>
               {formatDate(bookingData?.bookingDate)}
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Time Slot:</Text>
             <Text style={styles.detailValue}>
               {formatTimeSlot(bookingData?.eventTime)}
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Event Type:</Text>
             <Text style={styles.detailValue}>
               {formatEventType(bookingData?.eventType)}
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Number of Guests:</Text>
             <Text style={styles.detailValue}>
               {bookingData?.numberOfGuests || 0} people
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Rate Type:</Text>
             <Text style={styles.detailValue}>
               {isGuest ? 'Guest Rate' : 'Member Rate'}
             </Text>
           </View>
-          
+
           {bookingData?.specialRequest && (
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Special Requests:</Text>
@@ -464,7 +464,7 @@ A 2% processing fee applies for credit cards.
               </Text>
             </View>
           )}
-          
+
           <View style={[styles.detailRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total Amount:</Text>
             <Text style={styles.totalValue}>
@@ -475,7 +475,7 @@ A 2% processing fee applies for credit cards.
 
         {/* Payment Methods */}
         {!showPaymentMethods ? (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.showPaymentMethodsButton}
             onPress={() => setShowPaymentMethods(true)}
           >
@@ -489,7 +489,7 @@ A 2% processing fee applies for credit cards.
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Available Payment Methods</Text>
             <View style={styles.paymentMethodsGrid}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.paymentMethodCard}
                 onPress={() => handlePaymentMethodSelect('bank')}
               >
@@ -499,8 +499,8 @@ A 2% processing fee applies for credit cards.
                 <Text style={styles.paymentMethodName}>Bank Transfer</Text>
                 <Text style={styles.paymentMethodDesc}>Online/ATM Transfer</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.paymentMethodCard}
                 onPress={() => handlePaymentMethodSelect('cash')}
               >
@@ -510,8 +510,8 @@ A 2% processing fee applies for credit cards.
                 <Text style={styles.paymentMethodName}>Cash Payment</Text>
                 <Text style={styles.paymentMethodDesc}>At Club Office</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.paymentMethodCard}
                 onPress={() => handlePaymentMethodSelect('card')}
               >
@@ -528,35 +528,35 @@ A 2% processing fee applies for credit cards.
         {/* Important Instructions */}
         <View style={styles.instructionsCard}>
           <Text style={styles.instructionsTitle}>Important Instructions</Text>
-          
+
           <View style={styles.instructionItem}>
             <Icon name="checkcircle" size={14} color="#2E8B57" />
             <Text style={styles.instructionTextItem}>
               Complete payment within 24 hours to secure your booking
             </Text>
           </View>
-          
+
           <View style={styles.instructionItem}>
             <Icon name="checkcircle" size={14} color="#2E8B57" />
             <Text style={styles.instructionTextItem}>
               Bring this invoice and payment confirmation when you visit
             </Text>
           </View>
-          
+
           <View style={styles.instructionItem}>
             <Icon name="checkcircle" size={14} color="#2E8B57" />
             <Text style={styles.instructionTextItem}>
               Arrive 1 hour before your event time for setup
             </Text>
           </View>
-          
+
           <View style={styles.instructionItem}>
             <Icon name="checkcircle" size={14} color="#2E8B57" />
             <Text style={styles.instructionTextItem}>
               Maximum capacity: {venue?.capacity || 'As per booking'} people
             </Text>
           </View>
-          
+
           <View style={styles.instructionItem}>
             <Icon name="checkcircle" size={14} color="#2E8B57" />
             <Text style={styles.instructionTextItem}>
@@ -618,7 +618,7 @@ A 2% processing fee applies for credit cards.
               </>
             )}
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.secondaryButton}
             onPress={() => navigation.goBack()}

@@ -10,7 +10,8 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  Switch,
+  ImageBackground,
+  Image,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/AntDesign';
@@ -19,12 +20,12 @@ import { paymentAPI, photoshootAPI, makeApiCall, getUserData, checkAuthStatus } 
 
 const shootsBooking = ({ route, navigation }) => {
   const { photoshoot } = route.params || {};
-  
+
   // State variables
   const [selectedDate, setSelectedDate] = useState('');
   const [fromTime, setFromTime] = useState('');
   const [toTime, setToTime] = useState('');
-  const [isGuest, setIsGuest] = useState(false);
+  const [isGuest, setIsGuest] = useState(true); // Guest selected by default
   const [guestName, setGuestName] = useState('');
   const [guestContact, setGuestContact] = useState('');
   const [specialRequest, setSpecialRequest] = useState('');
@@ -32,7 +33,7 @@ const shootsBooking = ({ route, navigation }) => {
   const [markedDates, setMarkedDates] = useState({});
   const [timeSlots, setTimeSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  
+
   // Member info state
   const [memberInfo, setMemberInfo] = useState(null);
   const [authError, setAuthError] = useState(null);
@@ -40,23 +41,23 @@ const shootsBooking = ({ route, navigation }) => {
 
   useEffect(() => {
     console.log('🎬 shootsBooking mounted with photoshoot:', photoshoot);
-    
+
     // Always initialize time slots immediately
     generateTimeSlots();
-    
+
     // Initialize with today's date
     const today = new Date().toISOString().split('T')[0];
     setSelectedDate(today);
-    
+
     // Then check authentication
     checkAuthentication();
-    
+
     // Listen for focus to refresh data
     const unsubscribe = navigation.addListener('focus', () => {
       console.log('🔄 Screen focused, refreshing...');
       checkAuthentication();
     });
-    
+
     return unsubscribe;
   }, [navigation]);
 
@@ -65,38 +66,38 @@ const shootsBooking = ({ route, navigation }) => {
       console.log('🔐 Checking authentication...');
       setLoading(true);
       setAuthError(null);
-      
+
       // Use the checkAuthStatus function from your config
       const authStatus = await checkAuthStatus();
       console.log('📊 Auth status:', authStatus);
-      
+
       if (authStatus.isAuthenticated && authStatus.userData) {
         setIsAuthenticated(true);
-        
+
         // Extract member information from userData
         const userData = authStatus.userData;
         console.log('👤 User data from storage:', userData);
-        
+
         // Map userData to memberInfo structure
         const memberData = {
-          membership_no: userData.membership_no || 
-                        userData.Membership_No || 
-                        userData.membershipNumber ||
-                        userData.memberId ||
-                        '',
-          member_name: userData.member_name || 
-                      userData.Name || 
-                      userData.name ||
-                      userData.fullName ||
-                      '',
+          membership_no: userData.membership_no ||
+            userData.Membership_No ||
+            userData.membershipNumber ||
+            userData.memberId ||
+            '',
+          member_name: userData.member_name ||
+            userData.Name ||
+            userData.name ||
+            userData.fullName ||
+            '',
           Sno: userData.Sno || userData.id || userData.userId,
           email: userData.email || '',
           phone: userData.phone || userData.Phone || '',
           status: userData.status || 'active',
         };
-        
+
         console.log('✅ Extracted member data:', memberData);
-        
+
         if (!memberData.membership_no) {
           console.warn('⚠️ No membership number found in user data');
           setAuthError('Membership information incomplete. Please login again.');
@@ -143,7 +144,7 @@ const shootsBooking = ({ route, navigation }) => {
     const selectedDateStr = day.dateString;
     console.log('📅 Date selected:', selectedDateStr);
     setSelectedDate(selectedDateStr);
-    
+
     // Reset selected time slot when date changes
     setFromTime('');
     setToTime('');
@@ -165,38 +166,41 @@ const shootsBooking = ({ route, navigation }) => {
         'Please login to book a photoshoot.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Go to Login', 
-            onPress: () => navigation.navigate('LoginScr')
+          {
+            text: 'Go to Login',
+            onPress: () => navigation.reset({
+              index: 0,
+              routes: [{ name: 'LoginScr' }],
+            })
           }
         ]
       );
       return;
     }
-    
+
     // Validation
     if (!photoshoot || !photoshoot.id) {
       Alert.alert('Error', 'Photoshoot information is missing');
       return;
     }
-    
+
     if (!selectedDate) {
       Alert.alert('Error', 'Please select a date');
       return;
     }
-    
+
     if (!fromTime || !toTime) {
       Alert.alert('Error', 'Please select a time slot');
       return;
     }
-    
+
     if (isGuest && (!guestName || !guestContact)) {
       Alert.alert('Error', 'Please enter guest name and contact');
       return;
     }
 
     setLoading(true);
-    
+
     try {
       const bookingData = {
         membership_no: memberInfo.membership_no,
@@ -222,10 +226,10 @@ const shootsBooking = ({ route, navigation }) => {
       );
 
       setLoading(false);
-      
+
       if (result.success) {
         console.log('✅ Invoice generated successfully:', result.data);
-        
+
         // Navigate to invoice screen
         navigation.navigate('InvoiceScreen', {
           invoiceData: result.data.Data || result.data,
@@ -272,23 +276,23 @@ const shootsBooking = ({ route, navigation }) => {
     try {
       const keys = await AsyncStorage.getAllKeys();
       console.log('🔑 All AsyncStorage keys:', keys);
-      
+
       for (const key of keys) {
         const value = await AsyncStorage.getItem(key);
         console.log(`📦 ${key}:`, value);
       }
-      
+
       // Show specific keys
       const token = await AsyncStorage.getItem('access_token');
       const userData = await AsyncStorage.getItem('user_data');
-      
+
       console.log('🔐 Token exists:', !!token);
       console.log('👤 User data exists:', !!userData);
-      
+
       if (userData) {
         console.log('📄 Parsed user data:', JSON.parse(userData));
       }
-      
+
       // Show in alert for easier debugging
       Alert.alert(
         'Storage Debug',
@@ -312,15 +316,15 @@ const shootsBooking = ({ route, navigation }) => {
         phone: '1234567890',
         status: 'active'
       };
-      
+
       await AsyncStorage.setItem('user_data', JSON.stringify(testUserData));
       await AsyncStorage.setItem('access_token', 'test_token_123');
-      
+
       Alert.alert(
         'Test Login',
         'Test member data stored. Now you can test booking.',
-        [{ 
-          text: 'OK', 
+        [{
+          text: 'OK',
           onPress: () => {
             // Refresh authentication check
             checkAuthentication();
@@ -348,20 +352,44 @@ const shootsBooking = ({ route, navigation }) => {
   if (!isAuthenticated || authError) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#D2B48C" />
-        
-        {/* Header */}
-        <View style={styles.headerBackground}>
-          <View style={styles.headerBar}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Icon name="arrowleft" size={24} color="black" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Book Photoshoot</Text>
-            <View style={{ width: 24 }} />
-          </View>
-        </View>
+        <StatusBar barStyle="light-content" backgroundColor="black" />
 
-        <ScrollView 
+        {/* 🔹 NOTCH HEADER */}
+        <ImageBackground
+          source={require('../assets/notch.jpg')}
+          style={styles.notch}
+          imageStyle={styles.notchImage}
+        >
+          <View style={styles.notchRow}>
+            <TouchableOpacity
+              style={styles.iconWrapper}
+              onPress={() => navigation.goBack()}
+            >
+              <Icon name="arrowleft" size={30} color="#000" />
+            </TouchableOpacity>
+
+            <Text style={styles.notchTitle}>Book Photoshoot</Text>
+
+            <View style={styles.iconWrapper}>
+              <Icon name="bells" size={24} color="#000" />
+            </View>
+          </View>
+        </ImageBackground>
+
+        {/* 
+        {/* Header */}
+        {/* <View style={styles.headerBackground}>
+          {/* <View style={styles.headerBar}>
+            {/* <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="arrowleft" size={24} color="black" />
+            </TouchableOpacity> */}
+        {/* <Text style={styles.headerTitle}>Book Photoshoot</Text> */}
+        {/* <View style={{ width: 24 }} />
+          </View> */}
+        {/* /</View>  */}
+
+
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -372,33 +400,109 @@ const shootsBooking = ({ route, navigation }) => {
               {authError || 'Please login to complete booking'}
             </Text>
           </View>
-          
+
           {/* Package Info Card */}
           <View style={styles.packageCard}>
             <Text style={styles.packageTitle}>{photoshoot?.description || 'Photoshoot Package'}</Text>
             <View style={styles.priceContainer}>
               <View style={styles.priceColumn}>
                 <Text style={styles.priceLabel}>Member Price</Text>
-                <Text style={styles.priceValue}>₹{photoshoot?.memberCharges || 0}</Text>
+                <Text style={styles.priceValue}>Rs:{photoshoot?.memberCharges || 0}</Text>
               </View>
               <View style={styles.priceColumn}>
                 <Text style={styles.priceLabel}>Guest Price</Text>
-                <Text style={styles.priceValue}>₹{photoshoot?.guestCharges || 0}</Text>
+                <Text style={styles.priceValue}>Rs:{photoshoot?.guestCharges || 0}</Text>
               </View>
             </View>
           </View>
 
+          {/* Member/Guest Booking Toggle - Sliding Pill Style */}
+          <View style={styles.bookingTypeCard}>
+            <Text style={styles.bookingTypeTitle}>Booking Type</Text>
+            <View style={styles.togglePillContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.togglePillOption,
+                  !isGuest && styles.togglePillOptionActive
+                ]}
+                onPress={() => setIsGuest(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.togglePillText,
+                  !isGuest && styles.togglePillTextActive
+                ]}>
+                  Member Booking
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.togglePillOption,
+                  isGuest && styles.togglePillOptionActive
+                ]}
+                onPress={() => setIsGuest(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.togglePillText,
+                  isGuest && styles.togglePillTextActive
+                ]}>
+                  Guest Booking
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Price Description based on selection */}
+            <View style={styles.priceDescriptionContainer}>
+              <Icon name="infocirlceo" size={16} color="#666" />
+              <Text style={styles.priceDescriptionText}>
+                {isGuest
+                  ? `Guest price: Rs ${photoshoot?.guestCharges || 0}`
+                  : `Member price: Rs ${photoshoot?.memberCharges || 0}`
+                }
+              </Text>
+            </View>
+          </View>
+
+          {/* Guest Details (Conditional) */}
+          {isGuest && (
+            <View style={styles.guestContainer}>
+              <Text style={styles.sectionTitle}>Guest Information</Text>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Guest Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter guest full name"
+                  value={guestName}
+                  onChangeText={setGuestName}
+                  placeholderTextColor="#999"
+                />
+              </View>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Guest Contact Number *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter guest phone number"
+                  value={guestContact}
+                  onChangeText={setGuestContact}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#999"
+                />
+              </View>
+            </View>
+          )}
+
           {/* Show booking form even if not authenticated */}
           <View style={styles.bookingForm}>
             <Text style={styles.sectionTitle}>Select Date & Time</Text>
-            
+
             {/* Calendar Section */}
             <View style={styles.calendarCard}>
               <Text style={styles.sectionTitle}>Select Date</Text>
               <Text style={styles.selectedDate}>
                 {selectedDate ? formatDateForDisplay(selectedDate) : 'Select a date'}
               </Text>
-              
+
               <Calendar
                 current={selectedDate || new Date().toISOString().split('T')[0]}
                 minDate={new Date().toISOString().split('T')[0]}
@@ -458,7 +562,7 @@ const shootsBooking = ({ route, navigation }) => {
                   </TouchableOpacity>
                 ))}
               </View>
-              
+
               {selectedSlot && (
                 <View style={styles.selectedTimeContainer}>
                   <Text style={styles.selectedTimeText}>
@@ -466,7 +570,7 @@ const shootsBooking = ({ route, navigation }) => {
                   </Text>
                 </View>
               )}
-              
+
               {!selectedSlot && timeSlots.length > 0 && (
                 <Text style={styles.timeSlotHint}>
                   Please select a time slot from the options above
@@ -497,6 +601,12 @@ const shootsBooking = ({ route, navigation }) => {
                 <Text style={styles.summaryValue}>{photoshoot?.description || 'N/A'}</Text>
               </View>
               <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Booking Type:</Text>
+                <Text style={styles.summaryValue}>
+                  {isGuest ? 'Guest' : 'Member'}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Date:</Text>
                 <Text style={styles.summaryValue}>
                   {selectedDate ? formatDateForDisplay(selectedDate) : 'Not selected'}
@@ -511,7 +621,7 @@ const shootsBooking = ({ route, navigation }) => {
               <View style={[styles.summaryRow, styles.totalRow]}>
                 <Text style={styles.totalLabel}>Total Amount:</Text>
                 <Text style={styles.totalValue}>
-                  ₹{photoshoot?.memberCharges || 0}
+                  Rs: {isGuest ? photoshoot?.guestCharges || 0 : photoshoot?.memberCharges || 0}
                 </Text>
               </View>
             </View>
@@ -523,23 +633,23 @@ const shootsBooking = ({ route, navigation }) => {
               <Text style={styles.loginRequiredText}>
                 Please login to generate invoice and complete your booking
               </Text>
-              
+
               <View style={styles.authButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.loginButton}
                   onPress={() => navigation.navigate('Login')}
                 >
                   <Text style={styles.loginButtonText}>Go to Login</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.testLoginButton}
                   onPress={simulateLogin}
                 >
                   <Text style={styles.testLoginButtonText}>Test Login (Dev Only)</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.debugButton}
                   onPress={debugStorage}
                 >
@@ -556,9 +666,31 @@ const shootsBooking = ({ route, navigation }) => {
   // Render booking form when authenticated
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#D2B48C" />
-      
-      {/* Header */}
+      <StatusBar barStyle="light-content" backgroundColor="black" />
+      {/* 🔹 NOTCH HEADER */}
+      <ImageBackground
+        source={require('../assets/notch.jpg')}
+        style={styles.notch}
+        imageStyle={styles.notchImage}
+      >
+        <View style={styles.notchRow}>
+          <TouchableOpacity
+            style={styles.iconWrapper}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="arrowleft" size={30} color="#000" />
+          </TouchableOpacity>
+
+          <Text style={styles.notchTitle}>Book Photoshoot</Text>
+
+          <View style={styles.iconWrapper}>
+            <Icon name="bells" size={24} color="#000" />
+          </View>
+        </View>
+      </ImageBackground>
+
+
+      {/* Header
       <View style={styles.headerBackground}>
         <View style={styles.headerBar}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -567,14 +699,14 @@ const shootsBooking = ({ route, navigation }) => {
           <Text style={styles.headerTitle}>Book Photoshoot</Text>
           <View style={{ width: 24 }} />
         </View>
-      </View>
+      </View> */}
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Member Info Card */}
-        <View style={styles.memberInfoCard}>
+        {/* <View style={styles.memberInfoCard}>
           <View style={styles.memberInfoHeader}>
             <Icon name="user" size={20} color="#2E8B57" />
             <Text style={styles.memberInfoTitle}>Logged in as</Text>
@@ -587,7 +719,7 @@ const shootsBooking = ({ route, navigation }) => {
             <Text style={styles.memberInfoLabel}>Name:</Text>
             <Text style={styles.memberInfoValue}>{memberInfo?.member_name || 'N/A'}</Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Package Info Card */}
         <View style={styles.packageCard}>
@@ -595,30 +727,59 @@ const shootsBooking = ({ route, navigation }) => {
           <View style={styles.priceContainer}>
             <View style={styles.priceColumn}>
               <Text style={styles.priceLabel}>Member Price</Text>
-              <Text style={styles.priceValue}>₹{photoshoot?.memberCharges || 0}</Text>
+              <Text style={styles.priceValue}>Rs: {photoshoot?.memberCharges || 0}</Text>
             </View>
             <View style={styles.priceColumn}>
               <Text style={styles.priceLabel}>Guest Price</Text>
-              <Text style={styles.priceValue}>₹{photoshoot?.guestCharges || 0}</Text>
+              <Text style={styles.priceValue}>Rs: {photoshoot?.guestCharges || 0}</Text>
             </View>
           </View>
         </View>
 
-        {/* Booking Type Toggle */}
-        <View style={styles.toggleContainer}>
-          <Text style={styles.toggleLabel}>Booking Type:</Text>
-          <View style={styles.toggleRow}>
-            <Text style={[styles.toggleOption, !isGuest && styles.toggleActive]}>
-              Member
-            </Text>
-            <Switch
-              value={isGuest}
-              onValueChange={setIsGuest}
-              trackColor={{ false: '#D2B48C', true: '#B8860B' }}
-              thumbColor={isGuest ? '#fff' : '#fff'}
-            />
-            <Text style={[styles.toggleOption, isGuest && styles.toggleActive]}>
-              Guest
+        {/* Member/Guest Booking Toggle - Sliding Pill Style */}
+        <View style={styles.bookingTypeCard}>
+          <Text style={styles.bookingTypeTitle}>Booking Type</Text>
+          <View style={styles.togglePillContainer}>
+            <TouchableOpacity
+              style={[
+                styles.togglePillOption,
+                !isGuest && styles.togglePillOptionActive
+              ]}
+              onPress={() => setIsGuest(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.togglePillText,
+                !isGuest && styles.togglePillTextActive
+              ]}>
+                Member Booking
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.togglePillOption,
+                isGuest && styles.togglePillOptionActive
+              ]}
+              onPress={() => setIsGuest(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.togglePillText,
+                isGuest && styles.togglePillTextActive
+              ]}>
+                Guest Booking
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Price Description based on selection */}
+          <View style={styles.priceDescriptionContainer}>
+            <Icon name="infocirlceo" size={16} color="#666" />
+            <Text style={styles.priceDescriptionText}>
+              {isGuest
+                ? `Guest price: Rs ${photoshoot?.guestCharges || 0}`
+                : `Member price: Rs ${photoshoot?.memberCharges || 0}`
+              }
             </Text>
           </View>
         </View>
@@ -626,22 +787,28 @@ const shootsBooking = ({ route, navigation }) => {
         {/* Guest Details (Conditional) */}
         {isGuest && (
           <View style={styles.guestContainer}>
-            <Text style={styles.sectionTitle}>Guest Details</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Guest Name"
-              value={guestName}
-              onChangeText={setGuestName}
-              placeholderTextColor="#999"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Guest Contact Number"
-              value={guestContact}
-              onChangeText={setGuestContact}
-              keyboardType="phone-pad"
-              placeholderTextColor="#999"
-            />
+            <Text style={styles.sectionTitle}>Guest Information</Text>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Guest Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter guest full name"
+                value={guestName}
+                onChangeText={setGuestName}
+                placeholderTextColor="#999"
+              />
+            </View>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Guest Contact Number *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter guest phone number"
+                value={guestContact}
+                onChangeText={setGuestContact}
+                keyboardType="phone-pad"
+                placeholderTextColor="#999"
+              />
+            </View>
           </View>
         )}
 
@@ -651,7 +818,7 @@ const shootsBooking = ({ route, navigation }) => {
           <Text style={styles.selectedDate}>
             {selectedDate ? formatDateForDisplay(selectedDate) : 'Select a date'}
           </Text>
-          
+
           <Calendar
             current={selectedDate || new Date().toISOString().split('T')[0]}
             minDate={new Date().toISOString().split('T')[0]}
@@ -711,7 +878,7 @@ const shootsBooking = ({ route, navigation }) => {
               </TouchableOpacity>
             ))}
           </View>
-          
+
           {selectedSlot && (
             <View style={styles.selectedTimeContainer}>
               <Text style={styles.selectedTimeText}>
@@ -719,7 +886,7 @@ const shootsBooking = ({ route, navigation }) => {
               </Text>
             </View>
           )}
-          
+
           {!selectedSlot && timeSlots.length > 0 && (
             <Text style={styles.timeSlotHint}>
               Please select a time slot from the options above
@@ -770,7 +937,7 @@ const shootsBooking = ({ route, navigation }) => {
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total Amount:</Text>
             <Text style={styles.totalValue}>
-              ₹{isGuest ? photoshoot?.guestCharges || 0 : photoshoot?.memberCharges || 0}
+              Rs: {isGuest ? photoshoot?.guestCharges || 0 : photoshoot?.memberCharges || 0}
             </Text>
           </View>
         </View>
@@ -800,7 +967,7 @@ const shootsBooking = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F9EFE6',
   },
   loadingContainer: {
     flex: 1,
@@ -822,6 +989,39 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
   },
+  notch: {
+    paddingTop: 60,
+    paddingBottom: 25,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    overflow: "hidden",
+    backgroundColor: "#D2B48C",
+  },
+
+  notchImage: {
+    resizeMode: "cover",
+  },
+
+  notchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  notchTitle: {
+    fontSize: 22,
+    fontWeight: "600",
+    color: "#000",
+  },
+
   headerBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -868,6 +1068,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
     marginBottom: 10,
+    marginLeft: 120
   },
   priceContainer: {
     flexDirection: 'row',
@@ -1133,31 +1334,74 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
-  toggleContainer: {
+  // Booking Type Toggle Styles (sliding pill style)
+  bookingTypeCard: {
     backgroundColor: '#fff',
     marginHorizontal: 15,
     marginBottom: 15,
     borderRadius: 12,
     padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  toggleLabel: {
+  bookingTypeTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 10,
+    marginBottom: 12,
+    textAlign: 'center',
   },
-  toggleRow: {
+  // Sliding Pill Toggle Styles
+  togglePillContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F9EFE6',
+    borderRadius: 30,
+    padding: 4,
+  },
+  togglePillOption: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  togglePillOptionActive: {
+    backgroundColor: '#C9A962',
+  },
+  togglePillText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+  },
+  togglePillTextActive: {
+    color: '#000',
+  },
+  priceDescriptionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
   },
-  toggleOption: {
-    fontSize: 16,
+  priceDescriptionText: {
+    marginLeft: 8,
+    fontSize: 14,
     color: '#666',
   },
-  toggleActive: {
-    color: '#B8860B',
-    fontWeight: 'bold',
+  // Form Group Styles
+  formGroup: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
   },
   guestContainer: {
     backgroundColor: '#fff',
@@ -1165,6 +1409,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderRadius: 12,
     padding: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#B8860B',
   },
   actionButtons: {
     marginHorizontal: 15,
@@ -1179,7 +1425,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   invoiceButton: {
-    backgroundColor: '#2E8B57',
+    backgroundColor: '#b48a64',
   },
   buttonIcon: {
     marginRight: 8,

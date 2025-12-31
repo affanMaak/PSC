@@ -36,7 +36,6 @@ const modules = [
   "Calendar",
   "Notifications",
   "Members",
-  "Admins",
   "Rooms",
   "Room Bookings",
   "Halls",
@@ -48,6 +47,7 @@ const modules = [
   "Sports",
   "Accounts",
   "Affiliated Clubs",
+  "Contents"
 ];
 
 export default function Admins() {

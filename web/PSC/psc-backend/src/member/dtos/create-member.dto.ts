@@ -16,7 +16,7 @@ export class CreateMemberDto {
     @IsNotEmpty({message: "Phone cannot be empty"})
     Contact_No: string;
     
-    @IsNotEmpty()
+    @IsNotEmpty({message: "Status cannot be empty"})
     Status: "ACTIVE" | "DEACTIVATED" | "BLOCKED"
     
     @IsOptional()

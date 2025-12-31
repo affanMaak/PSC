@@ -104,9 +104,21 @@ const HallPaymentSection = React.memo(
               <SelectItem value="UNPAID">Unpaid</SelectItem>
               <SelectItem value="HALF_PAID">Half Paid</SelectItem>
               <SelectItem value="PAID">Paid</SelectItem>
+              <SelectItem value="TO_BILL">To Bill</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        {form.paymentStatus === "TO_BILL" && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center">
+              <Receipt className="h-4 w-4 text-blue-600 mr-2" />
+              <span className="text-sm font-medium text-blue-800">
+                Remaining amount will be added to Member's Ledger/Balance
+              </span>
+            </div>
+          </div>
+        )}
 
         {form.paymentStatus === "HALF_PAID" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -649,6 +661,8 @@ export default function HallBookings() {
         return <Badge className="bg-yellow-600 text-white">Half Paid</Badge>;
       case "UNPAID":
         return <Badge variant="destructive">Unpaid</Badge>;
+      case "TO_BILL":
+        return <Badge className="bg-blue-600 text-white">To Bill</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -749,6 +763,7 @@ export default function HallBookings() {
               <SelectItem value="PAID">Paid</SelectItem>
               <SelectItem value="HALF_PAID">Half Paid</SelectItem>
               <SelectItem value="UNPAID">Unpaid</SelectItem>
+              <SelectItem value="TO_BILL">To Bill</SelectItem>
             </SelectContent>
           </Select>
           <Dialog

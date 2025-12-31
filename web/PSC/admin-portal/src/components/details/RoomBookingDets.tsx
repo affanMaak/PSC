@@ -154,16 +154,16 @@ export function BookingDetailsCard({
   // Check if booking overlaps with any out-of-order periods
   const overlappingOutOfOrders = hasOutOfOrders
     ? booking.room.outOfOrders.filter(oo => {
-        const bookingStart = new Date(booking.checkIn);
-        const bookingEnd = new Date(booking.checkOut);
-        const ooStart = new Date(oo.startDate);
-        const ooEnd = new Date(oo.endDate);
-        return bookingStart < ooEnd && bookingEnd > ooStart;
-      })
+      const bookingStart = new Date(booking.checkIn);
+      const bookingEnd = new Date(booking.checkOut);
+      const ooStart = new Date(oo.startDate);
+      const ooEnd = new Date(oo.endDate);
+      return bookingStart < ooEnd && bookingEnd > ooStart;
+    })
     : [];
 
   return (
-    <Card className={`overflow-hidden border shadow-sm hover:shadow-md transition-shadow p-3 ${className}`}>
+    <Card className={`overflow-hidden border shadow-sm hover:shadow-md transition-shadow  ${className}`}>
       <CardHeader className="pb-3 bg-gradient-to-r from-gray-50 to-white">
         <div className="flex justify-between items-start">
           <div>
@@ -328,55 +328,16 @@ export function BookingDetailsCard({
           </div>
         </div>
 
-        {/* Out of Order Periods Warning */}
-        {hasOutOfOrders && showFullDetails && (
-          <div className="mt-6 pt-4 border-t">
-            <h3 className="font-semibold text-sm flex items-center gap-2 text-gray-700 mb-2">
-              <AlertCircle className="h-4 w-4 text-orange-500" />
-              Room Maintenance Periods
-            </h3>
-            <div className="space-y-2">
-              {booking.room.outOfOrders.map((period) => {
-                const isOverlapping = overlappingOutOfOrders.some(oo => oo.id === period.id);
-                return (
-                  <div
-                    key={period.id}
-                    className={`p-3 rounded-md border text-sm ${
-                      isOverlapping
-                        ? "bg-red-50 border-red-300"
-                        : "bg-gray-50 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-medium">
-                          {formatDate(period.startDate)} - {formatDate(period.endDate)}
-                        </div>
-                        <div className="text-gray-600 mt-1">{period.reason}</div>
-                      </div>
-                      {isOverlapping && (
-                        <Badge variant="destructive" className="text-xs">
-                          Overlaps with Booking
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Status Summary */}
         {showFullDetails && (
           <div className="mt-6 pt-4 border-t">
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
-                <div className={`h-2 w-2 rounded-full ${
-                  booking.paymentStatus === "PAID" ? "bg-green-500" :
-                  booking.paymentStatus === "HALF_PAID" ? "bg-yellow-500" :
-                  "bg-red-500"
-                }`} />
+                <div className={`h-2 w-2 rounded-full ${booking.paymentStatus === "PAID" ? "bg-green-500" :
+                    booking.paymentStatus === "HALF_PAID" ? "bg-yellow-500" :
+                      "bg-red-500"
+                  }`} />
                 <span className="text-sm">
                   <span className="font-medium">Payment:</span> {booking.paymentStatus}
                 </span>

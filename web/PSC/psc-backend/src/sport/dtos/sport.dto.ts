@@ -42,7 +42,7 @@ export class SportChargeDto {
 
 export class CreateSportDto {
     @IsOptional()
-    id?:string;
+    id?: string;
     @IsString()
     @IsNotEmpty()
     activity: string;
@@ -53,6 +53,31 @@ export class CreateSportDto {
 
     @IsBoolean()
     isActive: boolean;
+
+    @IsOptional()
+    timing?: any;  // JSON object for weekly schedule (Gents)
+
+    @IsOptional()
+    timingLadies?: any;  // JSON object for weekly schedule (Ladies)
+
+    @IsString()
+    @IsOptional()
+    dressCodeDos?: string;
+
+    @IsString()
+    @IsOptional()
+    dressCodeDonts?: string;
+
+    @IsString()
+    @IsOptional()
+    dos?: string;
+
+    @IsString()
+    @IsOptional()
+    donts?: string;
+
+    @IsOptional()
+    existingimgs?: string[];
 
     @IsArray()
     @ValidateNested({ each: true })

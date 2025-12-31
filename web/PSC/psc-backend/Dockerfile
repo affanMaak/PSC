@@ -1,44 +1,34 @@
-# -----------------------------
-# 1. BUILDER STAGE
-# -----------------------------
+# -------- Builder --------
 FROM node:20-slim AS builder
 
-# Install OpenSSL for Prisma engine
 RUN apt-get update -y && apt-get install -y openssl libssl-dev
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
 
-# Generate Prisma client after openssl is installed
+# Build project and generate Prisma client for production stage
 RUN npx prisma generate
-
-# Build the project
 RUN npm run build
 
+# -------- Production --------
+FROM node:20-slim
 
-
-# -----------------------------
-# 2. PRODUCTION STAGE
-# -----------------------------
-FROM node:20-slim AS production
-
-# Install OpenSSL in production image also (required by Prisma at runtime)
 RUN apt-get update -y && apt-get install -y openssl libssl-dev
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --omit=dev
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-# Copy compiled build + Prisma engine files
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && node dist/main.js"]

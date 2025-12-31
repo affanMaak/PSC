@@ -24,6 +24,8 @@ model Admin {
   permissions      Json?
   roomReservations RoomReservation[]
   hallReservations HallReservation[]
+  lawnReservations LawnReservation[]
+  photoshootReservations PhotoshootReservation[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 }
@@ -55,9 +57,16 @@ model Member {
   hallHolding         hallHoldings[]
   lawnHolding         lawnHoldings[]
 
+  notifications deliveredNotis[]
+
   totalBookings   Int       @default(0)
   drAmount        Decimal   @default(0.00) @db.Decimal(12, 2)
   crAmount        Decimal   @default(0.00) @db.Decimal(12, 2)
+
+  bookingAmountPaid Int @default(0)
+  bookingAmountDue  Int @default(0)
+  bookingBalance   Int @default(0)
+
   lastBookingDate DateTime?
 
   vouchers PaymentVoucher[]
@@ -72,6 +81,7 @@ enum PaymentStatus {
   UNPAID
   HALF_PAID
   PAID
+  TO_BILL
 }
 
 enum PaidBy {
@@ -153,6 +163,7 @@ model LawnBooking {
   memberId      Int
   lawnId        Int
   bookingDate   DateTime
+  eventType     String?       @db.VarChar(255)
   bookingTime   BookingOpt    @default(NIGHT)
   guestsCount   Int
   totalPrice    Decimal       @default(0.00) @db.Decimal(30, 2)
@@ -307,6 +318,7 @@ model RoomReservation {
   reservedTo   DateTime
   reservedBy   Int
   admin        Admin    @relation(fields: [reservedBy], references: [id])
+  remarks      String?  @db.Text
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -460,14 +472,17 @@ model Lawn {
   memberCharges  Decimal      @default(0.00) @db.Decimal(30, 2)
   guestCharges   Decimal      @default(0.00) @db.Decimal(30, 2)
   isActive       Boolean      @default(true)
+  isOutOfService Boolean      @default(false)
 
   outOfOrders LawnOutOfOrder[]
   holdings lawnHoldings[]
 
-  isBooked  Boolean       @default(false)
-  bookings  LawnBooking[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  isBooked     Boolean           @default(false)
+  bookings     LawnBooking[]
+  reservations LawnReservation[]
+  isReserved   Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 }
 model lawnHoldings {
   id Int @id @unique @default(autoincrement())
@@ -490,6 +505,38 @@ model LawnCategory {
   updatedAt DateTime @updatedAt
 }
 
+model LawnReservation {
+  id           Int      @id @default(autoincrement())
+  lawnId       Int
+  lawn         Lawn     @relation(fields: [lawnId], references: [id])
+  reservedFrom DateTime
+  reservedTo   DateTime
+  timeSlot     String   @default("MORNING") @db.VarChar(20) // MORNING, EVENING, NIGHT
+  reservedBy   Int
+  admin        Admin    @relation(fields: [reservedBy], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([lawnId])
+  @@index([reservedFrom, reservedTo])
+}
+
+model PhotoshootReservation {
+  id           Int        @id @default(autoincrement())
+  photoshootId Int
+  photoshoot   Photoshoot @relation(fields: [photoshootId], references: [id])
+  reservedFrom DateTime
+  reservedTo   DateTime
+  timeSlot     String     @default("MORNING") @db.VarChar(20)
+  reservedBy   Int
+  admin        Admin      @relation(fields: [reservedBy], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([photoshootId])
+  @@index([reservedFrom, reservedTo])
+}
+
 // photoshoot
 model Photoshoot {
   id          Int    @id @unique @default(autoincrement())
@@ -500,6 +547,8 @@ model Photoshoot {
   isActive Boolean @default(true)
   isBooked   Boolean             @default(false)
   bookings   PhotoshootBooking[]
+  reservations PhotoshootReservation[]
+  isReserved   Boolean             @default(false)
   // onHold     Boolean             @default(false)
   // holdBy     String?
   // holdMember Member?             @relation(fields: [holdBy], references: [Membership_No])
@@ -520,6 +569,22 @@ model Sport {
   activity    String  @db.VarChar(100)
   description String? @db.VarChar(300)
   isActive    Boolean @default(true)
+  images      Json    @default("[]") // Array of image URLs, max 5
+
+  // Timing for Gents: JSON object with each day of the week
+  // Format: { "monday": { "open": "09:00 AM", "close": "05:00 PM", "isClosed": false }, ... }
+  timing Json? @default("{}")
+
+  // Timing for Ladies: JSON object with each day of the week
+  timingLadies Json? @default("{}")
+
+  // Dress Code (rich text)
+  dressCodeDos   String? @db.LongText
+  dressCodeDonts String? @db.LongText
+
+  // General Do's and Don'ts (rich text)
+  dos   String? @db.LongText
+  donts String? @db.LongText
 
   subscriptions SportSubscription[]
 
@@ -559,6 +624,7 @@ model AffiliatedClub {
   contactNo   String? @db.VarChar(50)
   email       String? @db.VarChar(100)
   description String? @db.Text
+  image       String?
   isActive    Boolean @default(true)
 
   requests AffiliatedClubRequest[]
@@ -573,14 +639,8 @@ model AffiliatedClubRequest {
   affiliatedClubId Int
   affiliatedClub   AffiliatedClub @relation(fields: [affiliatedClubId], references: [id], onDelete: Cascade)
 
-  status RequestStatus @default(PENDING)
-
-  guestCount Int?    @default(0)
-  purpose    String? @db.Text
 
   requestedDate DateTime  
-  approvedDate  DateTime?
-  rejectedDate  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -588,3 +648,85 @@ model AffiliatedClubRequest {
   @@index([membershipNo])
   @@index([affiliatedClubId])
 }
+
+// Content Management
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  images      Json     @default("[]") // Array of image URLs
+  startDate   DateTime
+  endDate     DateTime
+  time        String?
+  venue       String?
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ClubRule {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.LongText // Rich text content
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?  @db.Text
+  date        DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AboutUs {
+  id        Int      @id @default(autoincrement())
+  clubInfo  String   @db.LongText
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClubHistory {
+  id          Int      @id @default(autoincrement())
+  description String   @db.Text
+  image       String?  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PromotionalAd {
+  id          Int      @id @default(autoincrement())
+  title       String?
+  description String?  @db.Text
+  image       String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+model deliveredNotis{
+  id          Int      @id @default(autoincrement())
+  notificationId Int
+  notification Notification @relation(fields: [notificationId], references: [id])
+  seen Boolean @default(false)
+  member Int
+  deliveredTo Member @relation(fields: [member], references: [Sno])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?  @db.Text
+  delivered   Boolean  @default(false)
+  deliveries deliveredNotis[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

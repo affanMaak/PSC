@@ -1,11 +1,21 @@
 package com.psc
 
+import android.os.Bundle
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 class MainActivity : ReactActivity() {
+
+  /**
+   * Called when the activity is starting. This is where we switch from splash theme to app theme.
+   */
+  override fun onCreate(savedInstanceState: Bundle?) {
+    // Set the app theme before calling super.onCreate()
+    setTheme(R.style.AppTheme)
+    super.onCreate(savedInstanceState)
+  }
 
   /**
    * Returns the name of the main component registered from JavaScript. This is used to schedule

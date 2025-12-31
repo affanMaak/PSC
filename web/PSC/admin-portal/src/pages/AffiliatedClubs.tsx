@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -118,14 +119,75 @@ export default function AffiliatedClubs() {
     },
   });
 
+  /* New Handlers */
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setClubForm({ ...clubForm, file });
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setClubForm({ ...clubForm, image: "", file: undefined });
+  };
+
   // Handlers
   const handleCreateClub = () => {
-    createMutation.mutate(clubForm);
+    const formData = new FormData();
+    formData.append("name", clubForm.name);
+    if (clubForm.location) formData.append("location", clubForm.location);
+    if (clubForm.contactNo) formData.append("contactNo", clubForm.contactNo);
+    if (clubForm.email) formData.append("email", clubForm.email);
+    if (clubForm.description) formData.append("description", clubForm.description);
+    // If active is boolean, convert to strong if needed or let formData handle it (usually string 'true'/'false')
+    formData.append("isActive", String(clubForm.isActive ?? true));
+
+    if (clubForm.file) {
+      formData.append("image", clubForm.file);
+    }
+
+    createMutation.mutate(formData);
   };
 
   const handleUpdateClub = () => {
     if (!editingClub) return;
-    updateMutation.mutate({ ...clubForm, id: editingClub.id });
+
+    const formData = new FormData();
+    formData.append("id", String(editingClub.id));
+    formData.append("name", clubForm.name);
+    if (clubForm.location) formData.append("location", clubForm.location);
+    if (clubForm.contactNo) formData.append("contactNo", clubForm.contactNo);
+    if (clubForm.email) formData.append("email", clubForm.email);
+    if (clubForm.description) formData.append("description", clubForm.description);
+    formData.append("isActive", String(clubForm.isActive));
+
+    if (clubForm.file) {
+      formData.append("image", clubForm.file);
+    } else if (clubForm.image) {
+      // If we have an existing image URL and no new file, we might want to send it 
+      // OR the backend logic "Keep existing if not replaced" handles it if we send nothing.
+      // Based on backend logic: `let imageUrl = payload.image; if(file)...`
+      // So we should send the existing image URL back if we want to keep it? 
+      // OR if the backend treats missing payload.image as "remove"?
+      // Backend: `let imageUrl = payload.image; // Keep existing if not replaced` -> Wait, if payload.image is undefined, imageUrl is undefined.
+      // Actually typically `payload` structure from `Body` decorator might have it.
+      // Backend code:
+      // `let imageUrl = payload.image;`
+      // `if (file) { ... }`
+      // `data: { ... image: imageUrl }`
+      // If I send nothing for image, `imageUrl` is undefined. Prisma update with `image: undefined` usually means "do nothing/no change" 
+      // BUT `payload` is DTO. 
+      // If I append `image` with current URL, it's fine.
+      formData.append("image", clubForm.image);
+    } else {
+      // If explicit removal (image is empty string), we should send empty string or null?
+      // Backend `image` field is optional string.
+      // If I send "", it might save as "". 
+      // Let's assume sending empty string clears it.
+      formData.append("image", "");
+    }
+
+    updateMutation.mutate(formData);
   };
 
   const handleDeleteClub = (id: number) => {
@@ -155,6 +217,7 @@ export default function AffiliatedClubs() {
       contactNo: club.contactNo || "",
       email: club.email || "",
       description: club.description || "",
+      image: club.image || "",
       isActive: club.isActive,
     });
     setClubDialog(true);
@@ -216,6 +279,7 @@ export default function AffiliatedClubs() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Image</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Contact</TableHead>
@@ -226,13 +290,19 @@ export default function AffiliatedClubs() {
                 <TableBody>
                   {clubs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
                         No clubs found
                       </TableCell>
                     </TableRow>
                   ) : (
                     clubs.map((club) => (
                       <TableRow key={club.id}>
+                        <TableCell>
+                          <Avatar>
+                            <AvatarImage src={club.image} alt={club.name} />
+                            <AvatarFallback>{club.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                        </TableCell>
                         <TableCell className="font-medium">{club.name}</TableCell>
                         <TableCell>{club.location || "N/A"}</TableCell>
                         <TableCell>{club.contactNo || "N/A"}</TableCell>
@@ -251,6 +321,7 @@ export default function AffiliatedClubs() {
                               size="icon"
                               className="text-destructive hover:text-destructive"
                               onClick={() => handleDeleteClub(club.id)}
+                              disabled={deleteMutation.isPending}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -306,6 +377,7 @@ export default function AffiliatedClubs() {
                                   size="icon"
                                   className="text-success hover:text-success"
                                   onClick={() => handleApproveRequest(request.id)}
+                                  disabled={updateRequestStatusMutation.isPending}
                                 >
                                   <Check className="h-4 w-4" />
                                 </Button>
@@ -314,6 +386,7 @@ export default function AffiliatedClubs() {
                                   size="icon"
                                   className="text-destructive hover:text-destructive"
                                   onClick={() => handleRejectRequest(request.id)}
+                                  disabled={updateRequestStatusMutation.isPending}
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
@@ -390,23 +463,64 @@ export default function AffiliatedClubs() {
                 placeholder="Enter description"
                 rows={3}
               />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="image">Club Image</Label>
+                <div className="flex items-center gap-4">
+                  {(clubForm.image || clubForm.file) && (
+                    <div className="relative">
+                      <img
+                        src={
+                          clubForm.file
+                            ? URL.createObjectURL(clubForm.file)
+                            : clubForm.image
+                        }
+                        alt="Preview"
+                        className="h-20 w-20 object-cover rounded-md border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="w-full"
+                  />
+                </div>
+              </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={clubForm.isActive}
-                onCheckedChange={(checked) => setClubForm({ ...clubForm, isActive: checked })}
-              />
-              <Label htmlFor="isActive">Active</Label>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={clubForm.isActive}
+                  onCheckedChange={(checked) => setClubForm({ ...clubForm, isActive: checked })}
+                />
+                <Label htmlFor="isActive">Active</Label>
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setClubDialog(false)}>
+            <Button variant="outline" onClick={() => setClubDialog(false)} disabled={createMutation.isPending || updateMutation.isPending}>
               Cancel
             </Button>
-            <Button onClick={editingClub ? handleUpdateClub : handleCreateClub}>
-              {editingClub ? "Update" : "Create"}
+            <Button onClick={editingClub ? handleUpdateClub : handleCreateClub} disabled={createMutation.isPending || updateMutation.isPending}>
+              {createMutation.isPending || updateMutation.isPending ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  {editingClub ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                editingClub ? "Update" : "Create"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -461,15 +575,17 @@ export default function AffiliatedClubs() {
                 onClick={() => {
                   if (viewRequest) handleRejectRequest(viewRequest.id);
                 }}
+                disabled={updateRequestStatusMutation.isPending}
               >
-                Reject
+                {updateRequestStatusMutation.isPending ? "Processing..." : "Reject"}
               </Button>
               <Button
                 onClick={() => {
                   if (viewRequest) handleApproveRequest(viewRequest.id);
                 }}
+                disabled={updateRequestStatusMutation.isPending}
               >
-                Approve
+                {updateRequestStatusMutation.isPending ? "Processing..." : "Approve"}
               </Button>
             </DialogFooter>
           )}

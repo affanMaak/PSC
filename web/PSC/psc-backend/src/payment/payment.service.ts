@@ -14,7 +14,7 @@ import {
 
 @Injectable()
 export class PaymentService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(private prismaService: PrismaService) { }
 
   // kuick pay
   // Mock payment gateway call - replace with actual integration
@@ -130,6 +130,7 @@ export class PaymentService {
         isActive: true,
         holdings: {
           none: {
+            holdBy: bookingData.membership_no.toString(),
             onHold: true,
             holdExpiry: { gt: new Date() },
           },
@@ -174,7 +175,7 @@ export class PaymentService {
 
       throw new ConflictException(
         `Only ${availableRooms.length} room(s) available. Requested: ${bookingData.numberOfRooms}. ` +
-          `${unavailableCount} room(s) are either reserved, booked, on maintenance, or on active hold.`,
+        `${unavailableCount} room(s) are either reserved, booked, on maintenance, or on active hold.`,
       );
     }
 
@@ -221,6 +222,8 @@ export class PaymentService {
       totalPrice,
       selectedRoomIds: selectedRooms.map((room) => room.id),
       selectedRoomNumbers: selectedRooms.map((room) => room.roomNumber),
+      guestName: bookingData.guestName,
+      guestContact: bookingData.guestContact,
     };
 
     // Call payment gateway
@@ -308,6 +311,7 @@ export class PaymentService {
         outOfOrders: true, // Include out-of-order periods
         holdings: {
           where: {
+            holdBy: bookingData.membership_no,
             onHold: true,
             holdExpiry: { gt: new Date() },
           },
@@ -481,6 +485,8 @@ export class PaymentService {
       numberOfGuests: bookingData.numberOfGuests || 0,
       pricingType: bookingData.pricingType,
       specialRequest: bookingData.specialRequest || '',
+      guestName: bookingData.guestName,
+      guestContact: bookingData.guestContact,
       totalPrice,
     };
 
@@ -584,6 +590,7 @@ export class PaymentService {
         },
         holdings: {
           where: {
+            holdBy: bookingData.membership_no,
             onHold: true,
             holdExpiry: { gt: new Date() },
           },
@@ -744,9 +751,8 @@ export class PaymentService {
 
     // ── 13. PUT LAWN ON HOLD ────────────────────────────────
     try {
-      await this.prismaService.lawnHoldings.update({
-        where: { id: lawnExists.id },
-         data: {
+      await this.prismaService.lawnHoldings.create({
+        data: {
           lawnId: lawnExists.id,
           onHold: true,
           holdExpiry: holdExpiry,
@@ -768,14 +774,17 @@ export class PaymentService {
     const bookingRecord = {
       lawnId: lawnExists.id,
       bookingDate: bookingData.bookingDate,
-      bookingTime: normalizedEventTime,
-      guestsCount: bookingData.numberOfGuests,
+      eventTime: normalizedEventTime,
+      numberOfGuests: bookingData.numberOfGuests,
       pricingType: bookingData.pricingType,
+      eventType: bookingData.eventType || '',
       specialRequest: bookingData.specialRequest || '',
       totalPrice,
+      guestName: bookingData.guestName,
+      guestContact: bookingData.guestContact,
     };
 
-    console.log('Lawn booking record prepared:', bookingRecord);
+    // console.log('Lawn booking record prepared:', bookingRecord);
 
     // ── 15. GENERATE INVOICE ────────────────────────────────
     try {
@@ -784,7 +793,6 @@ export class PaymentService {
         EVENING: 'Evening (2:00 PM - 8:00 PM)',
         NIGHT: 'Night (8:00 PM - 12:00 AM)',
       };
-
       const invoiceResponse = await this.callPaymentGateway({
         type: 'lawn',
         amount: totalPrice,
@@ -834,9 +842,9 @@ export class PaymentService {
             MaintenancePeriods:
               lawnExists.outOfOrders.length > 0
                 ? lawnExists.outOfOrders.map((period) => ({
-                    dates: `${new Date(period.startDate).toLocaleDateString()} - ${new Date(period.endDate).toLocaleDateString()}`,
-                    reason: period.reason,
-                  }))
+                  dates: `${new Date(period.startDate).toLocaleDateString()} - ${new Date(period.endDate).toLocaleDateString()}`,
+                  reason: period.reason,
+                }))
                 : [],
           },
         },
@@ -1050,5 +1058,12 @@ export class PaymentService {
       },
       orderBy: { issued_at: 'desc' },
     });
+  }
+
+
+
+  // check idempotency
+  async checkIdempo(idempotencyKey: string) {
+    console.log(idempotencyKey)
   }
 }

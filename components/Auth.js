@@ -34,7 +34,7 @@
 //     }
 
 //     setLoading(true);
-    
+
 //     try {
 //       if (isLogin) {
 //         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -74,7 +74,7 @@
 //       }
 //     } catch (error) {
 //       console.error('Auth error:', error);
-      
+
 //       let errorMessage = error.message;
 //       if (error.message.includes('User already registered')) {
 //         errorMessage = 'This email is already registered. Please log in.';
@@ -94,7 +94,7 @@
 //   return (
 //     <View style={styles.container}>
 //       <Text style={styles.header}>SavSplit</Text>
-//       <Image source={require('../assets/logo.jpg')} style={styles.logo} />
+//       <Image source={require('../assets/logo.jpeg')} style={styles.logo} />
 
 //       <View style={styles.inputContainer}>
 //         <Text style={styles.label}>Email</Text>
@@ -344,7 +344,7 @@
 //     }
 
 //     setLoading(true);
-    
+
 //     try {
 //       if (!isSignUp) {
 //         // Login logic
@@ -395,7 +395,7 @@
 //       }
 //     } catch (error) {
 //       console.error('Auth error:', error);
-      
+
 //       let errorMessage = error.message;
 //       if (error.message.includes('User already registered')) {
 //         errorMessage = 'This email is already registered. Please log in.';
@@ -710,7 +710,7 @@ export default function Auth({ navigation }) {
     }
 
     setLoading(true);
-    
+
     try {
       if (!isSignUp) {
         // Login logic
@@ -719,10 +719,10 @@ export default function Auth({ navigation }) {
         navigation.replace('Home'); // Navigate to Home instead of Account
       } else {
         // Signup logic
-        const { data: { user }, error: signupError } = await supabase.auth.signUp({ 
-          email, 
+        const { data: { user }, error: signupError } = await supabase.auth.signUp({
+          email,
           password,
-          options: { 
+          options: {
             emailRedirectTo: 'yourapp://callback',
             data: {
               email: email
@@ -746,7 +746,7 @@ export default function Auth({ navigation }) {
         if (profileError) throw profileError;
 
         Alert.alert(
-          'Success', 
+          'Success',
           'Account created successfully!',
           [
             {
@@ -761,7 +761,7 @@ export default function Auth({ navigation }) {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      
+
       let errorMessage = error.message;
       if (error.message.includes('User already registered')) {
         errorMessage = 'This email is already registered. Please log in.';
@@ -772,7 +772,7 @@ export default function Auth({ navigation }) {
       }
 
       Alert.alert(
-        'Authentication Error', 
+        'Authentication Error',
         errorMessage || 'Something went wrong. Please try again.'
       );
     } finally {
@@ -789,7 +789,7 @@ export default function Auth({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>SavSplit</Text>
-      <Image source={require('../assets/logo.jpg')} style={styles.logo} />
+      <Image source={require('../assets/logo.jpeg')} style={styles.logo} />
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Email</Text>
@@ -820,7 +820,7 @@ export default function Auth({ navigation }) {
             autoCapitalize="none"
             editable={!loading}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.showHide}
             onPress={() => setShowPassword(!showPassword)}
           >
@@ -845,7 +845,7 @@ export default function Auth({ navigation }) {
               autoCapitalize="none"
               editable={!loading}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.showHide}
               onPress={() => setShowConfirmPassword(!showConfirmPassword)}
             >
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-   input: {
+  input: {
     backgroundColor: '#1E1E1E',
     color: '#FFF0DC',
     fontSize: 16,
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#333',
-   },
+  },
   passwordInput: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -987,7 +987,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  footer2:  {
+  footer2: {
     color: '#888',
     textAlign: 'center',
     marginTop: 60,

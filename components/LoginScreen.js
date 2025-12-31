@@ -28,7 +28,7 @@
 //     }
 
 //     setLoading(true);
-    
+
 //     try {
 //       const { error } = await supabase.auth.signInWithPassword({ email, password });
 //       if (error) throw error;
@@ -223,15 +223,15 @@
 // });
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Alert, 
-  StyleSheet, 
-  View, 
-  AppState, 
-  Text, 
-  TouchableOpacity, 
-  Image, 
-  TextInput, 
+import {
+  Alert,
+  StyleSheet,
+  View,
+  AppState,
+  Text,
+  TouchableOpacity,
+  Image,
+  TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -265,7 +265,7 @@ export default function LoginScreen({ navigation }) {
     }
 
     setLoading(true);
-    
+
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
@@ -279,14 +279,14 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
           <Text style={styles.header}>SavSplit</Text>
-          <Image source={require('../assets/logo.jpg')} style={styles.logo} />
+          <Image source={require('../assets/logo.jpeg')} style={styles.logo} />
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
@@ -315,7 +315,7 @@ export default function LoginScreen({ navigation }) {
                 autoCapitalize="none"
                 editable={!loading}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.showHide}
                 onPress={() => setShowPassword(!showPassword)}
               >

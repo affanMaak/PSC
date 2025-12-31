@@ -8,8 +8,9 @@ import {
   StyleSheet,
   StatusBar,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-const ClubArenaScreen = () => {
+const ClubArenaScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -18,16 +19,19 @@ const ClubArenaScreen = () => {
         {/* Notch Header Image */}
         <View style={styles.headerContainer}>
           <Image
-            source={require('../assets/psc_home.jpeg')}
+            source={require('../assets/notch.jpg')}
             style={styles.notchImage}
             resizeMode="cover"
           />
           <View style={styles.headerOverlay}>
-            <TouchableOpacity>
-              <Text style={styles.backArrow}>←</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('SportsScreen')}
+              style={styles.backButton}
+            >
+              <Icon name="arrow-back" size={28} color="#000" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>The Club Arena</Text>
-            <View style={{ width: 24 }} /> 
+            <View style={{ width: 28 }} />
           </View>
         </View>
 
@@ -58,46 +62,47 @@ const ClubArenaScreen = () => {
           />
           <View style={styles.videoOverlay}>
             <TouchableOpacity style={styles.playButton}>
-              <Text style={styles.playIcon}>▶️</Text>
+              <Icon name="play" size={36} color="#fff" style={styles.playIcon} />
             </TouchableOpacity>
             <Text style={styles.videoText}>COMPLETE INCLUDE OWING FEATURES</Text>
           </View>
         </View>
 
         {/* Facility Cards */}
-        <TouchableOpacity style={styles.facilityCard}>
+        <TouchableOpacity style={styles.facilityCard} onPress={() => navigation.navigate('Swimming')}>
           <Image
-            source={require('../assets/psc_home.jpeg')}
+            source={require('../assets/swimming.jpg')}
             style={styles.facilityImage}
             resizeMode="cover"
           />
+
           <View style={styles.facilityOverlay}>
             <Text style={styles.facilityTitle}>Swimming Pool</Text>
-            <Text style={styles.chevron}>›</Text>
+            <Icon name="chevron-forward" size={32} color="#fff" />
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.facilityCard}>
+        {/* <TouchableOpacity style={styles.facilityCard}>
           <View style={styles.underConstructionBadge}>
             <Text style={styles.underConstructionText}>UNDER</Text>
             <Text style={styles.underConstructionText}>CONSTRUCTION</Text>
           </View>
           <View style={styles.facilityOverlay}>
             <Text style={styles.facilityTitle}>Sauna & Steam</Text>
-            <Text style={styles.chevron}>›</Text>
+            <Icon name="chevron-forward" size={32} color="#fff" />
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
-        <TouchableOpacity style={styles.facilityCard}>
+        {/* <TouchableOpacity style={styles.facilityCard}>
           <View style={styles.underConstructionBadge}>
             <Text style={styles.underConstructionText}>UNDER</Text>
             <Text style={styles.underConstructionText}>CONSTRUCTION</Text>
           </View>
           <View style={styles.facilityOverlay}>
             <Text style={styles.facilityTitle}>Jacuzzi, Ice Room, Salt Room</Text>
-            <Text style={styles.chevron}>›</Text>
+            <Icon name="chevron-forward" size={32} color="#fff" />
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </ScrollView>
     </View>
   );
@@ -106,7 +111,7 @@ const ClubArenaScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FEF9F3',
   },
   scrollView: {
     flex: 1,
@@ -116,7 +121,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     position: 'relative',
     width: '100%',
-    height: 140,
+    height: 120,
     overflow: 'hidden',
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
@@ -136,18 +141,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
   },
-  backArrow: {
-    fontSize: 22,
-    color: '#000',
-    fontWeight: '600',
+  backButton: {
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#000',
     textAlign: 'center',
     flex: 1,
-    marginRight: 24,
+    marginRight: 28,
   },
 
   /* -------------------- DESCRIPTION -------------------- */
@@ -200,8 +203,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   playIcon: {
-    fontSize: 32,
-    color: '#fff',
     marginLeft: 4,
   },
   videoText: {
@@ -238,12 +239,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     flex: 1,
-  },
-  chevron: {
-    marginLeft: 8,
-    fontSize: 32,
-    color: '#fff',
-    fontWeight: '300',
   },
 
   /* -------------------- UNDER CONSTRUCTION -------------------- */

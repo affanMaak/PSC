@@ -1,325 +1,16 @@
-
-// import 'react-native-gesture-handler';
-// import React, { useState, useEffect } from 'react';
-// import { enableScreens } from 'react-native-screens';
-// import { View, Button, Alert, LogBox, Image, StyleSheet, Text } from 'react-native';
-// import { AuthProvider } from './src/auth/contexts/AuthContext';
-// import { NavigationContainer } from '@react-navigation/native';
-// import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
-// import { supabase } from './lib/supabase';
-// import 'react-native-url-polyfill/auto';
-
-// // ===== Your Components =====
-// import Auth from './components/Auth';
-// import Account from './components/Account';
-// import Home from './components/Home';
-// import BusinessAccount from './components/BusinessAccount';
-// import PersonalAccount from './components/PersonalAccount';
-// import GroupExp from './PersonalScreens/GroupExp';
-// import GroupsScreen from './PersonalScreens/Group';
-// import GroupHistory from './PersonalScreens/GroupHistory';
-// import Invoicing from './businessAcct/Invoicing';
-// import Payments from './businessAcct/Payments';
-// import Expenses from './businessAcct/Expenses';
-// import Reports from './businessAcct/Reports';
-// import Proposals from './businessAcct/Proposals';
-// import Retailer from './businessAcct/Retailer';
-// import Location from './businessAcct/BusinessHome';
-// import Wholesaler from './businessAcct/Wholesaler';
-// import Logbook from './screens/Logbook';
-// import AddLogEntry from './screens/AddLogEntry';
-// import CustomersScreen from './screens/CustomersScreen';
-// import Acct from './components/Acct';
-// import ReceiptScreen from './screens/ReceiptScreen';
-// import Dashboard from './screens/Dashboard';
-// import PendingReqs from './PersonalScreens/PendingReqs';
-// import BusinessHome from './businessAcct/BusinessHome';
-// import GroupExpenseDetail from './PersonalScreens/GroupExpenseDetail';
-// import ForgotPassword from './components/ForgotPassword';
-// import UpdatePassword from './components/UpdatePassword';
-// import home from './src/rooms/home';
-// import details from './src/rooms/details';
-// import booking from './src/rooms/booking';
-// import studio from './src/rooms/studio';
-// import deluxe from './src/rooms/deluxe';
-// import suite from './src/rooms/suite';
-// import start from './slides/start';
-// import about from './slides/about';
-// import aff_club from './slides/aff_club';
-// import contact from './slides/contact';
-// import BH from './src/halls/BanquetHallScreen';
-// import BHBooking from './src/halls/BHBooking';
-// import shoots from './slides/shoots';
-// import shootsBooking from './slides/shootsBooking';
-// import ConferenceRoomBookingScreen from './slides/ConferenceRoomBookingScreen';
-// import ConferenceRoomDetailsScreen from './slides/ConferenceRoomDetailsScreen';
-// import TimePickerModal from './slides/TimePickerModal';
-// import events from './slides/events';
-// import VerifyScreen from './src/auth/VerifyScreen';
-// import SportsScreen from './slides/SportsScreen';
-// import ClubArenaScreen from './slides/ClubArenaScreen';
-// import BillPaymentScreen from './slides/BillPaymentScreen';
-// import LoginScr from './src/auth/LoginScr';
-// import HallDetailsScreen from './src/halls/HallDetailsScreen';
-// import voucher from './src/rooms/voucher';
-// import Lawn from './src/lawn/Lawn';
-// import LawnBooking from './src/lawn/LawnBooking';
-// import LawnListScreen from './src/lawn/LawnListScreen';
-// import Voucher from './src/lawn/Voucher';
-
-// // ===== Navigation Setup =====
-// enableScreens();
-// const Stack = createNativeStackNavigator();
-// const Drawer = createDrawerNavigator();
-
-// // ===== Custom Drawer Content Component =====
-// function CustomDrawerContent(props) {
-//   return (
-//     <DrawerContentScrollView {...props}>
-//       {/* Header with Image */}
-//       <View style={styles.drawerHeader}>
-//         <Image 
-//           source={require('./assets/psc_home.jpeg')} 
-//           style={styles.drawerImage}
-//           resizeMode="cover"
-//         />
-//         <Text style={styles.drawerTitle}>PESHAWAR SERVICES CLUB</Text>
-//       </View>
-      
-//       {/* Default Drawer Items */}
-//       <DrawerItemList {...props} />
-//     </DrawerContentScrollView>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   drawerHeader: {
-//     backgroundColor: '#fff',
-//     padding: 20,
-//     borderBottomWidth: 1,
-//     borderBottomColor: '#ccc',
-//     alignItems: 'center',
-//   },
-//   drawerImage: {
-//     width: 100,
-//     height: 100,
-//     borderRadius: 50,
-//     marginBottom: 10,
-//   },
-//   drawerTitle: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//     textAlign: 'center',
-//     color: '#000',
-//   },
-// });
-
-// // ===== Logout Component =====
-// function LogoutScreen({ navigation }) {
-//   const handleLogout = async () => {
-//     await supabase.auth.signOut();
-//     navigation.replace('Auth');
-//   };
-//   return (
-//     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-//       <Button title="Log out" onPress={handleLogout} color="red" />
-//     </View>
-//   );
-// }
-
-// // ===== Drawer Navigator (Visible only after login) =====
-// function HomeDrawer({ session, users }) {
-//   return (
-//     <AuthProvider>
-//     <Drawer.Navigator
-//       screenOptions={{
-//         headerShown: true,
-//         drawerActiveTintColor: '#007AFF',
-//         drawerLabelStyle: { fontSize: 16 },
-//       }}
-//       drawerContent={(props) => <CustomDrawerContent {...props} />}
-//     >
-//       <Drawer.Screen name="LoginScr" component={LoginScr} />
-//       <Drawer.Screen name="VerifyScreen" component={VerifyScreen} />
-//       <Drawer.Screen name="start" component={start} />
-//       <Drawer.Screen name="home" component={home} />
-//       <Drawer.Screen name="about" component={about} />
-//       <Drawer.Screen name="aff_club" component={aff_club} />
-//       <Drawer.Screen name="contact" component={contact} />
-//       <Drawer.Screen name="BH" component={BH} />
-//       <Drawer.Screen name="BHBooking" component={BHBooking} />
-//       <Drawer.Screen name="Lawn" component={Lawn} />
-//       <Drawer.Screen name="LawnListScreen" component={LawnListScreen} />
-// <Drawer.Screen name="LawnBooking" component={LawnBooking} />
-// <Drawer.Screen name="Voucher" component={Voucher} />
-//       <Drawer.Screen name="shoots" component={shoots} />
-//       <Drawer.Screen name="shootsBooking" component={shootsBooking} />
-//       <Drawer.Screen name="ConferenceRoomBookingScreen" component={ConferenceRoomBookingScreen} />
-//       <Drawer.Screen name="ConferenceRoomDetailsScreen" component={ConferenceRoomDetailsScreen} />
-//       <Drawer.Screen name="events" component={events} />
-//       <Drawer.Screen name="SportsScreen" component={SportsScreen}/>
-//       <Drawer.Screen name="ClubArenaScreen" component={ClubArenaScreen} />  
-//       <Drawer.Screen name="Business Account" component={BusinessAccount} />
-//       <Drawer.Screen name="Personal Account" component={PersonalAccount} />
-//       <Drawer.Screen name="Groups" component={GroupsScreen} />
-//       <Drawer.Screen name="Group Expenses" component={GroupExp} />
-//       <Drawer.Screen name="Group History" component={GroupHistory} />
-//       <Drawer.Screen name="Invoicing" component={Invoicing} />
-//       <Drawer.Screen name="Payments" component={Payments} />
-//       <Drawer.Screen name="Expenses" component={Expenses} />
-//       <Drawer.Screen name="Reports" component={Reports} />
-//       <Drawer.Screen name="Proposals" component={Proposals} />
-//       <Drawer.Screen name="Retailer" component={Retailer} />
-//       <Drawer.Screen name="Wholesaler" component={Wholesaler} />
-//       <Drawer.Screen name="Logbook" component={Logbook} />
-//       <Drawer.Screen name="Add Log Entry" component={AddLogEntry} />
-//       <Drawer.Screen name="Customers" component={CustomersScreen} />
-//       <Drawer.Screen name="Receipts" component={ReceiptScreen} />
-//       <Drawer.Screen name="Pending Requests" component={PendingReqs} />
-//       <Drawer.Screen name="Business Home" component={BusinessHome} />
-//       <Drawer.Screen name="Logout" component={LogoutScreen} />
-//     </Drawer.Navigator>
-//     </AuthProvider>
-//   );
-// }
-
-// // ===== Main App Component =====
-// export default function App() {
-//   const [session, setSession] = useState(null);
-//   const [users, setUsers] = useState([]);
-//   const [isLoading, setIsLoading] = useState(true);
-
-//   // Ignore noisy logs
-//   useEffect(() => {
-//     LogBox.ignoreLogs(['Animated node with tag', 'ViewPropTypes']);
-//   }, []);
-
-//   // Fetch session from Supabase
-//   useEffect(() => {
-//     const fetchSession = async () => {
-//       try {
-//         const { data: { session } } = await supabase.auth.getSession();
-//         setSession(session);
-//       } catch (error) {
-//         console.error('Error fetching session:', error);
-//       } finally {
-//         setIsLoading(false);
-//       }
-//     };
-
-//     fetchSession();
-
-//     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-//       setSession(session);
-//       setIsLoading(false);
-//     });
-
-//     return () => {
-//       authListener.subscription.unsubscribe();
-//     };
-//   }, []);
-
-//   useEffect(() => {
-//     if (session) getAllUsers();
-//   }, [session]);
-
-//   async function getAllUsers() {
-//     try {
-//       const { data, error } = await supabase.from('profiles').select('id, username');
-//       if (error) {
-//         Alert.alert('Error', error.message);
-//       } else {
-//         setUsers(data ?? []);
-//       }
-//     } catch (error) {
-//       console.error('Error fetching users:', error);
-//     }
-//   }
-
-//   if (isLoading) return null;
-
-//   return (
-//     <AuthProvider>
-//     <NavigationContainer>
-//       <Stack.Navigator
-//         screenOptions={({ navigation, route }) => ({
-//           headerShown: !['Auth', 'Account', 'Home', 'Acct'].includes(route.name),
-//           headerStyle: {
-//             elevation: 0,
-//             shadowOpacity: 0,
-//             backgroundColor: 'black',
-//           },
-//           headerShadowVisible: false,
-//           gestureEnabled: false,
-//           animation: 'none',
-//           headerTitle: '',
-//           headerLeft: () =>
-//             navigation.canGoBack() ? (
-//               <Button onPress={() => navigation.goBack()} title="Back" color="#007AFF" />
-//             ) : null,
-//         })}
-//         initialRouteName={session && session.user ? 'Account' : 'Auth'}
-//       >
-//         <Stack.Screen name="Auth" component={Auth} options={{ headerShown: false }} />
-
-//         <Stack.Screen name="Account">
-//           {(props) => <Account {...props} session={session} users={users} />}
-//         </Stack.Screen>
-
-//         {/* Drawer-enabled Home */}
-//         <Stack.Screen name="Home">
-//           {(props) => <HomeDrawer {...props} session={session} users={users} />}
-//         </Stack.Screen>
-
-//         <Stack.Screen name="Acct">
-//           {(props) => <Account {...props} session={session} users={users} />}
-//         </Stack.Screen>
-
-//         {/* Other screens accessible by navigation */}
-//         <Stack.Screen name="LoginScr" component={LoginScr} />
-//         <Stack.Screen name="VerifyScreen" component={VerifyScreen} />
-//         <Stack.Screen name="SportsScreen" component={SportsScreen}/>
-//         <Stack.Screen name="ClubArenaScreen" component={ClubArenaScreen} />
-//         <Stack.Screen name="GroupExpenseDetail" component={GroupExpenseDetail} />
-//         <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-//         <Stack.Screen name="UpdatePassword" component={UpdatePassword} />
-//         <Stack.Screen name="home" component={home} />
-//         <Stack.Screen name="details" component={details} />
-//         <Stack.Screen name="booking" component={booking} />
-//         <Stack.Screen name="studio" component={studio} />
-//         <Stack.Screen name="deluxe" component={deluxe} />
-//         <Stack.Screen name="suite" component={suite} />
-//         <Stack.Screen name="start" component={start} />
-//         <Stack.Screen name="BH" component={BH} />
-//         <Stack.Screen name="BHBooking" component={BHBooking} />
-//         <Stack.Screen name="shoots" component={shoots} />
-//         <Stack.Screen name="shootsBooking" component={shootsBooking} />
-//         <Stack.Screen name="ConferenceRoomBooking" component={ConferenceRoomBookingScreen} />
-//         <Stack.Screen name="ConferenceRoomDetails" component={ConferenceRoomDetailsScreen} />
-//         <Stack.Screen name="events" component={events} />
-//         <Stack.Screen name="BillPaymentsScreen" component={BillPaymentScreen} />
-//         <Stack.Screen name="HallDetailsScreen" component={HallDetailsScreen} />
-//         <Stack.Screen name="voucher" component={voucher}/>
-//         <Stack.Screen name="Lawn" component={Lawn}/>
-//         <Stack.Screen name="LawnBooking" component={LawnBooking} />
-//         <Stack.Screen name="LawnListScreen" component={LawnListScreen} />
-// <Stack.Screen name="Voucher" component={Voucher} />
-
-//       </Stack.Navigator>
-//     </NavigationContainer>
-//     </AuthProvider>
-//   );
-// }
-
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
 import { enableScreens } from 'react-native-screens';
-import { View, Button, Alert, LogBox, Image, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, Button, Alert, LogBox, Image, StyleSheet, Text, TouchableOpacity, StatusBar, Linking } from 'react-native';
 import { AuthProvider, useAuth } from './src/auth/contexts/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create QueryClient instance
+const queryClient = new QueryClient();
 
 // Import screens
 import home from './src/rooms/home';
@@ -337,9 +28,17 @@ import shoots from './slides/shoots';
 import shootsBooking from './slides/shootsBooking';
 import ConferenceRoomBookingScreen from './slides/ConferenceRoomBookingScreen';
 import ConferenceRoomDetailsScreen from './slides/ConferenceRoomDetailsScreen';
+import BanquetHallDetailsScreen from './slides/BanquetHallDetailsScreen';
+import BallRoomDetailsScreen from './slides/BallRoomDetailsScreen';
+import EngleBrightHallDetailsScreen from './slides/EngleBrightHallDetailsScreen';
+import IrvineHallDetailsScreen from './slides/IrvineHallDetailsScreen';
+import VeteransLoungeDetailsScreen from './slides/VeteransLoungeDetailsScreen';
+import DiningHallDetailsScreen from './slides/DiningHallDetailsScreen';
 import events from './slides/events';
 import VerifyScreen from './src/auth/VerifyScreen';
-import SportsScreen from './slides/SportsScreen';
+import Announcements from './slides/Announcements';
+import SportsScreen from './src/sports/SportsScreen.js';
+import SportDetailsScreen from './src/sports/SportDetailsScreen.js';
 import ClubArenaScreen from './slides/ClubArenaScreen';
 import BillPaymentScreen from './slides/BillPaymentScreen';
 import LoginScr from './src/auth/LoginScr';
@@ -354,7 +53,37 @@ import BookingConfirmation from './src/shoots/BookingConfirmation';
 import HallInvoiceScreen from './src/halls/HallInvoiceScreen';
 import aff_club from './src/affClub/aff_club';
 import calendar from './src/adminOnly/calender';
-
+import Dashboard from './src/adminOnly/Dashboard'; // Import Dashboard
+import Aerobics_gym from './slides/Aerobics_gym';
+import Badminton from './slides/Badminton';
+import Gym_jogging from './slides/Gym_jogging';
+import Tennis from './slides/Tennis';
+import Squash from './slides/Squash';
+import Billiard from './slides/Billiard';
+import Messing from './slides/Messing';
+import The_Club_Cafe from './slides/The_Club_Cafe';
+import Bakistry from './slides/Bakistry';
+import BakistryItems from './slides/BakistryItems';
+import ClubCafeCart from './slides/ClubCafeCart';
+import FoodMenuCart from './slides/FoodMenuCart';
+import SplashScreen from './components/SplashScreen';
+import VCR from './slides/VCR';
+import GTN from './slides/GTN';
+import CR from './slides/CR';
+import NY from './slides/NY';
+import SF from './slides/SF';
+import LCM from './slides/LCM';
+import SNB from './slides/SNB';
+import HiTea from './slides/HiTea';
+import Swimming from './slides/Swimming';
+import SB from './slides/SB';
+import FB from './slides/FB';
+import SendNotifications from './src/adminOnly/SendNotifications';
+import EventDetails from './src/events/EventDetails';
+import ClubRulesScreen from './src/events/ClubRulesScreen';
+import MemberBookingsScreen from './src/view/MemberBookingsScreen';
+import BookingDetailsScreen from './src/view/BookingDetailsScreen';
+import AdminBookingsScreen from './src/view/AdminBookingsScreen';
 
 // ===== Navigation Setup =====
 enableScreens();
@@ -371,54 +100,68 @@ function CustomDrawerContent(props) {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
+        {
+          text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             try {
               await logout();
-              props.navigation.navigate('LoginScr');
+              props.navigation.reset({
+                index: 0,
+                routes: [{ name: 'LoginScr' }],
+              });
+              Alert.alert('Success', 'Logged out successfully');
             } catch (error) {
               console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
             }
           }
         }
-      ]
+      ],
+      { cancelable: true }
     );
   };
 
   return (
-    <DrawerContentScrollView {...props}>
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={{ flexGrow: 1 }}
+      style={{ backgroundColor: '#FEF2E4' }}
+    >
       {/* Header with Image */}
       <View style={styles.drawerHeader}>
-        <Image 
-          source={require('./assets/psc_home.jpeg')} 
+        <Image
+          source={require('./assets/logo.jpeg')}
           style={styles.drawerImage}
           resizeMode="cover"
         />
         <Text style={styles.drawerTitle}>PESHAWAR SERVICES CLUB</Text>
-        {user && (
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user.name}</Text>
-            <Text style={styles.userRole}>{user.role}</Text>
-          </View>
-        )}
       </View>
-      
+
       {/* Default Drawer Items */}
-      <DrawerItemList {...props} />
-      
+      <View style={{ flex: 1, backgroundColor: '#FEF2E4' }}>
+        <DrawerItemList {...props} />
+      </View>
+
       {/* Logout Button */}
-      {user && (
-        <View style={styles.logoutContainer}>
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={styles.logoutContainer}>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Icon name="log-out-outline" size={24} color="#fff" />
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Developed and Designed by</Text>
+        <Text style={styles.footerTextBold}>CODE CLUB</Text>
+        <TouchableOpacity onPress={() => Linking.openURL('https://www.codeclub.tech')}>
+          <Text style={[styles.footerTextBold, styles.websiteLink]}>www.codeclub.tech</Text>
+        </TouchableOpacity>
+      </View>
     </DrawerContentScrollView>
   );
 }
@@ -433,21 +176,88 @@ function MemberDrawer() {
         drawerLabelStyle: { fontSize: 16 },
       }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
-      initialRouteName="Dashboard"
+      initialRouteName="Home"
     >
-      <Drawer.Screen name="Dashboard" component={start} />
-      <Drawer.Screen name="Rooms" component={home} />
-      <Drawer.Screen name="Banquet Halls" component={BH} />
-      <Drawer.Screen name="Lawns" component={Lawn} />
-      <Drawer.Screen name="Photo Shoots" component={shoots} />
-      <Drawer.Screen name="Conference Rooms" component={ConferenceRoomDetailsScreen} />
-      <Drawer.Screen name="Sports Facilities" component={SportsScreen} />
-      <Drawer.Screen name="Club Arena" component={ClubArenaScreen} />
-      <Drawer.Screen name="Events" component={events} />
-      <Drawer.Screen name="Bill Payments" component={BillPaymentScreen} />
-      <Drawer.Screen name="About Club" component={about} />
-      <Drawer.Screen name="Affiliated Clubs" component={aff_club} />
-      <Drawer.Screen name="Contact Us" component={contact} />
+      <Drawer.Screen
+        name="Home"
+        component={start}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="About PSC"
+        component={about}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="information-circle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Announcements"
+        component={Announcements}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="megaphone-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Affiliated Clubs"
+        component={aff_club}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="people-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Contact us"
+        component={contact}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="call-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Club rules"
+        component={ClubRulesScreen}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="document-text-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="My Bookings"
+        component={MemberBookingsScreen}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="calendar-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      {/* <Drawer.Screen
+        name="Booking Details"
+        component={BookingDetailsScreen}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="information-circle-outline" size={size} color={color} />
+          ),
+        }}
+      /> */}
     </Drawer.Navigator>
   );
 }
@@ -462,22 +272,118 @@ function AdminDrawer() {
         drawerLabelStyle: { fontSize: 16 },
       }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
-     initialRouteName='start'
+      initialRouteName="Home"
     >
-
-      <Drawer.Screen 
-        name="Facility Calendar" 
-        component={calendar}
+      <Drawer.Screen
+        name="Home"
+        component={start}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="home-outline" size={size} color={color} />
+          ),
+        }}
       />
-    
-      {/* Admin can also access member features */}
-      <Drawer.Screen name="start" component={start} />
-      <Drawer.Screen name="home" component={home} />
-      <Drawer.Screen name="Banquet Halls" component={BH} />
-      <Drawer.Screen name="Lawns" component={Lawn} />
-      <Drawer.Screen name="Photo Shoots" component={shoots} />
-      <Drawer.Screen name="Conference Rooms" component={ConferenceRoomDetailsScreen} />
-      <Drawer.Screen name="Sports Facilities" component={SportsScreen} />
+      <Drawer.Screen
+        name="Dashboard"
+        component={Dashboard}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="speedometer-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Facility Calendar"
+        component={calendar}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="calendar-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="About PSC"
+        component={about}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="information-circle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Affiliated Clubs"
+        component={aff_club}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="people-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Contact us"
+        component={contact}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="call-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Announcements"
+        component={events}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="megaphone-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Club rules"
+        component={ClubRulesScreen}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="document-text-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="My Bookings"
+        component={MemberBookingsScreen}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="calendar-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      {/* <Drawer.Screen
+        name="Booking Details"
+        component={BookingDetailsScreen}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="information-circle-outline" size={size} color={color} />
+          ),
+        }}
+      /> */}
+      <Drawer.Screen
+        name="Booking Management"
+        component={AdminBookingsScreen}
+        options={{
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Icon name="briefcase-outline" size={size} color={color} />
+          ),
+        }}
+      />
     </Drawer.Navigator>
   );
 }
@@ -485,21 +391,32 @@ function AdminDrawer() {
 // ===== Role-Based Drawer Selector =====
 function RoleBasedDrawer() {
   const { user } = useAuth();
-  
+
   // Check if user is admin (you might have SUPER_ADMIN, ADMIN, etc.)
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-  
+
   return isAdmin ? <AdminDrawer /> : <MemberDrawer />;
 }
 
 // ===== Main App Component =====
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
+  const [showSplash, setShowSplash] = React.useState(true);
 
   // Ignore noisy logs
   useEffect(() => {
     LogBox.ignoreLogs(['Animated node with tag', 'ViewPropTypes']);
   }, []);
+
+  // Handle splash screen finish
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
+
+  // Show splash screen on first load
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
 
   // Show nothing while checking auth state
   if (loading) {
@@ -508,6 +425,7 @@ function AppContent() {
 
   return (
     <NavigationContainer>
+      <StatusBar backgroundColor="#fffaf2" barStyle="dark-content" />
       <Stack.Navigator
         screenOptions={({ navigation, route }) => ({
           headerShown: !['start', 'LoginScr'].includes(route.name),
@@ -532,51 +450,89 @@ function AppContent() {
         <Stack.Screen name="VerifyScreen" component={VerifyScreen} />
 
         {/* Main Drawer Navigation (Role-based) */}
-        <Stack.Screen name="start" component={RoleBasedDrawer} />
-        
+        <Stack.Screen name="start" component={RoleBasedDrawer} options={{ headerShown: false }} />
+
+        {/* Dashboard - accessible as standalone screen */}
+        <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
 
         {/* Common screens accessible from anywhere */}
-        <Stack.Screen name="home" component={home} />
-        <Stack.Screen name="details" component={details} />
+        <Stack.Screen name="home" component={home} options={{ headerShown: false }} />
+        <Stack.Screen name="details" component={details} options={{ headerShown: false }} />
         <Stack.Screen name="booking" component={booking} />
         <Stack.Screen name="studio" component={studio} />
         <Stack.Screen name="deluxe" component={deluxe} />
         <Stack.Screen name="suite" component={suite} />
-        <Stack.Screen name="BHBooking" component={BHBooking} />
-        <Stack.Screen name="shootsBooking" component={shootsBooking} />
+        <Stack.Screen name="BHBooking" component={BHBooking} options={{ headerShown: false }} />
+        <Stack.Screen name="shootsBooking" component={shootsBooking} options={{ headerShown: false }} />
         <Stack.Screen name="ConferenceRoomBooking" component={ConferenceRoomBookingScreen} />
-        <Stack.Screen name="HallDetailsScreen" component={HallDetailsScreen} />
-        <Stack.Screen name="voucher" component={voucher} />
-        <Stack.Screen name="LawnBooking" component={LawnBooking} />
-        <Stack.Screen name="LawnListScreen" component={LawnListScreen} />
-        <Stack.Screen name="Voucher" component={Voucher} />
-        <Stack.Screen name="Lawn" component={Lawn} />
-        <Stack.Screen name="BH" component={BH} />
-        <Stack.Screen name="about" component={about} />
+        <Stack.Screen name="ConferenceRoomDetailsScreen" component={ConferenceRoomDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="BanquetHallDetailsScreen" component={BanquetHallDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="BallRoomDetailsScreen" component={BallRoomDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="EngleBrightHallDetailsScreen" component={EngleBrightHallDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="IrvineHallDetailsScreen" component={IrvineHallDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="VeteransLoungeDetailsScreen" component={VeteransLoungeDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="DiningHallDetailsScreen" component={DiningHallDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="HallDetailsScreen" component={HallDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="voucher" component={voucher} options={{ headerShown: false }} />
+        <Stack.Screen name="LawnBooking" component={LawnBooking} options={{ headerShown: false }} />
+        <Stack.Screen name="LawnListScreen" component={LawnListScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Voucher" component={Voucher} options={{ headerShown: false }} />
+        <Stack.Screen name="Lawn" component={Lawn} options={{ headerShown: false }} />
+        <Stack.Screen name="BH" component={BH} options={{ headerShown: false }} />
+        <Stack.Screen name="about" component={about} options={{ headerShown: false }} />
         <Stack.Screen name="aff_club" component={aff_club} />
-        <Stack.Screen name="BillPaymentScreen" component={BillPaymentScreen} />
-        <Stack.Screen name="ClubArenaScreen" component={ClubArenaScreen} />
+        <Stack.Screen name="SportDetailsScreen" component={SportDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Swimming" component={Swimming} options={{ headerShown: false }} />
+        <Stack.Screen name="BillPaymentScreen" component={BillPaymentScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ClubArenaScreen" component={ClubArenaScreen} options={{ headerShown: false }} />
         <Stack.Screen name="contact" component={contact} />
-        <Stack.Screen name="events" component={events} />
-        <Stack.Screen name="shoots" component={shoots} />
-        <Stack.Screen name="SportsScreen" component={SportsScreen} />
-        <Stack.Screen name='InvoiceScreen' component={InvoiceScreen}/>
-        <Stack.Screen name='BookingConfirmation' component={BookingConfirmation}/>
-        <Stack.Screen name="HallInvoiceScreen" component={HallInvoiceScreen} />
-        
-
-
+        <Stack.Screen name="events" component={events} options={{ headerShown: false }} />
+        <Stack.Screen name="shoots" component={shoots} options={{ headerShown: false }} />
+        <Stack.Screen name="SportsScreen" component={SportsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Aerobics_gym" component={Aerobics_gym} options={{ headerShown: false }} />
+        <Stack.Screen name="Badminton" component={Badminton} options={{ headerShown: false }} />
+        <Stack.Screen name="Gym_jogging" component={Gym_jogging} options={{ headerShown: false }} />
+        <Stack.Screen name="Tennis" component={Tennis} options={{ headerShown: false }} />
+        <Stack.Screen name="Squash" component={Squash} options={{ headerShown: false }} />
+        <Stack.Screen name="Billiard" component={Billiard} options={{ headerShown: false }} />
+        <Stack.Screen name='InvoiceScreen' component={InvoiceScreen} options={{ headerShown: false }} />
+        <Stack.Screen name='BookingConfirmation' component={BookingConfirmation} />
+        <Stack.Screen name="HallInvoiceScreen" component={HallInvoiceScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Messing" component={Messing} options={{ headerShown: false }} />
+        <Stack.Screen name="The_Club_Cafe" component={The_Club_Cafe} options={{ headerShown: false }} />
+        <Stack.Screen name="FB" component={FB} options={{ headerShown: false }} />
+        <Stack.Screen name="Bakistry" component={Bakistry} options={{ headerShown: false }} />
+        <Stack.Screen name="BakistryItems" component={BakistryItems} options={{ headerShown: false }} />
+        <Stack.Screen name="ClubCafeCart" component={ClubCafeCart} options={{ headerShown: false }} />
+        <Stack.Screen name="FoodMenuCart" component={FoodMenuCart} options={{ headerShown: false }} />
+        <Stack.Screen name="VCR" component={VCR} options={{ headerShown: false }} />
+        <Stack.Screen name="GTN" component={GTN} options={{ headerShown: false }} />
+        <Stack.Screen name="CR" component={CR} options={{ headerShown: false }} />
+        <Stack.Screen name="NY" component={NY} options={{ headerShown: false }} />
+        <Stack.Screen name="SF" component={SF} options={{ headerShown: false }} />
+        <Stack.Screen name="LCM" component={LCM} options={{ headerShown: false }} />
+        <Stack.Screen name="SNB" component={SNB} options={{ headerShown: false }} />
+        <Stack.Screen name="HiTea" component={HiTea} options={{ headerShown: false }} />
+        <Stack.Screen name="SB" component={SB} options={{ headerShown: false }} />
+        <Stack.Screen name="SendNotifications" component={SendNotifications} options={{ headerShown: false }} />
+        <Stack.Screen name="EventDetails" component={EventDetails} options={{ headerShown: false }} />
+        <Stack.Screen name="ClubRulesScreen" component={ClubRulesScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="MemberBookingsScreen" component={MemberBookingsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="BookingDetailsScreen" component={BookingDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AdminBookingsScreen" component={AdminBookingsScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
-// ===== Root App Component with AuthProvider =====
+// ===== Root App Component with AuthProvider and QueryClientProvider =====
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -589,10 +545,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   drawerImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
+    width: 110,
+    height: 110,
+    marginBottom: 30,
   },
   drawerTitle: {
     fontSize: 16,
@@ -600,35 +555,49 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#000',
   },
-  userInfo: {
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  userName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  userRole: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
   logoutContainer: {
-    padding: 20,
+    padding: 15,
+    backgroundColor: '#FEF2E4',
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    marginTop: 'auto',
+    borderTopColor: '#ddd',
   },
   logoutButton: {
-    backgroundColor: '#FF3B30',
-    padding: 12,
-    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#d9534f',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   logoutText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#fff',
     fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  footer: {
+    padding: 15,
+    alignItems: 'center',
+    backgroundColor: '#FEF2E4',
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  footerTextBold: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+    marginTop: 2,
+  },
+  websiteLink: {
+    color: '#007AFF',
+    textDecorationLine: 'underline',
   },
 });

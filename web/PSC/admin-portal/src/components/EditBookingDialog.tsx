@@ -86,14 +86,14 @@ export const EditBookingDialog = React.memo(({
           availableRooms={editAvailableRooms}
           isLoadingRoomTypes={isLoadingRoomTypes}
           memberSearch=""
-          onMemberSearchChange={() => {}}
+          onMemberSearchChange={() => { }}
           showMemberResults={false}
           searchResults={[]}
           isSearching={false}
           selectedMember={null}
-          onSelectMember={() => {}}
-          onClearMember={() => {}}
-          onSearchFocus={() => {}}
+          onSelectMember={() => { }}
+          onClearMember={() => { }}
+          onSearchFocus={() => { }}
           dateStatuses={dateStatuses}
           isEdit={true}
         />

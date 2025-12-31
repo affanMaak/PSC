@@ -381,6 +381,50 @@ export default function RoomBookings() {
     }
   }, [editBooking]);
 
+  // Conflict check function
+  const checkConflicts = (roomId: string, checkIn: string, checkOut: string, excludeBookingId?: number) => {
+    const room = allRooms.find((r) => r.id.toString() === roomId);
+    if (!room) return null;
+
+    const selStart = new Date(checkIn);
+    const selEnd = new Date(checkOut);
+    selStart.setHours(0, 0, 0, 0);
+    selEnd.setHours(0, 0, 0, 0);
+
+    // 1. Check Out of Order (Inclusive)
+    const ooConflict = room.outOfOrders?.find((oo: any) => {
+      const ooStart = new Date(oo.startDate);
+      const ooEnd = new Date(oo.endDate);
+      ooStart.setHours(0, 0, 0, 0);
+      ooEnd.setHours(0, 0, 0, 0);
+      return selStart <= ooEnd && selEnd > ooStart;
+    });
+    if (ooConflict) return `Room is out of service from ${format(new Date(ooConflict.startDate), "PP")} to ${format(new Date(ooConflict.endDate), "PP")}`;
+
+    // 2. Check Reservations
+    const resConflict = room.reservations?.find((res: any) => {
+      const resStart = new Date(res.reservedFrom);
+      const resEnd = new Date(res.reservedTo);
+      resStart.setHours(0, 0, 0, 0);
+      resEnd.setHours(0, 0, 0, 0);
+      return selStart < resEnd && selEnd > resStart;
+    });
+    if (resConflict) return `Room has a reservation from ${format(new Date(resConflict.reservedFrom), "PP")} to ${format(new Date(resConflict.reservedTo), "PP")}`;
+
+    // 3. Check Other Bookings
+    const bookingConflict = room.bookings?.find((book: any) => {
+      if (excludeBookingId && book.id === excludeBookingId) return false;
+      const bStart = new Date(book.checkIn);
+      const bEnd = new Date(book.checkOut);
+      bStart.setHours(0, 0, 0, 0);
+      bEnd.setHours(0, 0, 0, 0);
+      return selStart < bEnd && selEnd > bStart;
+    });
+    if (bookingConflict) return `Room is already booked from ${format(new Date(bookingConflict.checkIn), "PP")} to ${format(new Date(bookingConflict.checkOut), "PP")}`;
+
+    return null;
+  };
+
   // Calculate price function
   const calculatePriceForForm = (
     roomTypeId: string,
@@ -579,6 +623,29 @@ export default function RoomBookings() {
       }
     }
 
+    // Guest Info Validation
+    if (form.pricingType === "guest") {
+      if (!form.guestName || !form.guestContact) {
+        toast({
+          title: "Guest information required",
+          description: "Guest name and contact are required for guest pricing",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Conflict Check
+    const conflict = checkConflicts(form.roomId, form.checkIn, form.checkOut);
+    if (conflict) {
+      toast({
+        title: "Booking Conflict",
+        description: conflict,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const payload = {
       category: "Room",
       membershipNo: form.membershipNo,
@@ -640,6 +707,29 @@ export default function RoomBookings() {
       }
     }
 
+    // Guest Info Validation
+    if (editForm.pricingType === "guest") {
+      if (!editForm.guestName || !editForm.guestContact) {
+        toast({
+          title: "Guest information required",
+          description: "Guest name and contact are required for guest pricing",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Conflict Check
+    const conflict = checkConflicts(editForm.roomId, editForm.checkIn, editForm.checkOut, editBooking.id);
+    if (conflict) {
+      toast({
+        title: "Booking Conflict",
+        description: conflict,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const payload = {
       id: editBooking?.id?.toString(),
       category: "Room",
@@ -695,6 +785,8 @@ export default function RoomBookings() {
         return <Badge className="bg-yellow-600 text-white">Half Paid</Badge>;
       case "UNPAID":
         return <Badge variant="destructive">Unpaid</Badge>;
+      case "TO_BILL":
+        return <Badge className="bg-blue-600 text-white">To Bill</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -733,6 +825,7 @@ export default function RoomBookings() {
               <SelectItem value="PAID">Paid</SelectItem>
               <SelectItem value="HALF_PAID">Half Paid</SelectItem>
               <SelectItem value="UNPAID">Unpaid</SelectItem>
+              <SelectItem value="TO_BILL">To Bill</SelectItem>
             </SelectContent>
           </Select>
           <Dialog
@@ -748,7 +841,7 @@ export default function RoomBookings() {
                 New Booking
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Room Booking</DialogTitle>
               </DialogHeader>

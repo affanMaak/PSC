@@ -167,7 +167,7 @@
 //   return (
 //     <SafeAreaView style={styles.container}>
 //       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
+
 //       <View style={styles.header}>
 //         <TouchableOpacity onPress={() => navigation.goBack()}>
 //           <Icon name="arrowleft" size={24} color="#000" />
@@ -213,42 +213,42 @@
 //         {/* Booking Summary */}
 //         <View style={styles.sectionCard}>
 //           <Text style={styles.sectionTitle}>Booking Summary</Text>
-          
+
 //           <View style={styles.detailRow}>
 //             <Text style={styles.detailLabel}>Package:</Text>
 //             <Text style={styles.detailValue}>
 //               {invoiceData.BookingSummary?.ServiceName || photoshoot.description}
 //             </Text>
 //           </View>
-          
+
 //           <View style={styles.detailRow}>
 //             <Text style={styles.detailLabel}>Date:</Text>
 //             <Text style={styles.detailValue}>
 //               {formatDate(bookingData.bookingDate)}
 //             </Text>
 //           </View>
-          
+
 //           <View style={styles.detailRow}>
 //             <Text style={styles.detailLabel}>Time:</Text>
 //             <Text style={styles.detailValue}>
 //               {formatTime(bookingData.timeSlot)} (2 hours duration)
 //             </Text>
 //           </View>
-          
+
 //           <View style={styles.detailRow}>
 //             <Text style={styles.detailLabel}>Booking Type:</Text>
 //             <Text style={styles.detailValue}>
 //               {bookingData.pricingType === 'member' ? 'Member Booking' : 'Guest Booking'}
 //             </Text>
 //           </View>
-          
+
 //           <View style={styles.detailRow}>
 //             <Text style={styles.detailLabel}>Base Price:</Text>
 //             <Text style={styles.detailValue}>
 //               ₹{invoiceData.BookingSummary?.BasePrice || bookingData.totalPrice}
 //             </Text>
 //           </View>
-          
+
 //           <View style={[styles.detailRow, styles.totalRow]}>
 //             <Text style={styles.totalLabel}>Total Amount:</Text>
 //             <Text style={styles.totalValue}>₹{invoiceData.Amount}</Text>
@@ -330,7 +330,7 @@
 //             </>
 //           )}
 //         </TouchableOpacity>
-        
+
 //         <TouchableOpacity
 //           style={styles.secondaryButton}
 //           onPress={() => navigation.goBack()}
@@ -712,7 +712,7 @@ Thank you for choosing our service!
     setLoading(true);
     try {
       console.log('🔍 Verifying payment with transaction ID:', transactionId);
-      
+
       const result = await paymentAPI.verifyPayment(
         invoiceData.InvoiceNumber,
         transactionId
@@ -784,10 +784,10 @@ Thank you for choosing our service!
   const formatTime = (timeString) => {
     if (!timeString) return '';
     try {
-      const timePart = timeString.includes('T') 
+      const timePart = timeString.includes('T')
         ? timeString.split('T')[1].slice(0, 5)
         : timeString.slice(0, 5);
-      
+
       const [hours, minutes] = timePart.split(':');
       const hour = parseInt(hours, 10);
       const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -804,7 +804,7 @@ Thank you for choosing our service!
         <View style={styles.errorContainer}>
           <Icon name="exclamationcircleo" size={64} color="#ff6b6b" />
           <Text style={styles.errorText}>Invoice data not found</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -817,9 +817,8 @@ Thank you for choosing our service!
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
-      <View style={styles.header}>
+      <StatusBar barStyle="light-content" backgroundColor="black" />
+      {/* <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrowleft" size={24} color="#000" />
         </TouchableOpacity>
@@ -827,7 +826,7 @@ Thank you for choosing our service!
         <TouchableOpacity onPress={handleShareInvoice} disabled={loading}>
           <Icon name="sharealt" size={24} color={loading ? '#ccc' : '#000'} />
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Invoice Header */}
@@ -862,20 +861,20 @@ Thank you for choosing our service!
         {/* Amount Card */}
         <View style={styles.amountCard}>
           <Text style={styles.amountLabel}>Total Amount Due</Text>
-          <Text style={styles.amountValue}>₹{invoiceData.Amount}</Text>
+          <Text style={styles.amountValue}>Rs: {invoiceData.Amount}</Text>
         </View>
 
         {/* Member Information */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Member Information</Text>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Membership No:</Text>
             <Text style={styles.detailValue}>
               {memberInfo?.membership_no || 'N/A'}
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Name:</Text>
             <Text style={styles.detailValue}>
@@ -887,45 +886,45 @@ Thank you for choosing our service!
         {/* Booking Summary */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Booking Summary</Text>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Package:</Text>
             <Text style={styles.detailValue}>
               {invoiceData.BookingSummary?.ServiceName || photoshoot?.description || 'N/A'}
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Date:</Text>
             <Text style={styles.detailValue}>
               {formatDate(bookingData?.bookingDate)}
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Time:</Text>
             <Text style={styles.detailValue}>
               {formatTime(bookingData?.timeSlot)} (2 hours duration)
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Booking Type:</Text>
             <Text style={styles.detailValue}>
               {bookingData?.pricingType === 'member' ? 'Member Booking' : 'Guest Booking'}
             </Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Base Price:</Text>
             <Text style={styles.detailValue}>
-              ₹{invoiceData.BookingSummary?.BasePrice || invoiceData.Amount}
+              Rs: {invoiceData.BookingSummary?.BasePrice || invoiceData.Amount}
             </Text>
           </View>
-          
+
           <View style={[styles.detailRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total Amount:</Text>
-            <Text style={styles.totalValue}>₹{invoiceData.Amount}</Text>
+            <Text style={styles.totalValue}>Rs: {invoiceData.Amount}</Text>
           </View>
         </View>
 
@@ -1007,7 +1006,7 @@ Thank you for choosing our service!
               </>
             )}
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.secondaryButton}
             onPress={() => navigation.goBack()}
@@ -1024,7 +1023,7 @@ Thank you for choosing our service!
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9EFE6',
   },
   errorContainer: {
     flex: 1,

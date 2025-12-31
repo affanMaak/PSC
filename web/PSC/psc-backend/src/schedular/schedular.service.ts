@@ -6,7 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class SchedularService {
   private readonly logger = new Logger(SchedularService.name);
 
-  constructor(private prismaService: PrismaService) {}
+  constructor(private prismaService: PrismaService) { }
 
   @Cron(CronExpression.EVERY_10_SECONDS)
   async checkScheduledOutOfOrder() {
@@ -17,128 +17,152 @@ export class SchedularService {
       try {
         await this.prismaService.$transaction(async (tx) => {
           const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-          // Get current date at midnight in local time
-          const today = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-          );
-
-          // STEP 1 — Find rooms that should be marked as "currently out of order"
-          // Rooms that have active out-of-order periods overlapping with today
+          // ─────────────────────────── ROOMS ───────────────────────────
           const roomsWithActiveOutOfOrder = await tx.room.findMany({
             where: {
               outOfOrders: {
                 some: {
-                  AND: [
-                    { startDate: { lte: today } },
-                    { endDate: { gte: today } },
-                  ],
-                },
-              },
-            },
-            include: {
-              outOfOrders: {
-                where: {
-                  AND: [
-                    { startDate: { lte: today } },
-                    { endDate: { gte: today } },
-                  ],
+                  AND: [{ startDate: { lte: today } }, { endDate: { gt: today } }],
                 },
               },
             },
           });
 
-          // Update rooms that should be marked as out-of-order
-          const roomsToMarkOutOfOrder = roomsWithActiveOutOfOrder
-            .filter((room) => room.isActive) // Only mark if currently active
+          const roomsToMarkInactive = roomsWithActiveOutOfOrder
+            .filter((room) => room.isActive)
             .map((room) => room.id);
 
-          if (roomsToMarkOutOfOrder.length > 0) {
-            const markOutOfOrderResult = await tx.room.updateMany({
-              where: {
-                id: { in: roomsToMarkOutOfOrder },
-                isActive: true,
-              },
-              data: {
-                isActive: false,
-              },
+          if (roomsToMarkInactive.length > 0) {
+            await tx.room.updateMany({
+              where: { id: { in: roomsToMarkInactive } },
+              data: { isActive: false },
             });
-
-            this.logger.log(
-              `Marked ${markOutOfOrderResult.count} rooms as inactive due to out-of-order periods.`,
-            );
+            this.logger.log(`Marked ${roomsToMarkInactive.length} rooms as inactive.`);
           }
 
-          // STEP 2 — Find rooms that should be reactivated
-          // Rooms that don't have any active out-of-order periods today
-          const allRooms = await tx.room.findMany({
+          const roomsToReactivate = await tx.room.findMany({
             where: {
               isActive: false,
-            },
-            include: {
               outOfOrders: {
-                where: {
-                  endDate: { gte: today }, // Only consider ongoing or future periods
+                none: {
+                  AND: [{ startDate: { lte: today } }, { endDate: { gt: today } }],
+                },
+              },
+            },
+            select: { id: true },
+          });
+
+          if (roomsToReactivate.length > 0) {
+            await tx.room.updateMany({
+              where: { id: { in: roomsToReactivate.map((r) => r.id) } },
+              data: { isActive: true },
+            });
+            this.logger.log(`Reactivated ${roomsToReactivate.length} rooms.`);
+          }
+
+          // ─────────────────────────── HALLS ───────────────────────────
+          const hallsWithActiveOutOfOrder = await tx.hall.findMany({
+            where: {
+              outOfOrders: {
+                some: {
+                  AND: [{ startDate: { lte: today } }, { endDate: { gt: today } }],
                 },
               },
             },
           });
 
-          // const roomsToReactivate = allRooms
-          //   .filter((room) => {
-          //     // Room should be reactivated if it has NO out-of-order periods covering today
-          //     const hasActiveOutOfOrderToday = room.outOfOrders.some(
-          //       (oo) => oo.startDate <= today && oo.endDate >= today,
-          //     );
-          //     return !hasActiveOutOfOrderToday;
-          //   })
-          //   .map((room) => room.id);
+          const hallsToMarkInactive = hallsWithActiveOutOfOrder
+            .filter((hall) => hall.isActive)
+            .map((hall) => hall.id);
 
-          // if (roomsToReactivate.length > 0) {
-          //   const reactivateResult = await tx.room.updateMany({
-          //     where: {
-          //       id: { in: roomsToReactivate },
-          //       isActive: false,
-          //     },
-          //     data: {
-          //       isActive: true,
-          //     },
-          //   });
+          if (hallsToMarkInactive.length > 0) {
+            await tx.hall.updateMany({
+              where: { id: { in: hallsToMarkInactive } },
+              data: { isActive: false },
+            });
+            this.logger.log(`Marked ${hallsToMarkInactive.length} halls as inactive.`);
+          }
 
-          //   this.logger.log(
-          //     `Reactivated ${reactivateResult.count} rooms (no active out-of-order periods today).`,
-          //   );
-          // }
+          const hallsToReactivate = await tx.hall.findMany({
+            where: {
+              isActive: false,
+              outOfOrders: {
+                none: {
+                  AND: [{ startDate: { lte: today } }, { endDate: { gt: today } }],
+                },
+              },
+            },
+            select: { id: true },
+          });
 
-          // STEP 3 — Clean up expired out-of-order records (optional, for data cleanup)
-          // Remove out-of-order records that ended more than 30 days ago
+          if (hallsToReactivate.length > 0) {
+            await tx.hall.updateMany({
+              where: { id: { in: hallsToReactivate.map((h) => h.id) } },
+              data: { isActive: true },
+            });
+            this.logger.log(`Reactivated ${hallsToReactivate.length} halls.`);
+          }
+
+          // ─────────────────────────── LAWNS ───────────────────────────
+          const lawnsWithActiveOutOfOrder = await tx.lawn.findMany({
+            where: {
+              outOfOrders: {
+                some: {
+                  AND: [{ startDate: { lte: today } }, { endDate: { gt: today } }],
+                },
+              },
+            },
+          });
+
+          const lawnsToMarkOutOfService = lawnsWithActiveOutOfOrder
+            .filter((lawn) => !lawn.isOutOfService)
+            .map((lawn) => lawn.id);
+
+          if (lawnsToMarkOutOfService.length > 0) {
+            await tx.lawn.updateMany({
+              where: { id: { in: lawnsToMarkOutOfService } },
+              data: { isOutOfService: true },
+            });
+            this.logger.log(`Marked ${lawnsToMarkOutOfService.length} lawns as out of service.`);
+          }
+
+          const lawnsToRestoreService = await tx.lawn.findMany({
+            where: {
+              isOutOfService: true,
+              outOfOrders: {
+                none: {
+                  AND: [{ startDate: { lte: today } }, { endDate: { gt: today } }],
+                },
+              },
+            },
+            select: { id: true },
+          });
+
+          if (lawnsToRestoreService.length > 0) {
+            await tx.lawn.updateMany({
+              where: { id: { in: lawnsToRestoreService.map((l) => l.id) } },
+              data: { isOutOfService: false },
+            });
+            this.logger.log(`Restored service for ${lawnsToRestoreService.length} lawns.`);
+          }
+
+          // ─────────────────────────── CLEANUP ───────────────────────────
           const thirtyDaysAgo = new Date(today);
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-          const cleanupResult = await tx.roomOutOfOrder.deleteMany({
-            where: {
-              endDate: { lt: thirtyDaysAgo },
-            },
-          });
-
-          if (cleanupResult.count > 0) {
-            this.logger.log(
-              `Cleaned up ${cleanupResult.count} expired out-of-order records.`,
-            );
-          }
+          await tx.roomOutOfOrder.deleteMany({ where: { endDate: { lt: thirtyDaysAgo } } });
+          await tx.hallOutOfOrder.deleteMany({ where: { endDate: { lt: thirtyDaysAgo } } });
+          await tx.lawnOutOfOrder.deleteMany({ where: { endDate: { lt: thirtyDaysAgo } } });
         });
 
-        // Success: exit retry loop
         return;
       } catch (err) {
         if (err.code === 'P2034') {
           retries++;
-          this.logger.warn(
-            `Deadlock detected. Retry ${retries}/${MAX_RETRIES}...`,
-          );
-          await new Promise((res) => setTimeout(res, 200)); // small delay
+          this.logger.warn(`Deadlock detected. Retry ${retries}/${MAX_RETRIES}...`);
+          await new Promise((res) => setTimeout(res, 200));
         } else {
           throw err;
         }

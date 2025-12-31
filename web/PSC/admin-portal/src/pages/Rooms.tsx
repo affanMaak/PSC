@@ -12,6 +12,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
   Plus,
   Edit,
   Trash2,
@@ -22,6 +28,11 @@ import {
   Clock,
   Info,
   Filter,
+  Eye,
+  MoreVertical,
+  Users,
+  DoorOpen,
+  Settings,
 } from "lucide-react";
 import {
   Dialog,
@@ -44,6 +55,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format, addDays } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   createRoom,
   getRooms,
@@ -51,6 +67,7 @@ import {
   updateRoom,
   deleteRoom,
   reserveRoom,
+  getRoomLogs,
 } from "../../config/apis";
 import {
   AlertDialog,
@@ -71,7 +88,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getPakistanDateString } from "@/utils/pakDate";
+import { getPakistanDateString, parsePakistanDate } from "@/utils/pakDate";
 
 interface RoomOutOfOrder {
   id?: string;
@@ -118,6 +135,29 @@ interface Room {
 
 export default function Rooms() {
   const { toast } = useToast();
+  const fetchLogs = async (roomId: string, range: DateRange | undefined) => {
+    if (!range?.from || !range?.to) return;
+    setIsLoadingLogs(true);
+    try {
+      const logs = await getRoomLogs(
+        roomId,
+        getPakistanDateString(range.from),
+        getPakistanDateString(range.to)
+      );
+      setDetailLogs(logs);
+    } catch (error) {
+      console.error("Error fetching logs:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch room logs",
+      });
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
+
   const queryClient = useQueryClient();
 
   // === STATE ===
@@ -130,8 +170,22 @@ export default function Rooms() {
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [reserveDates, setReserveDates] = useState({
     from: getPakistanDateString(new Date()),
-    to: getPakistanDateString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+    to: getPakistanDateString(new Date()),
   });
+
+  // Room Detail State
+  const [detailRoom, setDetailRoom] = useState<Room | null>(null);
+  const [detailDateRange, setDetailDateRange] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 30),
+  });
+  const [detailLogs, setDetailLogs] = useState<{
+    reservations: any[];
+    bookings: any[];
+    outOfOrders: any[];
+  } | null>(null);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [activeTab, setActiveTab] = useState("reservations");
 
   // Form state for room
   const [form, setForm] = useState({
@@ -146,8 +200,16 @@ export default function Rooms() {
   const [newOutOfOrder, setNewOutOfOrder] = useState<RoomOutOfOrder>({
     reason: "",
     startDate: getPakistanDateString(new Date()),
-    endDate: getPakistanDateString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+    endDate: getPakistanDateString(new Date()),
   });
+
+  const [reservationRemarks, setReservationRemarks] = useState("");
+
+  useEffect(() => {
+    if (detailRoom && detailDateRange?.from && detailDateRange?.to) {
+      fetchLogs(detailRoom.id, detailDateRange);
+    }
+  }, [detailRoom, detailDateRange]);
 
   // === FETCH DATA ===
   const { data: rooms = [], isLoading: roomsLoading } = useQuery({
@@ -213,12 +275,14 @@ export default function Rooms() {
       reserve,
       reserveFrom,
       reserveTo,
+      remarks,
     }: {
       roomIds: string[];
       reserve: boolean;
       reserveFrom?: string;
       reserveTo?: string;
-    }) => reserveRoom(roomIds, reserve, reserveFrom, reserveTo),
+      remarks?: string;
+    }) => reserveRoom(roomIds, reserve, reserveFrom, reserveTo, remarks),
     onSuccess: (data, variables) => {
       const action = variables.reserve ? "reserved" : "unreserved";
       toast({
@@ -226,6 +290,7 @@ export default function Rooms() {
         description: `Successfully ${action} ${variables.roomIds.length} room(s)`,
       });
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      setReservationRemarks("");
     },
     onError: (err: any) => {
       const errorMessage = err.response?.data?.message || err.message || "Failed to update reservations";
@@ -254,7 +319,7 @@ export default function Rooms() {
     setNewOutOfOrder({
       reason: "",
       startDate: getPakistanDateString(new Date()),
-      endDate: getPakistanDateString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+      endDate: getPakistanDateString(new Date()),
     });
   };
 
@@ -292,9 +357,9 @@ export default function Rooms() {
       return;
     }
 
-    const alreadyExists = form.outOfOrders?.some(o=> o.startDate === newOutOfOrder.startDate) || form.outOfOrders?.some(o=> o.endDate === newOutOfOrder.endDate)
-    
-    if(alreadyExists) {
+    const alreadyExists = form.outOfOrders?.some(o => o.startDate === newOutOfOrder.startDate) || form.outOfOrders?.some(o => o.endDate === newOutOfOrder.endDate)
+
+    if (alreadyExists) {
       toast({
         title: "Date Error",
         description: "Cannot Selecting existing dates",
@@ -311,7 +376,7 @@ export default function Rooms() {
     setNewOutOfOrder({
       reason: "",
       startDate: getPakistanDateString(new Date()),
-      endDate: getPakistanDateString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+      endDate: getPakistanDateString(new Date()),
     });
   };
 
@@ -521,6 +586,7 @@ export default function Rooms() {
         reserve: true,
         reserveFrom: reserveDates.from,
         reserveTo: reserveDates.to,
+        remarks: reservationRemarks,
       });
     }
   };
@@ -826,7 +892,7 @@ export default function Rooms() {
                 Add Room
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Room</DialogTitle>
               </DialogHeader>
@@ -914,31 +980,67 @@ export default function Rooms() {
                         className="mt-2"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Start Date *</Label>
-                        <Input
-                          type="date"
-                          value={newOutOfOrder.startDate}
-                          onChange={(e) =>
-                            setNewOutOfOrder({ ...newOutOfOrder, startDate: e.target.value })
-                          }
-                          className="mt-2"
-                          min={new Date().toISOString().split("T")[0]}
-                        />
-                      </div>
-                      <div>
-                        <Label>End Date *</Label>
-                        <Input
-                          type="date"
-                          value={newOutOfOrder.endDate}
-                          onChange={(e) =>
-                            setNewOutOfOrder({ ...newOutOfOrder, endDate: e.target.value })
-                          }
-                          className="mt-2"
-                          min={newOutOfOrder.startDate || new Date().toISOString().split("T")[0]}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label>Maintenance Date Range *</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal h-12",
+                              !newOutOfOrder.startDate && "text-muted-foreground"
+                            )}
+                          >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {newOutOfOrder.startDate ? (
+                              newOutOfOrder.endDate && newOutOfOrder.endDate !== newOutOfOrder.startDate ? (
+                                <>
+                                  {format(parsePakistanDate(newOutOfOrder.startDate), "LLL dd, y")} -{" "}
+                                  {format(parsePakistanDate(newOutOfOrder.endDate), "LLL dd, y")}
+                                </>
+                              ) : (
+                                format(parsePakistanDate(newOutOfOrder.startDate), "LLL dd, y")
+                              )
+                            ) : (
+                              <span>Pick a date range</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            initialFocus
+                            mode="range"
+                            defaultMonth={parsePakistanDate(newOutOfOrder.startDate)}
+                            selected={{
+                              from: parsePakistanDate(newOutOfOrder.startDate),
+                              to: parsePakistanDate(newOutOfOrder.endDate),
+                            }}
+                            onSelect={(range: DateRange | undefined) => {
+                              if (range?.from) {
+                                setNewOutOfOrder((prev) => ({
+                                  ...prev,
+                                  startDate: getPakistanDateString(range.from),
+                                  endDate: range.to ? getPakistanDateString(range.to) : getPakistanDateString(range.from),
+                                }));
+                              }
+                            }}
+                            modifiers={{
+                              today: new Date(),
+                            }}
+                            modifiersClassNames={{
+                              today: "border-2 border-primary bg-transparent text-primary hover:bg-transparent hover:text-primary",
+                            }}
+                            classNames={{
+                              day_today: "border-2 border-primary bg-transparent text-primary hover:bg-transparent hover:text-primary",
+                            }}
+                            disabled={(date) => {
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              return date < today;
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <Button
                       type="button"
@@ -1232,6 +1334,20 @@ export default function Rooms() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => {
+                              setDetailRoom(room);
+                              setDetailDateRange({
+                                from: new Date(),
+                                to: addDays(new Date(), 30),
+                              });
+                            }}
+                            title="View details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => openEditDialog(room)}
                             title="Edit room"
                           >
@@ -1259,7 +1375,7 @@ export default function Rooms() {
 
       {/* Edit Dialog - Similar to Add Dialog but with existing out-of-order periods */}
       <Dialog open={!!editRoom} onOpenChange={() => setEditRoom(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Room</DialogTitle>
           </DialogHeader>
@@ -1343,31 +1459,67 @@ export default function Rooms() {
                     className="mt-2"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Start Date *</Label>
-                    <Input
-                      type="date"
-                      value={newOutOfOrder.startDate}
-                      onChange={(e) =>
-                        setNewOutOfOrder({ ...newOutOfOrder, startDate: e.target.value })
-                      }
-                      className="mt-2"
-                      min={new Date().toISOString().split("T")[0]}
-                    />
-                  </div>
-                  <div>
-                    <Label>End Date *</Label>
-                    <Input
-                      type="date"
-                      value={newOutOfOrder.endDate}
-                      onChange={(e) =>
-                        setNewOutOfOrder({ ...newOutOfOrder, endDate: e.target.value })
-                      }
-                      className="mt-2"
-                      min={newOutOfOrder.startDate || new Date().toISOString().split("T")[0]}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Maintenance Date Range *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal h-12",
+                          !newOutOfOrder.startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {newOutOfOrder.startDate ? (
+                          newOutOfOrder.endDate && newOutOfOrder.endDate !== newOutOfOrder.startDate ? (
+                            <>
+                              {format(parsePakistanDate(newOutOfOrder.startDate), "LLL dd, y")} -{" "}
+                              {format(parsePakistanDate(newOutOfOrder.endDate), "LLL dd, y")}
+                            </>
+                          ) : (
+                            format(parsePakistanDate(newOutOfOrder.startDate), "LLL dd, y")
+                          )
+                        ) : (
+                          <span>Pick a date range</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        initialFocus
+                        mode="range"
+                        defaultMonth={parsePakistanDate(newOutOfOrder.startDate)}
+                        selected={{
+                          from: parsePakistanDate(newOutOfOrder.startDate),
+                          to: parsePakistanDate(newOutOfOrder.endDate),
+                        }}
+                        onSelect={(range: DateRange | undefined) => {
+                          if (range?.from) {
+                            setNewOutOfOrder((prev) => ({
+                              ...prev,
+                              startDate: getPakistanDateString(range.from),
+                              endDate: range.to ? getPakistanDateString(range.to) : getPakistanDateString(range.from),
+                            }));
+                          }
+                        }}
+                        modifiers={{
+                          today: new Date(),
+                        }}
+                        modifiersClassNames={{
+                          today: "border-2 border-primary bg-transparent text-primary hover:bg-transparent hover:text-primary",
+                        }}
+                        classNames={{
+                          day_today: "border-2 border-primary bg-transparent text-primary hover:bg-transparent hover:text-primary",
+                        }}
+                        disabled={(date) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return date < today;
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <Button
                   type="button"
@@ -1438,36 +1590,78 @@ export default function Rooms() {
           </DialogHeader>
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Date Selection */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-              <div>
-                <Label>Reserve From *</Label>
-                <Input
-                  type="date"
-                  value={reserveDates.from}
-                  onChange={(e) =>
-                    setReserveDates((prev) => ({
-                      ...prev,
-                      from: e.target.value,
-                    }))
-                  }
-                  className="mt-2"
-                  min={new Date().toISOString().split("T")[0]}
-                />
-              </div>
-              <div>
-                <Label>Reserve To *</Label>
-                <Input
-                  type="date"
-                  value={reserveDates.to}
-                  onChange={(e) =>
-                    setReserveDates((prev) => ({ ...prev, to: e.target.value }))
-                  }
-                  className="mt-2"
-                  min={
-                    reserveDates.from || new Date().toISOString().split("T")[0]
-                  }
-                />
-              </div>
+            <div className="p-4 bg-muted rounded-lg space-y-2">
+              <Label>Reservation Date Range *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-12",
+                      !reserveDates.from && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {reserveDates?.from ? (
+                      reserveDates.to && reserveDates.to !== reserveDates.from ? (
+                        <>
+                          {format(parsePakistanDate(reserveDates.from), "LLL dd, y")} -{" "}
+                          {format(parsePakistanDate(reserveDates.to), "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(parsePakistanDate(reserveDates.from), "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    initialFocus
+                    mode="range"
+                    defaultMonth={parsePakistanDate(reserveDates.from)}
+                    selected={{
+                      from: parsePakistanDate(reserveDates.from),
+                      to: parsePakistanDate(reserveDates.to),
+                    }}
+                    onSelect={(range: DateRange | undefined) => {
+                      if (range?.from) {
+                        setReserveDates({
+                          from: getPakistanDateString(range.from),
+                          to: range.to ? getPakistanDateString(range.to) : getPakistanDateString(range.from),
+                        });
+                      }
+                    }}
+                    numberOfMonths={2}
+                    modifiers={{
+                      today: new Date(),
+                    }}
+                    modifiersClassNames={{
+                      today: "border-2 border-primary bg-transparent text-primary hover:bg-transparent hover:text-primary",
+                    }}
+                    classNames={{
+                      day_today: "border-2 border-primary bg-transparent text-primary hover:bg-transparent hover:text-primary",
+                    }}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return date < today;
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="px-4 py-2 space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reservation Remarks (Optional)</Label>
+              <Textarea
+                placeholder="Add any additional notes for this reservation..."
+                value={reservationRemarks}
+                onChange={(e) => setReservationRemarks(e.target.value)}
+                className="resize-none min-h-[80px] bg-muted/30 border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary/20"
+              />
             </div>
 
             {/* Summary */}
@@ -1682,6 +1876,360 @@ export default function Rooms() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Room Detail Dialog */}
+      <Dialog
+        open={!!detailRoom}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailRoom(null);
+            setDetailLogs(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between pr-8">
+              <div>
+                <DialogTitle className="text-2xl font-bold">
+                  Room {detailRoom?.roomNumber}
+                </DialogTitle>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="outline" className="font-normal border-primary/20 bg-primary/5 text-primary">
+                    {detailRoom?.roomType?.type}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    ID: {detailRoom?.id}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">{detailRoom?.description}</span>
+              </div>
+              <Badge
+                variant={detailRoom?.isActive ? "default" : "secondary"}
+                className={cn(
+                  "px-3 py-1",
+                  detailRoom?.isActive
+                    ? "bg-green-100 text-green-700 hover:bg-green-100"
+                    : "bg-red-100 text-red-700 hover:bg-red-100"
+                )}
+              >
+                {detailRoom?.isActive ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
+            <Card className="p-3 bg-muted/20 border border-border/50 shadow-none transition-all hover:bg-muted/30 text-left">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-slate-100 rounded-md">
+                  <Users className="h-4 w-4 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-tight">
+                    Member Price
+                  </p>
+                  <p className="text-sm font-bold text-slate-700">
+                    Rs. {Number(detailRoom?.roomType?.priceMember || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-3 bg-muted/20 border border-border/50 shadow-none transition-all hover:bg-muted/30 text-left">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-slate-100 rounded-md">
+                  <Users className="h-4 w-4 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-tight">
+                    Guest Price
+                  </p>
+                  <p className="text-sm font-bold text-slate-700">
+                    Rs. {Number(detailRoom?.roomType?.priceGuest || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-3 bg-muted/20 border border-border/50 shadow-none transition-all hover:bg-muted/30 text-left overflow-hidden">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-slate-100 rounded-md shrink-0">
+                  <Info className="h-4 w-4 text-slate-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-tight whitespace-nowrap">
+                    Description
+                  </p>
+                  <p className="text-xs truncate text-slate-600">
+                    {detailRoom?.description || "No description provided."}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Small Overview Totals */}
+          <div className="flex items-center gap-4 py-2 border-y border-border/40">
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+              <span className="text-[11px] font-medium text-slate-500">
+                Reservations: <span className="text-slate-900">{detailLogs?.reservations?.length || 0}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 border-l pl-4 border-border/40">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+              <span className="text-[11px] font-medium text-slate-500">
+                Bookings: <span className="text-slate-900">{detailLogs?.bookings?.length || 0}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 border-l pl-4 border-border/40">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+              <span className="text-[11px] font-medium text-slate-500">
+                Maintenance: <span className="text-slate-900">{detailLogs?.outOfOrders?.length || 0}</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-6 pt-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2 text-slate-700">
+                Activity Logs
+                {isLoadingLogs && <div className="h-3 w-3 animate-spin rounded-full border border-slate-400 border-t-transparent" />}
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Filter Logs:</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "justify-start text-left font-normal h-9",
+                        !detailDateRange && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {detailDateRange?.from ? (
+                        detailDateRange.to ? (
+                          detailDateRange.from.getTime() ===
+                            detailDateRange.to.getTime() ? (
+                            format(detailDateRange.from, "LLL dd, y")
+                          ) : (
+                            <>
+                              {format(detailDateRange.from, "LLL dd, y")} -{" "}
+                              {format(detailDateRange.to, "LLL dd, y")}
+                            </>
+                          )
+                        ) : (
+                          format(detailDateRange.from, "LLL dd, y")
+                        )
+                      ) : (
+                        <span>Pick a date range</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <CalendarComponent
+                      initialFocus
+                      mode="range"
+                      defaultMonth={detailDateRange?.from}
+                      selected={detailDateRange}
+                      onSelect={setDetailDateRange}
+                      numberOfMonths={2}
+                      classNames={{
+                        day_today: "border-2 border-primary text-primary bg-transparent font-bold",
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-3 h-9 p-1 bg-slate-100 rounded-md">
+                <TabsTrigger value="reservations" className="text-[11px] rounded-sm data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border border-slate-200">
+                  Reservations ({detailLogs?.reservations?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger value="bookings" className="text-[11px] rounded-sm data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border border-slate-200">
+                  Bookings ({detailLogs?.bookings?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger value="maintenance" className="text-[11px] rounded-sm data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border border-slate-200">
+                  Maintenance ({detailLogs?.outOfOrders?.length || 0})
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="mt-4 min-h-[300px]">
+                {isLoadingLogs ? (
+                  <div className="flex flex-col items-center justify-center h-[300px] gap-2 text-slate-400">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-300"></div>
+                    <p className="text-[11px] font-medium">Loading history...</p>
+                  </div>
+                ) : (
+                  <>
+                    <TabsContent value="reservations" className="mt-0 outline-none">
+                      <div className="border border-slate-100 rounded-lg overflow-hidden bg-white">
+                        <Table>
+                          <TableHeader className="bg-slate-50/50">
+                            <TableRow className="hover:bg-transparent border-slate-100">
+                              <TableHead className="text-[11px] h-9 text-slate-500">Reserved From</TableHead>
+                              <TableHead className="text-[11px] h-9 text-slate-500">Reserved To</TableHead>
+                              <TableHead className="text-[11px] h-9 text-slate-500">Reserved By</TableHead>
+                              <TableHead className="text-[11px] h-9 text-slate-500">Remarks</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {detailLogs?.reservations?.length ? (
+                              detailLogs.reservations.map((res: any) => (
+                                <TableRow key={res.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
+                                  <TableCell className="text-xs py-2 text-slate-600">
+                                    {format(new Date(res.reservedFrom), "LLL dd, y")}
+                                  </TableCell>
+                                  <TableCell className="text-xs py-2 text-slate-600">
+                                    {format(new Date(res.reservedTo), "LLL dd, y")}
+                                  </TableCell>
+                                  <TableCell className="text-xs py-2">
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                      <div className="h-5 w-5 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-500">
+                                        {res.admin?.name?.substring(0, 1).toUpperCase()}
+                                      </div>
+                                      {res.admin?.name}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-[10px] py-2 text-slate-500 max-w-[150px] truncate" title={res.remarks}>
+                                    {res.remarks || "-"}
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="text-center py-10 text-slate-400"
+                                >
+                                  <div className="flex flex-col items-center gap-1.5">
+                                    <Calendar className="h-6 w-6 opacity-10" />
+                                    <p className="text-[11px]">No reservations found.</p>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="bookings" className="mt-0 outline-none">
+                      <div className="border border-slate-100 rounded-lg overflow-hidden bg-white">
+                        <Table>
+                          <TableHeader className="bg-slate-50/50">
+                            <TableRow className="hover:bg-transparent border-slate-100">
+                              <TableHead className="text-[11px] h-9 text-slate-500">Member</TableHead>
+                              <TableHead className="text-[11px] h-9 text-slate-500">Check-In</TableHead>
+                              <TableHead className="text-[11px] h-9 text-slate-500">Check-Out</TableHead>
+                              <TableHead className="text-[11px] h-9 text-slate-500">Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {detailLogs?.bookings?.length ? (
+                              detailLogs.bookings.map((book: any) => (
+                                <TableRow key={book.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
+                                  <TableCell className="py-2">
+                                    <div>
+                                      <p className="font-semibold text-xs text-slate-700">
+                                        {book.member?.Name}
+                                      </p>
+                                      <p className="text-[10px] text-slate-400">
+                                        {book.member?.Membership_No}
+                                      </p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-xs py-2 text-slate-600">
+                                    {format(new Date(book.checkIn), "LLL dd, y")}
+                                  </TableCell>
+                                  <TableCell className="text-xs py-2 text-slate-600">
+                                    {format(new Date(book.checkOut), "LLL dd, y")}
+                                  </TableCell>
+                                  <TableCell className="py-2">
+                                    <Badge
+                                      variant="secondary"
+                                      className={cn(
+                                        "capitalize text-[9px] font-semibold px-2 py-0 h-4 bg-slate-100 text-slate-600 border-none shadow-none"
+                                      )}
+                                    >
+                                      {book.paymentStatus.toLowerCase()}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="text-center py-10 text-slate-400"
+                                >
+                                  <div className="flex flex-col items-center gap-1.5">
+                                    <DoorOpen className="h-6 w-6 opacity-10" />
+                                    <p className="text-[11px]">No bookings found.</p>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="maintenance" className="mt-0 outline-none">
+                      <div className="border border-slate-100 rounded-lg overflow-hidden bg-white">
+                        <Table>
+                          <TableHeader className="bg-slate-50/50">
+                            <TableRow className="hover:bg-transparent border-slate-100">
+                              <TableHead className="text-[11px] h-9 text-slate-500">Date Range</TableHead>
+                              <TableHead className="text-[11px] h-9 text-slate-500">Reason</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {detailLogs?.outOfOrders?.length ? (
+                              detailLogs.outOfOrders.map((oo: any) => (
+                                <TableRow key={oo.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
+                                  <TableCell className="text-xs py-2 text-slate-600">
+                                    {format(new Date(oo.startDate), "LLL dd, y")} -{" "}
+                                    {format(new Date(oo.endDate), "LLL dd, y")}
+                                  </TableCell>
+                                  <TableCell className="text-xs py-2 text-slate-600">
+                                    <div className="flex items-center gap-1.5">
+                                      <Settings className="h-3 w-3 text-slate-300" />
+                                      {oo.reason}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={2}
+                                  className="text-center py-10 text-slate-400"
+                                >
+                                  <div className="flex flex-col items-center gap-1.5">
+                                    <Settings className="h-6 w-6 opacity-10" />
+                                    <p className="text-[11px]">No maintenance records.</p>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </TabsContent>
+                  </>
+                )}
+              </div>
+            </Tabs>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

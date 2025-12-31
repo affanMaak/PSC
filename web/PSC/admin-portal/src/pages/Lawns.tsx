@@ -16,10 +16,12 @@ import {
   Trash2,
   FileDown,
   Loader2,
-  CheckCircle2,
-  XCircle,
   Calendar,
   AlertCircle,
+  Sun,
+  Moon,
+  Sunset,
+  Clock,
 } from "lucide-react";
 import {
   Dialog,
@@ -41,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { exportLawnsReport } from "@/lib/pdfExport";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -49,6 +52,7 @@ import {
   updateLawn,
   deleteLawn,
   getLawnCategories,
+  reserveLawn,
 } from "../../config/apis";
 
 interface LawnOutOfOrder {
@@ -61,6 +65,52 @@ interface LawnOutOfOrder {
 interface LawnCategory {
   id: number;
   category: string;
+}
+
+interface LawnReservation {
+  id: number;
+  lawnId: number;
+  reservedFrom: string;
+  reservedTo: string;
+  timeSlot: string;
+  admin: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface LawnBooking {
+  id: number;
+  lawnId: number;
+  bookingFrom: string;
+  bookingTo: string;
+  timeSlot: string;
+  admin: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Lawn {
+  id: number;
+  description: string;
+  lawnCategoryId: number;
+  lawnCategory: LawnCategory;
+  minGuests: number;
+  maxGuests: number;
+  memberCharges: string;
+  guestCharges: string;
+  isActive: boolean;
+  isOutOfService: boolean;
+  outOfOrders: LawnOutOfOrder[];
+  reservations: LawnReservation[];
+  bookings: LawnBooking[];
 }
 
 interface LawnForm {
@@ -80,8 +130,8 @@ const initialFormState: LawnForm = {
   description: "",
   minGuests: "",
   maxGuests: "",
-  memberCharges: "",
-  guestCharges: "",
+  memberCharges: "0",
+  guestCharges: "0",
   isOutOfService: false,
   isActive: true,
   outOfOrders: [],
@@ -93,24 +143,80 @@ const initialOutOfOrderState: LawnOutOfOrder = {
   endDate: "",
 };
 
-// Helper function to check if lawn is currently out of service
-const isCurrentlyOutOfOrder = (outOfOrders: LawnOutOfOrder[]) => {
-  if (!outOfOrders || outOfOrders.length === 0) return false;
-  
-  const now = new Date();
-  return outOfOrders.some(period => {
-    const start = new Date(period.startDate);
-    const end = new Date(period.endDate);
-    return start <= now && end > now;
-  });
+const getUTCMidnight = (dateString: string) => {
+  const d = new Date(dateString);
+  d.setUTCHours(0, 0, 0, 0);
+  return d.getTime();
 };
 
-// Helper function to format date
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-// OutOfOrderPeriods Component
+const StatusIndicator = ({ isActive }: { isActive: boolean }) => {
+  return isActive ? (
+    <Badge className="bg-emerald-600">Active</Badge>
+  ) : (
+    <Badge variant="outline">Inactive</Badge>
+  );
+};
+
+const MaintenanceIndicator = ({
+  outOfOrders,
+  isOutOfService,
+}: {
+  outOfOrders: LawnOutOfOrder[];
+  isOutOfService: boolean;
+}) => {
+  const now = new Date();
+  now.setUTCHours(0, 0, 0, 0);
+  const today = now.getTime();
+
+  // All current or future periods
+  const activeAndFuture = outOfOrders
+    ?.filter((p) => new Date(p.endDate).getTime() >= today)
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()) || [];
+
+  const displayCount = 3;
+  const sliced = activeAndFuture.slice(0, displayCount);
+  const remaining = activeAndFuture.length - displayCount;
+
+  if (activeAndFuture.length === 0 && !isOutOfService) {
+    return <span className="text-[10px] text-muted-foreground italic">No maintenance</span>;
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {isOutOfService && !activeAndFuture.some(p => new Date(p.startDate).getTime() <= today && new Date(p.endDate).getTime() >= today) && (
+        <Badge variant="destructive" className="w-fit text-[10px] py-0 px-1.5 h-4">Manual Out of Service</Badge>
+      )}
+      {sliced.map((p, idx) => {
+        const isCurrent = new Date(p.startDate).getTime() <= today && new Date(p.endDate).getTime() >= today;
+        return (
+          <div key={idx} className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1">
+              <Badge
+                variant={isCurrent ? "destructive" : "secondary"}
+                className={`text-[9px] py-0 px-1 h-3.5 ${!isCurrent ? "bg-orange-50 text-orange-600 border-orange-100" : ""}`}
+              >
+                {isCurrent ? "Currently In Maintenance" : "Scheduled"}
+              </Badge>
+            </div>
+            <span className={`text-[10px] font-medium leading-tight ${isCurrent ? "text-red-600" : "text-muted-foreground"}`}>
+              {p.reason} ({formatDate(p.startDate)} - {formatDate(p.endDate)})
+            </span>
+          </div>
+        );
+      })}
+      {remaining > 0 && (
+        <span className="text-[9px] text-muted-foreground font-medium pl-1">
+          + {remaining} more maintenance periods
+        </span>
+      )}
+    </div>
+  );
+};
+
 const OutOfOrderPeriods = ({
   periods,
   onAddPeriod,
@@ -125,138 +231,49 @@ const OutOfOrderPeriods = ({
   onNewPeriodChange: (period: LawnOutOfOrder) => void;
 }) => {
   return (
-    <div className="space-y-6 p-6 rounded-xl border bg-gradient-to-br dark:from-blue-950/40 dark:to-teal-950/30">
+    <div className="space-y-4 p-4 rounded-lg border bg-slate-50/50">
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-orange-600" />
-            Out of Service Periods
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Add multiple maintenance periods (e.g., Nov 9-10, Dec 9-10)
-          </p>
-        </div>
-        <Badge variant={periods.length > 0 ? "destructive" : "outline"}>
-          {periods.length} period(s)
-        </Badge>
+        <Label className="text-base font-semibold flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          Maintenance Periods
+        </Label>
+        <Badge variant="outline">{periods.length} Saved</Badge>
       </div>
 
-      {/* Current periods */}
       {periods.length > 0 && (
-        <div className="space-y-3">
-          <Label>Added Maintenance Periods</Label>
+        <div className="space-y-2">
           {periods.map((period, index) => (
-            <div key={index} className="p-3 border rounded-lg flex justify-between items-center bg-orange-50/50">
+            <div key={index} className="flex justify-between items-center bg-white p-2 border rounded text-xs">
               <div>
-                <div className="font-medium text-orange-800">
-                  {formatDate(period.startDate)} - {formatDate(period.endDate)}
-                </div>
-                <div className="text-sm text-orange-600">
-                  {period.reason}
-                </div>
+                <span className="font-bold text-orange-800">{formatDate(period.startDate)} - {formatDate(period.endDate)}</span>
+                <p className="text-muted-foreground italic">{period.reason}</p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onRemovePeriod(index)}
-                className="text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onRemovePeriod(index)}>
+                <Trash2 className="h-3 w-3" />
               </Button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Add new period form */}
-      <div className="p-4 border-2 border-orange-300 rounded-xl bg-orange-50/80 backdrop-blur">
-        <h4 className="font-semibold text-orange-800 flex items-center gap-2 mb-4">
-          <Plus className="h-5 w-5" /> Add New Maintenance Period
-        </h4>
-        <div className="space-y-4">
-          <div>
-            <Label>Reason for Maintenance *</Label>
-            <Textarea
-              placeholder="e.g. Renovation, water damage, landscaping..."
-              className="mt-2"
-              value={newPeriod.reason}
-              onChange={(e) => onNewPeriodChange({ ...newPeriod, reason: e.target.value })}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Start Date *</Label>
-              <Input
-                type="date"
-                className="mt-2"
-                value={newPeriod.startDate}
-                onChange={(e) => onNewPeriodChange({ ...newPeriod, startDate: e.target.value })}
-                min={new Date().toISOString().split("T")[0]}
-              />
-            </div>
-            <div>
-              <Label>End Date *</Label>
-              <Input
-                type="date"
-                className="mt-2"
-                value={newPeriod.endDate}
-                onChange={(e) => onNewPeriodChange({ ...newPeriod, endDate: e.target.value })}
-                min={newPeriod.startDate || new Date().toISOString().split("T")[0]}
-              />
-            </div>
-          </div>
-          {newPeriod.startDate && newPeriod.endDate && new Date(newPeriod.startDate) > new Date(newPeriod.endDate) && (
-            <p className="text-red-600 text-sm">
-              Start date cannot be after end date
-            </p>
-          )}
-          <Button
-            type="button"
-            onClick={onAddPeriod}
-            className="w-full"
-            variant="outline"
-            disabled={!newPeriod.reason || !newPeriod.startDate || !newPeriod.endDate}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Maintenance Period
-          </Button>
+      <div className="grid grid-cols-2 gap-3 p-3 border-2 border-dashed rounded-md bg-orange-50/30">
+        <div className="col-span-2">
+          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Reason</Label>
+          <Input value={newPeriod.reason} onChange={(e) => onNewPeriodChange({ ...newPeriod, reason: e.target.value })} placeholder="Maintenance Reason" />
         </div>
+        <div>
+          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Start Date</Label>
+          <Input type="date" value={newPeriod.startDate} onChange={(e) => onNewPeriodChange({ ...newPeriod, startDate: e.target.value })} />
+        </div>
+        <div>
+          <Label className="text-[10px] uppercase font-bold text-muted-foreground">End Date</Label>
+          <Input type="date" value={newPeriod.endDate} onChange={(e) => onNewPeriodChange({ ...newPeriod, endDate: e.target.value })} />
+        </div>
+        <Button size="sm" className="col-span-2 h-8" variant="secondary" onClick={onAddPeriod} disabled={!newPeriod.reason || !newPeriod.startDate || !newPeriod.endDate}>
+          <Plus className="h-3 w-3 mr-1" /> Add Period
+        </Button>
       </div>
     </div>
-  );
-};
-
-// Status Indicator Component
-const StatusIndicator = ({ 
-  outOfOrders,
-  isActive 
-}: { 
-  outOfOrders: LawnOutOfOrder[];
-  isActive: boolean;
-}) => {
-  const currentlyOutOfOrder = isCurrentlyOutOfOrder(outOfOrders);
-  const hasFuturePeriods = outOfOrders?.some(period => new Date(period.startDate) > new Date());
-
-  if (currentlyOutOfOrder) {
-    return (
-      <Badge variant="destructive" className="font-medium">
-        Currently Out of Service
-      </Badge>
-    );
-  }
-
-  if (hasFuturePeriods) {
-    return (
-      <Badge variant="outline" className="border-orange-300 text-orange-700">
-        Scheduled Maintenance
-      </Badge>
-    );
-  }
-
-  return (
-    <>
-      {isActive ? <Badge className="bg-emerald-600 text-white font-medium">Active</Badge>: <Badge variant="outline" className="bg-gray-500 text-white font-medium">InActive</Badge>}
-    </>
   );
 };
 
@@ -267,508 +284,184 @@ export default function Lawns() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editLawn, setEditLawn] = useState<any>(null);
   const [deleteLawnItem, setDeleteLawnItem] = useState<any>(null);
+  const [reserveDialog, setReserveDialog] = useState(false);
+
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [selectedLawns, setSelectedLawns] = useState<number[]>([]);
+  const [reserveDates, setReserveDates] = useState({
+    from: new Date().toISOString().split("T")[0],
+    to: new Date().toISOString().split("T")[0],
+  });
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState("MORNING");
 
   const [form, setForm] = useState<LawnForm>(initialFormState);
   const [newOutOfOrder, setNewOutOfOrder] = useState<LawnOutOfOrder>(initialOutOfOrderState);
-  
-  const [editForm, setEditForm] = useState<LawnForm & { id: string }>({
-    ...initialFormState,
-    id: "",
-  });
+  const [editForm, setEditForm] = useState<any>({ ...initialFormState, id: "" });
   const [editNewOutOfOrder, setEditNewOutOfOrder] = useState<LawnOutOfOrder>(initialOutOfOrderState);
 
-  const { data: lawns = [], isLoading: isLoadingLawns } = useQuery({
-    queryKey: ["lawns"],
-    queryFn: getLawns,
-  });
-
-  const { data: lawnCategories = [], isLoading: isLoadingCategories } = useQuery({
-    queryKey: ["lawnCategories"],
-    queryFn: getLawnCategories,
-  });
+  const { data: lawns = [], isLoading: isLoadingLawns } = useQuery({ queryKey: ["lawns"], queryFn: getLawns });
+  const { data: lawnCategories = [] } = useQuery({ queryKey: ["lawnCategories"], queryFn: getLawnCategories });
 
   const createMutation = useMutation({
-    mutationFn: createLawn,
+    mutationFn: (data: any) => createLawn({ ...data, lawnCategoryId: Number(data.lawnCategoryId) }),
     onSuccess: () => {
-      toast({ title: "Lawn created successfully" });
+      toast({ title: "Lawn created" });
       queryClient.invalidateQueries({ queryKey: ["lawns"] });
       setIsAddOpen(false);
       setForm(initialFormState);
-      setNewOutOfOrder(initialOutOfOrderState);
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.cause || error.message || "Failed to create lawn";
-      toast({ 
-        title: "Failed to create lawn", 
-        description: errorMessage,
-        variant: "destructive" 
-      });
-    },
+    onError: (err: any) => toast({ title: "Failed to create", description: err.message, variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
-    mutationFn: updateLawn,
+    mutationFn: (data: any) => updateLawn({ ...data, id: Number(data.id), lawnCategoryId: Number(data.lawnCategoryId) }),
     onSuccess: () => {
-      toast({ title: "Lawn updated successfully" });
+      toast({ title: "Lawn updated" });
       queryClient.invalidateQueries({ queryKey: ["lawns"] });
       setEditLawn(null);
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.cause || error.message || "Failed to update lawn";
-      toast({ 
-        title: "Failed to update lawn", 
-        description: errorMessage,
-        variant: "destructive" 
-      });
-    },
+    onError: (err: any) => toast({ title: "Failed to update", description: err.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteLawn,
     onSuccess: () => {
-      toast({ title: "Lawn deleted successfully" });
+      toast({ title: "Deleted" });
       queryClient.invalidateQueries({ queryKey: ["lawns"] });
       setDeleteLawnItem(null);
     },
-    onError: () => toast({ title: "Failed to delete lawn", variant: "destructive" }),
   });
 
-  const categories = useMemo(() => {
-    const cats = lawns.map((l: any) => l.lawnCategory?.category).filter(Boolean);
-    return Array.from(new Set(cats));
-  }, [lawns]);
-
-  const filteredLawns = useMemo(() => {
-    return categoryFilter === "ALL"
-      ? lawns
-      : lawns.filter((l: any) => l.lawnCategory?.category === categoryFilter);
-  }, [lawns, categoryFilter]);
+  const reserveMutation = useMutation({
+    mutationFn: (data: any) => reserveLawn(data.lawnIds, data.reserve, data.timeSlot, data.reserveFrom, data.reserveTo),
+    onSuccess: (data) => {
+      toast({ title: "Success", description: data.message });
+      queryClient.invalidateQueries({ queryKey: ["lawns"] });
+    },
+    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
 
   useEffect(() => {
     if (editLawn) {
-      const outOfOrders = editLawn.outOfOrders?.map((period: any) => ({
-        id: period.id,
-        reason: period.reason || "",
-        startDate: period.startDate?.split("T")[0] || "",
-        endDate: period.endDate?.split("T")[0] || "",
-      })) || [];
-
       setEditForm({
-        id: editLawn.id.toString(),
-        lawnCategoryId: editLawn.lawnCategoryId?.toString() || "",
+        id: editLawn.id,
+        lawnCategoryId: editLawn.lawnCategoryId.toString(),
         description: editLawn.description || "",
-        minGuests: editLawn.minGuests?.toString() || "",
-        maxGuests: editLawn.maxGuests?.toString() || "",
-        memberCharges: editLawn.memberCharges?.toString() || "",
-        guestCharges: editLawn.guestCharges?.toString() || "",
-        isOutOfService: editLawn.isOutOfService || false,
-        outOfOrders: outOfOrders,
+        minGuests: editLawn.minGuests.toString(),
+        maxGuests: editLawn.maxGuests.toString(),
+        memberCharges: editLawn.memberCharges.toString(),
+        guestCharges: editLawn.guestCharges.toString(),
         isActive: editLawn.isActive,
+        isOutOfService: editLawn.isOutOfService,
+        outOfOrders: editLawn.outOfOrders?.map((p: any) => ({
+          ...p,
+          startDate: p.startDate.split("T")[0],
+          endDate: p.endDate.split("T")[0],
+        })) || [],
       });
-      setEditNewOutOfOrder(initialOutOfOrderState);
     }
   }, [editLawn]);
 
-  // Add new out-of-order period to form
-  const handleAddOutOfOrder = () => {
-    if (!newOutOfOrder.reason || !newOutOfOrder.startDate || !newOutOfOrder.endDate) {
-      toast({
-        title: "Missing information",
-        description: "Please fill all fields for maintenance period",
-        variant: "destructive",
-      });
-      return;
+  useEffect(() => {
+    if (reserveDialog && reserveDates.from && reserveDates.to && selectedTimeSlot) {
+      const selectedFrom = getUTCMidnight(reserveDates.from);
+      const selectedTo = getUTCMidnight(reserveDates.to);
+      const reserved = lawns.filter((l: Lawn) =>
+        l.reservations?.some(r =>
+          getUTCMidnight(r.reservedFrom) === selectedFrom &&
+          getUTCMidnight(r.reservedTo) === selectedTo &&
+          r.timeSlot === selectedTimeSlot
+        )
+      ).map((l: Lawn) => l.id);
+      setSelectedLawns(reserved);
     }
+  }, [reserveDialog, reserveDates, selectedTimeSlot, lawns]);
 
-    if (new Date(newOutOfOrder.startDate) > new Date(newOutOfOrder.endDate)) {
-      toast({
-        title: "Invalid date range",
-        description: "End date must be after start date",
-        variant: "destructive",
-      });
-      return;
-    }
+  const categories = useMemo(() => Array.from(new Set(lawns.map((l: any) => l.lawnCategory?.category).filter(Boolean))), [lawns]);
+  const filteredLawns = useMemo(() => categoryFilter === "ALL" ? lawns : lawns.filter((l: any) => l.lawnCategory?.category === categoryFilter), [lawns, categoryFilter]);
 
-    setForm(prev => ({
-      ...prev,
-      outOfOrders: [...prev.outOfOrders, { ...newOutOfOrder }],
-      isOutOfService: true, // Auto-set to out of service when periods are added
-    }));
-
-    setNewOutOfOrder(initialOutOfOrderState);
+  const getTimeSlotIcon = (slot: string) => {
+    if (slot === "MORNING") return <Sun className="h-4 w-4 text-yellow-500" />;
+    if (slot === "EVENING") return <Sunset className="h-4 w-4 text-orange-500" />;
+    return <Moon className="h-4 w-4 text-blue-500" />;
   };
 
-  const handleRemoveOutOfOrder = (index: number) => {
-    const newPeriods = form.outOfOrders.filter((_, i) => i !== index);
-    setForm(prev => ({
-      ...prev,
-      outOfOrders: newPeriods,
-      isOutOfService: newPeriods.length > 0,
-    }));
-  };
-
-  // Edit out-of-order handlers
-  const handleAddEditOutOfOrder = () => {
-    if (!editNewOutOfOrder.reason || !editNewOutOfOrder.startDate || !editNewOutOfOrder.endDate) {
-      toast({
-        title: "Missing information",
-        description: "Please fill all fields for maintenance period",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (new Date(editNewOutOfOrder.startDate) > new Date(editNewOutOfOrder.endDate)) {
-      toast({
-        title: "Invalid date range",
-        description: "End date must be after start date",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setEditForm(prev => ({
-      ...prev,
-      outOfOrders: [...prev.outOfOrders, { ...editNewOutOfOrder }],
-      isOutOfService: true,
-    }));
-
-    setEditNewOutOfOrder(initialOutOfOrderState);
-  };
-
-  const handleRemoveEditOutOfOrder = (index: number) => {
-    const newPeriods = editForm.outOfOrders.filter((_, i) => i !== index);
-    setEditForm(prev => ({
-      ...prev,
-      outOfOrders: newPeriods,
-      isOutOfService: newPeriods.length > 0,
-    }));
-  };
-
-  const handleCreate = useCallback(() => {
-    if (!form.lawnCategoryId || !form.minGuests || !form.maxGuests) {
-      toast({ title: "Category, Min & Max Guests are required", variant: "destructive" });
-      return;
-    }
-
-    // Validate out-of-order periods
-    for (const period of form.outOfOrders) {
-      if (!period.reason.trim()) {
-        toast({
-          title: "Reason required",
-          description: "Please provide a reason for each maintenance period",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (new Date(period.startDate) > new Date(period.endDate)) {
-        toast({
-          title: "Invalid date range",
-          description: "End date must be after start date for all maintenance periods",
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-
-    const payload = {
-      lawnCategoryId: form.lawnCategoryId,
-      description: form.description,
-      minGuests: form.minGuests,
-      maxGuests: form.maxGuests,
-      memberCharges: form.memberCharges || "0",
-      guestCharges: form.guestCharges || "0",
-      outOfOrders: form.outOfOrders,
-      isActive: form.isActive
-    };
-
-    createMutation.mutate(payload);
-  }, [form, createMutation, toast]);
-
-  const handleUpdate = useCallback(() => {
-    if (!editForm.lawnCategoryId || !editForm.minGuests || !editForm.maxGuests) {
-      toast({ title: "Category, Min & Max Guests are required", variant: "destructive" });
-      return;
-    }
-
-    // Validate out-of-order periods
-    for (const period of editForm.outOfOrders) {
-      if (!period.reason.trim()) {
-        toast({
-          title: "Reason required",
-          description: "Please provide a reason for each maintenance period",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (new Date(period.startDate) > new Date(period.endDate)) {
-        toast({
-          title: "Invalid date range",
-          description: "End date must be after start date for all maintenance periods",
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-
-    const payload = {
-      id: editForm.id,
-      lawnCategoryId: editForm.lawnCategoryId,
-      description: editForm.description,
-      minGuests: editForm.minGuests,
-      maxGuests: editForm.maxGuests,
-      memberCharges: editForm.memberCharges,
-      guestCharges: editForm.guestCharges,
-      outOfOrders: editForm.outOfOrders,
-      isActive: editForm.isActive
-    };
-
-    updateMutation.mutate(payload);
-  }, [editForm, updateMutation, toast]);
-
-  const resetAddForm = () => {
-    setForm(initialFormState);
-    setNewOutOfOrder(initialOutOfOrderState);
+  const handleBulkReserve = () => {
+    if (!reserveDates.from || !reserveDates.to) return;
+    const sFrom = getUTCMidnight(reserveDates.from);
+    const sTo = getUTCMidnight(reserveDates.to);
+    const currentlyReserved = lawns.filter((l: Lawn) => l.reservations?.some(r => getUTCMidnight(r.reservedFrom) === sFrom && getUTCMidnight(r.reservedTo) === sTo && r.timeSlot === selectedTimeSlot)).map((l: Lawn) => l.id);
+    const toReserve = selectedLawns.filter(id => !currentlyReserved.includes(id));
+    const toUnreserve = currentlyReserved.filter(id => !selectedLawns.includes(id));
+    if (toReserve.length > 0) reserveMutation.mutate({ lawnIds: toReserve, reserve: true, reserveFrom: reserveDates.from, reserveTo: reserveDates.to, timeSlot: selectedTimeSlot });
+    if (toUnreserve.length > 0) reserveMutation.mutate({ lawnIds: toUnreserve, reserve: false, reserveFrom: reserveDates.from, reserveTo: reserveDates.to, timeSlot: selectedTimeSlot });
   };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Manage Lawns</h1>
-          <p className="text-muted-foreground">Configure outdoor event spaces</p>
+          <h1 className="text-4xl font-bold">Lawn Management</h1>
+          <p className="text-muted-foreground">Manage lawn categories, status, and reservations</p>
         </div>
-
-        <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => exportLawnsReport(lawns)}>
-            <FileDown className="h-4 w-4 mr-2" /> Export PDF
+        <div className="flex gap-3">
+          <Button variant="outline" className="gap-2 border-orange-200 bg-orange-50 text-orange-700" onClick={() => setReserveDialog(true)}>
+            <Calendar className="h-4 w-4" /> Reservations
           </Button>
-
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder="Filter by category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Categories</SelectItem>
-              {categories.map((cat: any) => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* ADD DIALOG */}
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-5 w-5" /> Add Lawn
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-2xl">Add New Lawn</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6 py-6">
-                <div>
-                  <Label>Lawn Category *</Label>
-                  {isLoadingCategories ? (
-                    <div className="h-10 bg-muted animate-pulse rounded-md mt-2" />
-                  ) : (
-                    <Select value={form.lawnCategoryId} onValueChange={(v) => setForm(prev => ({ ...prev, lawnCategoryId: v }))}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select lawn category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {lawnCategories.map((cat: LawnCategory) => (
-                          <SelectItem key={cat.id} value={cat.id.toString()}>
-                            {cat.category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <Label>Min Guests *</Label>
-                    <Input 
-                      type="number" 
-                      value={form.minGuests} 
-                      onChange={e => setForm(prev => ({ ...prev, minGuests: e.target.value }))} 
-                      placeholder="100" 
-                    />
-                  </div>
-                  <div>
-                    <Label>Max Guests *</Label>
-                    <Input 
-                      type="number" 
-                      value={form.maxGuests} 
-                      onChange={e => setForm(prev => ({ ...prev, maxGuests: e.target.value }))} 
-                      placeholder="600" 
-                    />
-                  </div>
-                  <div>
-                    <Label>Member Charges (PKR)</Label>
-                    <Input 
-                      type="number" 
-                      value={form.memberCharges} 
-                      onChange={e => setForm(prev => ({ ...prev, memberCharges: e.target.value }))} 
-                      placeholder="35000" 
-                    />
-                  </div>
-                  <div>
-                    <Label>Guest Charges (PKR)</Label>
-                    <Input 
-                      type="number" 
-                      value={form.guestCharges} 
-                      onChange={e => setForm(prev => ({ ...prev, guestCharges: e.target.value }))} 
-                      placeholder="45000" 
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Description</Label>
-                  <Textarea 
-                    value={form.description} 
-                    onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))} 
-                    rows={4} 
-                    placeholder="Beautiful green lawn..." 
-                  />
-                </div>
-
-                {/* Out of Order Periods */}
-                <OutOfOrderPeriods
-                  periods={form.outOfOrders}
-                  onAddPeriod={handleAddOutOfOrder}
-                  onRemovePeriod={handleRemoveOutOfOrder}
-                  newPeriod={newOutOfOrder}
-                  onNewPeriodChange={setNewOutOfOrder}
-                />
-
-                {/* Status Toggle (for backward compatibility) */}
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50">
-                  <div>
-                    <Label className="text-base font-medium">Overall Status</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {form.outOfOrders.length > 0
-                        ? `Lawn has ${form.outOfOrders.length} maintenance period(s)`
-                        : "Lawn is active and available"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Label>Active</Label>
-                    <Switch
-                      checked={form.isActive}
-                      onCheckedChange={(checked) => {
-                        setForm(prev => ({ 
-                          ...prev, 
-                          isActive: checked,
-                          isOutOfService: !checked,
-                          outOfOrders: checked ? [] : prev.outOfOrders
-                        }));
-                      }}
-                      disabled={form.outOfOrders.length > 0}
-                    />
-                    {form.outOfOrders.length > 0 && (
-                      <p className="text-xs text-orange-600">
-                        Clear all periods first to activate
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsAddOpen(false);
-                    resetAddForm();
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleCreate} disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Creating..." : "Create Lawn"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => { setForm(initialFormState); setIsAddOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" /> Add Lawn
+          </Button>
         </div>
       </div>
 
-      {/* TABLE */}
-      <Card className="shadow-lg">
+      <div className="flex justify-end gap-4">
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-64"><SelectValue placeholder="All Categories" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Categories</SelectItem>
+            {categories.map((c: any) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Button variant="outline" onClick={() => exportLawnsReport(lawns)}><FileDown className="h-4 w-4 mr-2" /> Export</Button>
+      </div>
+
+      <Card>
         <CardContent className="p-0">
-          {isLoadingLawns ? (
-            <div className="flex justify-center py-32">
-              <Loader2 className="h-12 w-12 animate-spin" />
-            </div>
-          ) : filteredLawns.length === 0 ? (
-            <div className="text-center py-32 text-muted-foreground text-lg">No lawns found</div>
-          ) : (
+          {isLoadingLawns ? <div className="p-20 text-center"><Loader2 className="animate-spin inline mr-2" /> Loading...</div> : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
+                <TableRow>
                   <TableHead>Category</TableHead>
-                  <TableHead>Description</TableHead>
                   <TableHead>Capacity</TableHead>
-                  <TableHead>Member Rate</TableHead>
-                  <TableHead>Guest Rate</TableHead>
+                  <TableHead>Charges (Member/Guest)</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Maintenance Periods</TableHead>
+                  <TableHead>Maintenance</TableHead>
+                  <TableHead>Upcoming Reservations</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLawns.map((lawn: any) => (
-                  <TableRow key={lawn.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-semibold">{lawn.lawnCategory?.category || "—"}</TableCell>
-                    <TableCell className="max-w-md truncate">{lawn.description}</TableCell>
-                    <TableCell>{lawn.minGuests} - {lawn.maxGuests}</TableCell>
-                    <TableCell>PKR {Number(lawn.memberCharges).toLocaleString()}</TableCell>
-                    <TableCell>PKR {Number(lawn.guestCharges).toLocaleString()}</TableCell>
+                {filteredLawns.map((l: any) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="font-semibold">{l.lawnCategory?.category}</TableCell>
+                    <TableCell>{l.minGuests} - {l.maxGuests}</TableCell>
+                    <TableCell>PKR {Number(l.memberCharges).toLocaleString()} / {Number(l.guestCharges).toLocaleString()}</TableCell>
+                    <TableCell><StatusIndicator isActive={l.isActive} /></TableCell>
+                    <TableCell><MaintenanceIndicator outOfOrders={l.outOfOrders} isOutOfService={l.isOutOfService} /></TableCell>
                     <TableCell>
-                      <StatusIndicator 
-                        outOfOrders={lawn.outOfOrders || []} 
-                        isActive={lawn.isActive} 
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {lawn.outOfOrders && lawn.outOfOrders.length > 0 ? (
-                        <div className="space-y-1 max-w-xs">
-                          {lawn.outOfOrders.slice(0, 2).map((period: any, idx: number) => (
-                            <div key={idx} className="text-xs bg-orange-50 px-2 py-1 rounded border border-orange-200">
-                              <div className="font-medium text-orange-700">
-                                {formatDate(period.startDate)} - {formatDate(period.endDate)}
-                              </div>
-                              <div className="text-orange-600 truncate">
-                                {period.reason}
-                              </div>
+                      <div className="flex flex-col gap-1">
+                        {l.reservations?.filter((r: any) => getUTCMidnight(r.reservedFrom) >= new Date().setUTCHours(0, 0, 0, 0))
+                          .sort((a: any, b: any) => getUTCMidnight(a.reservedFrom) - getUTCMidnight(b.reservedFrom))
+                          .slice(0, 2).map((r: any) => (
+                            <div key={r.id} className="text-[10px] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-1">
+                              {getTimeSlotIcon(r.timeSlot)} {formatDate(r.reservedFrom)} - {formatDate(r.reservedTo)}
                             </div>
                           ))}
-                          {lawn.outOfOrders.length > 2 && (
-                            <div className="text-xs text-muted-foreground">
-                              +{lawn.outOfOrders.length - 2} more periods
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">None</span>
-                      )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => setEditLawn(lawn)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeleteLawnItem(lawn)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => setEditLawn(l)}><Edit className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => setDeleteLawnItem(l)}><Trash2 className="h-4 w-4" /></Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -778,144 +471,317 @@ export default function Lawns() {
         </CardContent>
       </Card>
 
-      {/* EDIT DIALOG */}
-      <Dialog open={!!editLawn} onOpenChange={() => setEditLawn(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">Edit Lawn: {editLawn?.lawnCategory?.category}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-6">
+      {/* Reservation Dialog */}
+      <Dialog open={reserveDialog} onOpenChange={(open) => {
+        setReserveDialog(open);
+        if (!open) setSelectedLawns([]);
+      }}>
+        <DialogContent className="max-w-7xl">
+          <DialogHeader><DialogTitle>Bulk Reservations</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-3 gap-4 p-4 bg-muted/40 rounded-lg">
             <div>
-              <Label>Lawn Category *</Label>
-              <Select value={editForm.lawnCategoryId} onValueChange={v => setEditForm(prev => ({ ...prev, lawnCategoryId: v }))}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
+              <Label className="text-xs font-semibold">From Date</Label>
+              <Input
+                type="date"
+                min={new Date().toISOString().split('T')[0]}
+                value={reserveDates.from}
+                onChange={e => setReserveDates(p => ({ ...p, from: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">To Date (Checkout)</Label>
+              <Input
+                type="date"
+                min={reserveDates.from || new Date().toISOString().split('T')[0]}
+                value={reserveDates.to}
+                onChange={e => setReserveDates(p => ({ ...p, to: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Time Slot</Label>
+              <Select value={selectedTimeSlot} onValueChange={setSelectedTimeSlot}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {lawnCategories.map((cat: LawnCategory) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>{cat.category}</SelectItem>
-                  ))}
+                  <SelectItem value="MORNING">Morning (8:00 AM - 1:00 PM)</SelectItem>
+                  <SelectItem value="EVENING">Evening (2:00 PM - 7:00 PM)</SelectItem>
+                  <SelectItem value="NIGHT">Night (8:00 PM - 1:00 AM)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <Label>Min Guests *</Label>
-                <Input 
-                  type="number" 
-                  value={editForm.minGuests} 
-                  onChange={e => setEditForm(prev => ({ ...prev, minGuests: e.target.value }))} 
-                />
-              </div>
-              <div>
-                <Label>Max Guests *</Label>
-                <Input 
-                  type="number" 
-                  value={editForm.maxGuests} 
-                  onChange={e => setEditForm(prev => ({ ...prev, maxGuests: e.target.value }))} 
-                />
-              </div>
-              <div>
-                <Label>Member Charges</Label>
-                <Input 
-                  type="number" 
-                  value={editForm.memberCharges} 
-                  onChange={e => setEditForm(prev => ({ ...prev, memberCharges: e.target.value }))} 
-                />
-              </div>
-              <div>
-                <Label>Guest Charges</Label>
-                <Input 
-                  type="number" 
-                  value={editForm.guestCharges} 
-                  onChange={e => setEditForm(prev => ({ ...prev, guestCharges: e.target.value }))} 
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label>Description</Label>
-              <Textarea 
-                value={editForm.description} 
-                onChange={e => setEditForm(prev => ({ ...prev, description: e.target.value }))} 
-                rows={4} 
-              />
-            </div>
-
-            {/* Edit Out of Order Periods */}
-            <OutOfOrderPeriods
-              periods={editForm.outOfOrders}
-              onAddPeriod={handleAddEditOutOfOrder}
-              onRemovePeriod={handleRemoveEditOutOfOrder}
-              newPeriod={editNewOutOfOrder}
-              onNewPeriodChange={setEditNewOutOfOrder}
-            />
-
-            {/* Status Toggle */}
-            <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50">
-              <div>
-                <Label className="text-base font-medium">Overall Status</Label>
-                <p className="text-sm text-muted-foreground">
-                  {editForm.outOfOrders.length > 0
-                    ? `Lawn has ${editForm.outOfOrders.length} maintenance period(s)`
-                    : "Lawn is active and available"}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Label>Active</Label>
-                <Switch
-                  checked={editForm.isActive}
-                  onCheckedChange={(checked) => {
-                    setEditForm(prev => ({ 
-                      ...prev, 
-                      isActive: checked,
-                      isOutOfService: !checked,
-                      outOfOrders: checked ? [] : prev.outOfOrders
-                    }));
-                  }}
-                  disabled={editForm.outOfOrders.length > 0}
-                />
-                {editForm.outOfOrders.length > 0 && (
-                  <p className="text-xs text-orange-600">
-                    Clear all periods first to activate
-                  </p>
-                )}
-              </div>
-            </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditLawn(null)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? "Updating..." : "Update Lawn"}
+          {reserveDates.from && reserveDates.to && getUTCMidnight(reserveDates.from) >= getUTCMidnight(reserveDates.to) && (
+            <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-md flex items-center gap-2 text-red-700 text-sm">
+              <AlertCircle className="h-4 w-4" />
+              <span>Checkout date must be after the start date.</span>
+            </div>
+          )}
+
+          <div className="max-h-[50vh] overflow-auto border rounded-md">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-12 text-center">
+                    <Checkbox
+                      checked={selectedLawns.length === filteredLawns.length && filteredLawns.length > 0}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          const nonConflicted = filteredLawns
+                            .filter(l => {
+                              const mFrom = getUTCMidnight(reserveDates.from);
+                              const mTo = getUTCMidnight(reserveDates.to);
+                              const hasMaintenance = l.outOfOrders?.some(oo => {
+                                const s = getUTCMidnight(oo.startDate);
+                                const e = getUTCMidnight(oo.endDate);
+                                return s < mTo && e > mFrom;
+                              });
+                              const hasBooking = l.bookings?.some(b => {
+                                const d = getUTCMidnight(b.bookingDate);
+                                return d >= mFrom && d < mTo && b.bookingTime === selectedTimeSlot;
+                              });
+                              return !hasMaintenance && !hasBooking;
+                            })
+                            .map(l => l.id);
+                          setSelectedLawns(nonConflicted);
+                        } else {
+                          setSelectedLawns([]);
+                        }
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead>Lawn Detail</TableHead>
+                  <TableHead>Availability Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLawns.map((l: Lawn) => {
+                  const mFrom = getUTCMidnight(reserveDates.from);
+                  const mTo = getUTCMidnight(reserveDates.to);
+
+                  const activeReservation = l.reservations?.find(r =>
+                    getUTCMidnight(r.reservedFrom) === mFrom &&
+                    getUTCMidnight(r.reservedTo) === mTo &&
+                    r.timeSlot === selectedTimeSlot
+                  );
+
+                  const overlappingReservation = l.reservations?.find(r => {
+                    const rFrom = getUTCMidnight(r.reservedFrom);
+                    const rTo = getUTCMidnight(r.reservedTo);
+                    return rFrom < mTo && rTo > mFrom && r.timeSlot === selectedTimeSlot &&
+                      !(rFrom === mFrom && rTo === mTo);
+                  });
+
+                  const hasMaintenance = l.outOfOrders?.find(oo => {
+                    const s = getUTCMidnight(oo.startDate);
+                    const e = getUTCMidnight(oo.endDate);
+                    return s < mTo && e > mFrom;
+                  });
+
+                  const hasBooking = l.bookings?.find(b => {
+                    const d = getUTCMidnight(b.bookingFrom);
+                    return d >= mFrom && d < mTo && b.timeSlot === selectedTimeSlot;
+                  });
+
+                  const isConflicted = hasMaintenance || hasBooking || overlappingReservation;
+                  const isAlreadySelected = activeReservation;
+
+                  return (
+                    <TableRow key={l.id} className={activeReservation ? "bg-blue-50/50" : isConflicted ? "bg-red-50/30 opacity-80" : ""}>
+                      <TableCell className="text-center">
+                        <Checkbox
+                          disabled={!!isConflicted && !activeReservation}
+                          checked={selectedLawns.includes(l.id)}
+                          onCheckedChange={checked => setSelectedLawns(prev => checked ? [...prev, l.id] : prev.filter(id => id !== l.id))}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{l.lawnCategory?.category}</div>
+                        <div className="text-[10px] text-muted-foreground">{l.description || "No description"}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {activeReservation && (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200 w-fit">Reserved by you</Badge>
+                          )}
+                          {hasMaintenance && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-red-600 font-medium">
+                              <AlertCircle className="h-3 w-3" />
+                              Maintenance: {hasMaintenance.reason}
+                            </div>
+                          )}
+                          {hasBooking && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-red-600 font-medium">
+                              <AlertCircle className="h-3 w-3" />
+                              Booked by member
+                            </div>
+                          )}
+                          {overlappingReservation && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-red-600 font-medium">
+                              <AlertCircle className="h-3 w-3" />
+                              Overlapping Reservation
+                            </div>
+                          )}
+                          {!isConflicted && !activeReservation && (
+                            <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50/50 w-fit">Available</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filteredLawns.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No lawns found match the criteria.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter className="gap-2">
+            <div className="flex-1 text-xs text-muted-foreground flex items-center">
+              {selectedLawns.length > 0 && <span>{selectedLawns.length} lawn(s) selected for action.</span>}
+            </div>
+            <Button variant="outline" onClick={() => setReserveDialog(false)}>Close</Button>
+            <Button
+              onClick={handleBulkReserve}
+              disabled={reserveMutation.isPending || selectedLawns.length === 0 || (reserveDates.from && reserveDates.to && getUTCMidnight(reserveDates.from) >= getUTCMidnight(reserveDates.to))}
+            >
+              {reserveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirm Action
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* DELETE DIALOG */}
+      {/* Add Dialog */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="max-w-7xl h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Add New Lawn</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="col-span-2">
+              <Label>Category</Label>
+              <Select value={form.lawnCategoryId} onValueChange={v => setForm(p => ({ ...p, lawnCategoryId: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {lawnCategories.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.category}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Min Guests</Label>
+              <Input type="number" value={form.minGuests} onChange={e => setForm(p => ({ ...p, minGuests: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Max Guests</Label>
+              <Input type="number" value={form.maxGuests} onChange={e => setForm(p => ({ ...p, maxGuests: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Member Price</Label>
+              <Input type="number" value={form.memberCharges} onChange={e => setForm(p => ({ ...p, memberCharges: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Guest Price</Label>
+              <Input type="number" value={form.guestCharges} onChange={e => setForm(p => ({ ...p, guestCharges: e.target.value }))} />
+            </div>
+            <div className="col-span-2">
+              <Label>Description</Label>
+              <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
+            </div>
+            <div className="col-span-2">
+              <OutOfOrderPeriods
+                periods={form.outOfOrders}
+                newPeriod={newOutOfOrder}
+                onNewPeriodChange={setNewOutOfOrder}
+                onAddPeriod={() => {
+                  setForm(p => ({ ...p, outOfOrders: [...p.outOfOrders, newOutOfOrder] }));
+                  setNewOutOfOrder(initialOutOfOrderState);
+                }}
+                onRemovePeriod={(i) => setForm(p => ({ ...p, outOfOrders: p.outOfOrders.filter((_, idx) => idx !== i) }))}
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch checked={form.isActive} onCheckedChange={c => setForm(p => ({ ...p, isActive: c }))} />
+                <Label>Active</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
+            <Button onClick={() => createMutation.mutate(form)}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editLawn} onOpenChange={() => setEditLawn(null)}>
+        <DialogContent className="max-w-7xl h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Edit Lawn</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="col-span-2">
+              <Label>Category</Label>
+              <Select value={editForm.lawnCategoryId} onValueChange={v => setEditForm(p => ({ ...p, lawnCategoryId: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {lawnCategories.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.category}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Min Guests</Label>
+              <Input type="number" value={editForm.minGuests} onChange={e => setEditForm(p => ({ ...p, minGuests: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Max Guests</Label>
+              <Input type="number" value={editForm.maxGuests} onChange={e => setEditForm(p => ({ ...p, maxGuests: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Member Price</Label>
+              <Input type="number" value={editForm.memberCharges} onChange={e => setEditForm(p => ({ ...p, memberCharges: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Guest Price</Label>
+              <Input type="number" value={editForm.guestCharges} onChange={e => setEditForm(p => ({ ...p, guestCharges: e.target.value }))} />
+            </div>
+            <div className="col-span-2">
+              <Label>Description</Label>
+              <Textarea value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))} />
+            </div>
+            <div className="col-span-2">
+              <OutOfOrderPeriods
+                periods={editForm.outOfOrders}
+                newPeriod={editNewOutOfOrder}
+                onNewPeriodChange={setEditNewOutOfOrder}
+                onAddPeriod={() => {
+                  setEditForm(p => ({ ...p, outOfOrders: [...p.outOfOrders, editNewOutOfOrder] }));
+                  setEditNewOutOfOrder(initialOutOfOrderState);
+                }}
+                onRemovePeriod={(i) => setEditForm(p => ({ ...p, outOfOrders: p.outOfOrders.filter((_, idx) => idx !== i) }))}
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch checked={editForm.isActive} onCheckedChange={c => setEditForm(p => ({ ...p, isActive: c }))} />
+                <Label>Active</Label>
+              </div>
+
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditLawn(null)}>Cancel</Button>
+            <Button onClick={() => updateMutation.mutate(editForm)}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
       <Dialog open={!!deleteLawnItem} onOpenChange={() => setDeleteLawnItem(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Lawn</DialogTitle>
-          </DialogHeader>
-          <p className="py-6">
-            Are you sure you want to delete this lawn? This action cannot be undone.
-          </p>
+          <DialogHeader><DialogTitle>Delete Lawn</DialogTitle></DialogHeader>
+          <div className="py-4 text-muted-foreground">Are you sure you want to delete this lawn? This action cannot be undone.</div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteLawnItem(null)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={() => deleteMutation.mutate(deleteLawnItem.id)}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
+            <Button variant="outline" onClick={() => setDeleteLawnItem(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => deleteMutation.mutate(deleteLawnItem.id)}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

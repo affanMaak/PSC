@@ -46,7 +46,7 @@
 //     if (!validateForm()) return;
 
 //     setLoading(true);
-    
+
 //     try {
 //       // Create auth user in Supabase
 //       const { data: { user }, error: signupError } = await supabase.auth.signUp({ 
@@ -82,13 +82,13 @@
 //         'Success', 
 //         'Account created! Please check your email for verification'
 //       );
-      
+
 //       // Navigate back to login after successful signup
 //       navigation.navigate('Login');
 
 //     } catch (error) {
 //       console.error('Signup error:', error);
-      
+
 //       let errorMessage = error.message;
 //       if (error.message.includes('User already registered')) {
 //         errorMessage = 'This email is already registered. Please log in.';
@@ -312,15 +312,15 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Alert, 
-  StyleSheet, 
-  View, 
-  AppState, 
-  Text, 
-  TouchableOpacity, 
-  Image, 
-  TextInput, 
+import {
+  Alert,
+  StyleSheet,
+  View,
+  AppState,
+  Text,
+  TouchableOpacity,
+  Image,
+  TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -372,12 +372,12 @@ export default function SignupScreen({ navigation }) {
     if (!validateForm()) return;
 
     setLoading(true);
-    
+
     try {
-      const { data: { user }, error: signupError } = await supabase.auth.signUp({ 
-        email, 
+      const { data: { user }, error: signupError } = await supabase.auth.signUp({
+        email,
         password,
-        options: { 
+        options: {
           emailRedirectTo: 'yourapp://callback'
         }
       });
@@ -399,7 +399,7 @@ export default function SignupScreen({ navigation }) {
       if (profileError) throw profileError;
 
       Alert.alert(
-        'Success', 
+        'Success',
         'Account created! Please check your email for verification',
         [
           {
@@ -408,7 +408,7 @@ export default function SignupScreen({ navigation }) {
           }
         ]
       );
-      
+
     } catch (error) {
       console.error('Signup error:', error);
       Alert.alert('Signup Error', error.message || 'Something went wrong');
@@ -418,14 +418,14 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
           <Text style={styles.header}>Create Account</Text>
-          <Image source={require('../assets/logo.jpg')} style={styles.logo} />
+          <Image source={require('../assets/logo.jpeg')} style={styles.logo} />
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
@@ -454,7 +454,7 @@ export default function SignupScreen({ navigation }) {
                 autoCapitalize="none"
                 editable={!loading}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.showHide}
                 onPress={() => setShowPassword(!showPassword)}
               >
@@ -478,7 +478,7 @@ export default function SignupScreen({ navigation }) {
                 autoCapitalize="none"
                 editable={!loading}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.showHide}
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               >

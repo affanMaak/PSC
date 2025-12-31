@@ -4,7 +4,8 @@ import { IsEnum, IsNotEmpty, IsOptional } from "class-validator";
 enum PaymentStatus {
     UNPAID,
     HALF_PAID,
-    PAID
+    PAID,
+    TO_BILL
 }
 // enum PaymentMode {
 //     CASH,
@@ -55,7 +56,7 @@ export class BookingDto {
 
     @IsNotEmpty({ message: "Total Price must be specified" })
     totalPrice: string
-    @IsEnum(PaymentStatus, { message: "Payment status must be UNPAID, HALF_PAID, or PAID" })
+    @IsEnum(PaymentStatus, { message: "Payment status must be UNPAID, HALF_PAID, PAID, or TO_BILL" })
     paymentStatus: PaymentStatus
     @IsNotEmpty({ message: "Pricing type either be Member or Guest" })
     pricingType: string

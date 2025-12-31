@@ -6,6 +6,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import {
   CreateAffiliatedClubDto,
   UpdateAffiliatedClubDto,
@@ -21,7 +22,8 @@ export class AffiliationService {
   constructor(
     private prismaService: PrismaService,
     private mailerService: MailerService,
-  ) {}
+    private cloudinary: CloudinaryService,
+  ) { }
 
   // -------------------- AFFILIATED CLUBS --------------------
 
@@ -68,7 +70,13 @@ export class AffiliationService {
     return club;
   }
 
-  async createAffiliatedClub(payload: CreateAffiliatedClubDto) {
+  async createAffiliatedClub(payload: CreateAffiliatedClubDto, file?: Express.Multer.File) {
+    let imageUrl = null;
+    if (file) {
+      const upload = await this.cloudinary.uploadFile(file);
+      imageUrl = upload.url;
+    }
+
     return await this.prismaService.affiliatedClub.create({
       data: {
         name: payload.name,
@@ -76,12 +84,13 @@ export class AffiliationService {
         contactNo: payload.contactNo,
         email: payload.email,
         description: payload.description,
+        image: imageUrl ?? null,
         isActive: payload.isActive ?? true,
       },
     });
   }
 
-  async updateAffiliatedClub(payload: UpdateAffiliatedClubDto) {
+  async updateAffiliatedClub(payload: UpdateAffiliatedClubDto, file?: Express.Multer.File) {
     if (!payload.id) {
       throw new HttpException(
         'Affiliated club ID is required',
@@ -92,6 +101,12 @@ export class AffiliationService {
     // Check if club exists
     await this.getAffiliatedClubById(payload.id);
 
+    let imageUrl = payload.image; // Keep existing if not replaced
+    if (file) {
+      const upload = await this.cloudinary.uploadFile(file);
+      imageUrl = upload.url;
+    }
+
     return await this.prismaService.affiliatedClub.update({
       where: { id: Number(payload.id) },
       data: {
@@ -100,6 +115,7 @@ export class AffiliationService {
         contactNo: payload.contactNo,
         email: payload.email,
         description: payload.description,
+        image: imageUrl ?? null,
         isActive: payload.isActive,
       },
     });
@@ -123,11 +139,8 @@ export class AffiliationService {
 
   // -------------------- AFFILIATED CLUB REQUESTS --------------------
 
-  async getAffiliatedClubRequests(status?: string) {
-    const where = status ? { status: status as RequestStatus } : {};
-
+  async getAffiliatedClubRequests() {
     return await this.prismaService.affiliatedClubRequest.findMany({
-      where,
       orderBy: { createdAt: 'desc' },
       include: {
         affiliatedClub: true,
@@ -152,15 +165,33 @@ export class AffiliationService {
 
   async createRequest(payload: CreateAffiliatedClubRequestDto) {
     // Check if club exists
-    await this.getAffiliatedClubById(payload.affiliatedClubId);
+    const club = await this.prismaService.affiliatedClub.findFirst({
+      where: { id: payload.affiliatedClubId },
+      select: { email: true }
+    })
+    if (!club) {
+      throw new HttpException('Club not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Check if member exists
+    const member = await this.prismaService.member.findFirst({
+      where: { Membership_No: payload.membershipNo.toString() },
+      select: { Email: true }
+    })
+    if (!member) {
+      throw new HttpException('Member not found', HttpStatus.NOT_FOUND);
+    }
+
+    const mailSent = this.sendRequestEmail(member.Email!, club, payload)
+    if(!mailSent){
+      throw new HttpException('Mail not sent', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
     return await this.prismaService.affiliatedClubRequest.create({
       data: {
-        membershipNo: payload.membershipNo,
+        membershipNo: payload.membershipNo.toString(),
         affiliatedClubId: payload.affiliatedClubId,
-        guestCount: payload.guestCount || 0,
-        purpose: payload.purpose,
-        requestedDate: new Date(payload.requestedDate) 
+        requestedDate: new Date(payload.requestedDate)
       },
       include: {
         affiliatedClub: true,
@@ -168,173 +199,77 @@ export class AffiliationService {
     });
   }
 
-  async updateRequestStatus(payload: UpdateRequestStatusDto) {
-    if (!payload.id) {
-      throw new HttpException('Request ID is required', HttpStatus.BAD_REQUEST);
-    }
-
-    // Check if request exists
-    await this.getRequestById(payload.id);
-
-    const updateData: any = {
-      status: payload.status,
-    };
-
-    if (payload.status === 'APPROVED') {
-      updateData.approvedDate = new Date();
-    } else if (payload.status === 'REJECTED') {
-      updateData.rejectedDate = new Date();
-    }
-
-    return await this.prismaService.affiliatedClubRequest.update({
-      where: { id: Number(payload.id) },
-      data: updateData,
-      include: {
-        affiliatedClub: true,
-      },
-    });
-  }
-
-  async deleteRequest(id: number) {
-    if (!id) {
-      throw new HttpException('Request ID is required', HttpStatus.BAD_REQUEST);
-    }
-
-    // Check if request exists
-    await this.getRequestById(id);
-
-    return await this.prismaService.affiliatedClubRequest.delete({
-      where: { id: Number(id) },
-    });
-  }
-
-  // send mail to member
-  private async mailToMember(
-    status: 'APPROVED' | 'REJECTED',
-    memberId: string,
+  private async sendRequestEmail(
+    member: string,
+    club: any,
     request: any,
-    clubId: number,
-    purpose?: string,
   ) {
-    // fetch member
-    const member = await this.prismaService.member.findFirst({
-      where: { Membership_No: memberId },
-      select: {
-        Membership_No: true,
-        Name: true,
-        Email: true,
-        Contact_No: true,
-      },
-    });
-
-    // fetch club
-    const club = await this.prismaService.affiliatedClub.findFirst({
-      where: { id: clubId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        contactNo: true,
-      },
-    });
-    const message = sendMailMemberAff(
-      status,
-      member,
-      club,
-      purpose || '',
-      request.id,
-      request.requestedDate,
-    );
-
-    return await this.mailerService.sendMail(
-      member?.Email!,
-      `${club?.name} Visit Request – ${status} (Request ID: ${request?.id})`,
-      message,
-    );
-  }
-  // send mail to club
-  private async mailToClub(
-    memberId: string,
-    request: any,
-    clubId: number,
-    purpose?: string,
-  ) {
-    // fetch member
-    const member = await this.prismaService.member.findFirst({
-      where: { Membership_No: memberId },
-      select: {
-        Membership_No: true,
-        Name: true,
-        Email: true,
-        Contact_No: true,
-      },
-    });
-
-    // fetch club
-    const club = await this.prismaService.affiliatedClub.findFirst({
-      where: { id: clubId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        contactNo: true,
-      },
-    });
-    const message = sendMailClubAff(
-      member,
-      club,
-      purpose || '',
-      request.id,
-      request.requestedDate,
-    );
-
-    return await this.mailerService.sendMail(
-      club?.email!,
-      `${member?.Name} Visit Request – (Request ID: ${request?.id})`,
+    const message = this.createRequestEmailContent(member, club, request);
+    await this.mailerService.sendMail(
+      club.email,
+      [member, process.env.NODEMAILER_USER],
+      `New Visit Request - ${club.name}`,
       message,
     );
   }
 
-  // handle approval/rejection
-  async handleAction(status: 'APPROVED' | 'REJECTED', requestId: number) {
-    // fetch request
-    const request = await this.prismaService.affiliatedClubRequest.findFirst({
-      where: { id: requestId },
-    });
-    if (!request) throw new NotFoundException('Request not found!');
-
-    // send mails
-    const sentMember = await this.mailToMember(
-      status,
-      request.membershipNo,
-      request,
-      Number(request.affiliatedClubId),
-      request.purpose!,
-    );
-
-    if (!sentMember)
-      throw new UnprocessableEntityException("Couldn't send mail to member");
-    console.log('Member sent: ', sentMember);
-
-    if (status === 'APPROVED') {
-      const sentClub = await this.mailToClub(
-        request.membershipNo,
-        request,
-        Number(request.affiliatedClubId),
-        request.purpose!,
-      );
-
-      if (!sentClub)
-        throw new UnprocessableEntityException("Couldn't send mail to member");
-      console.log('club sent: ', sentClub);
-    }
-
-    // toggle state in db
-    return await this.prismaService.affiliatedClubRequest.update({
-      where: { id: requestId },
-      data: {
-        status,
-      },
-    });
+  private createRequestEmailContent(
+    member: any,
+    club: any,
+    request: any,
+  ): string {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
+        .content { padding: 20px 0; }
+        .details { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h2>New Visit Request</h2>
+          <p><strong>Club:</strong> ${club.name}</p>
+        </div>
+        
+        <div class="content">
+          <p>Dear ${club.name} Team,</p>
+          
+          <p>A new visit request has been submitted. Please find the details below:</p>
+          
+          <div class="details">
+            <h3>Request Details:</h3>
+            <p><strong>Request ID:</strong> ${request.id}</p>
+            <p><strong>Request Date:</strong> ${new Date(request.requestedDate).toLocaleDateString()}</p>
+            
+            <h3>Member Details:</h3>
+            <p><strong>Name:</strong> ${member.Name}</p>
+            <p><strong>Membership No:</strong> ${member.Membership_No}</p>
+            <p><strong>Email:</strong> ${member.Email}</p>
+            <p><strong>Contact No:</strong> ${member.Contact_No}</p>
+          </div>
+          
+          <p>This email has been CC'd to the member and PSC Club for reference.</p>
+          
+          <p>Please review this request and take appropriate action.</p>
+        </div>
+        
+        <div class="footer">
+          <p>This is an automated message. Please do not reply directly to this email.</p>
+          <p>© ${new Date().getFullYear()} Club Management System</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
   }
+
+
+
 }

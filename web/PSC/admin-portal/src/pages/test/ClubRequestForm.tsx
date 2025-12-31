@@ -16,8 +16,6 @@ export default function ClubRequestForm() {
     const [selectedClubId, setSelectedClubId] = useState("");
     const [membershipNo, setMembershipNo] = useState("");
     const [requestedDate, setRequestedDate] = useState<Date | undefined>(undefined);
-    const [guestCount, setGuestCount] = useState(0);
-    const [purpose, setPurpose] = useState("");
 
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -57,7 +55,7 @@ export default function ClubRequestForm() {
             });
             return;
         }
-
+        console.log(membershipNo);
         if (!membershipNo) {
             toast({
                 title: "Please enter membership number",
@@ -78,8 +76,6 @@ export default function ClubRequestForm() {
         const payload = {
             affiliatedClubId: Number(selectedClubId),
             membershipNo: membershipNo,
-            guestCount: guestCount || 0,
-            purpose: purpose || undefined,
         };
 
         createRequestMutation.mutate(payload);
@@ -89,8 +85,6 @@ export default function ClubRequestForm() {
         setSelectedClubId("");
         setMembershipNo("");
         setRequestedDate(undefined);
-        setGuestCount(0);
-        setPurpose("");
     };
 
     return (
@@ -149,30 +143,7 @@ export default function ClubRequestForm() {
                             />
                         </div>
 
-                        {/* Guest Count */}
-                        <div className="space-y-2">
-                            <Label htmlFor="guestCount">Number of Guests</Label>
-                            <Input
-                                id="guestCount"
-                                type="number"
-                                min="0"
-                                value={guestCount}
-                                onChange={(e) => setGuestCount(Number(e.target.value))}
-                                placeholder="0"
-                            />
-                        </div>
-
-                        {/* Purpose */}
-                        <div className="space-y-2">
-                            <Label htmlFor="purpose">Purpose/Reason</Label>
-                            <Textarea
-                                id="purpose"
-                                value={purpose}
-                                onChange={(e) => setPurpose(e.target.value)}
-                                placeholder="Enter purpose or reason for the request"
-                                rows={4}
-                            />
-                        </div>
+                       
 
                         {/* Selected Club Info */}
                         {selectedClubId && (

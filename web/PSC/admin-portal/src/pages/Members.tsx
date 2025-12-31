@@ -98,6 +98,9 @@ export default function Members() {
       setIsAddOpen(false);
       queryClient.invalidateQueries({ queryKey: ["members"] });
     },
+    onError: (error: any) => {
+      toast({ title: error?.message || "Failed to add member" });
+    },
   });
 
   const updateMutation = useMutation({

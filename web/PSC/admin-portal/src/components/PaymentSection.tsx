@@ -37,10 +37,10 @@ export const PaymentSection = React.memo(({
 
   const handlePaidAmountChange = (value: number) => {
     console.log('Real-time paid amount change:', value);
-    
+
     // Update paid amount immediately
     onChange("paidAmount", value);
-    
+
     // Auto-update payment status based on amount
     if (value === accounting.total && form.paymentStatus !== "PAID") {
       onChange("paymentStatus", "PAID");
@@ -78,6 +78,7 @@ export const PaymentSection = React.memo(({
             <SelectItem value="UNPAID">Unpaid</SelectItem>
             <SelectItem value="HALF_PAID">Half Paid</SelectItem>
             <SelectItem value="PAID">Paid</SelectItem>
+            <SelectItem value="TO_BILL">To Bill</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -106,7 +107,7 @@ export const PaymentSection = React.memo(({
             className="mt-2 font-semibold"
             readOnly
             disabled
-            style={{ 
+            style={{
               color: accounting.pending > 0 ? '#dc2626' : '#16a34a',
               fontWeight: 'bold'
             }}
@@ -152,6 +153,16 @@ export const PaymentSection = React.memo(({
               {form.paymentStatus === "PAID"
                 ? "Full Payment Voucher will be generated automatically"
                 : "Half Payment Voucher will be generated automatically"}
+            </span>
+          </div>
+        </div>
+      )}
+      {form.paymentStatus === "TO_BILL" && (
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center">
+            <Receipt className="h-4 w-4 text-blue-600 mr-2" />
+            <span className="text-sm font-medium text-blue-800">
+              Remaining amount will be added to Member's Ledger/Balance
             </span>
           </div>
         </div>

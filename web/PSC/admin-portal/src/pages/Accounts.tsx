@@ -8,8 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { exportVoucherPDF } from "@/lib/pdfExport";
-
-const API_BASE_URL = "http://localhost:3000";
+import { getAccountMembers, getMemberVouchers, getMemberBookings } from "../../config/apis";
 
 export default function Accounts() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,8 +34,7 @@ export default function Accounts() {
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/member/get/members?page=1&limit=1000`);
-      const data = await response.json();
+      const data = await getAccountMembers();
       setMembers(data.data || []);
     } catch (error) {
       console.error("Failed to fetch members:", error);
@@ -47,8 +45,7 @@ export default function Accounts() {
 
   const fetchMemberVouchers = async (membershipNo: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/payment/member/vouchers?membershipNo=${membershipNo}`);
-      const data = await response.json();
+      const data = await getMemberVouchers(membershipNo);
       setMemberVouchers(data || []);
     } catch (error) {
       console.error("Failed to fetch vouchers:", error);
@@ -58,8 +55,7 @@ export default function Accounts() {
 
   const fetchMemberBookings = async (membershipNo: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/booking/member/bookings?membershipNo=${membershipNo}`);
-      const data = await response.json();
+      const data = await getMemberBookings(membershipNo);
       setMemberBookings(data || []);
     } catch (error) {
       console.error("Failed to fetch bookings:", error);

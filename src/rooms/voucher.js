@@ -10,7 +10,8 @@ import {
   Alert,
   StatusBar,
   Share,
-  RefreshControl
+  RefreshControl,
+  ImageBackground
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { bookingService } from '../../services/bookingService';
@@ -19,7 +20,7 @@ import { useAuth } from '../auth/contexts/AuthContext';
 export default function voucher({ navigation, route }) {
   const { user } = useAuth();
   const { bookingId, numericBookingId, bookingData, roomType, selectedRoom, bookingResponse } = route.params || {};
-  
+
   const [invoiceData, setInvoiceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,7 +40,7 @@ export default function voucher({ navigation, route }) {
       setLoading(true);
       console.log('🧾 Fetching invoice for booking:', { bookingId, numericBookingId });
       console.log('📊 Booking response:', bookingResponse);
-      
+
       let invoiceResponse;
 
       // First try: Use the booking response data (contains invoice)
@@ -66,7 +67,7 @@ export default function voucher({ navigation, route }) {
         // Create temporary invoice as fallback
         createTemporaryInvoice();
       }
-      
+
     } catch (error) {
       console.error('❌ Final invoice fetch error:', error);
       createTemporaryInvoice();
@@ -93,12 +94,12 @@ export default function voucher({ navigation, route }) {
         isInvoice: true
       };
     }
-    
+
     // Extract from direct invoice response
     if (bookingResponse.invoiceNumber || bookingResponse.invoice_no) {
       return bookingResponse;
     }
-    
+
     // Extract from bookings array if available
     if (bookingResponse.bookings && Array.isArray(bookingResponse.bookings) && bookingResponse.bookings.length > 0) {
       const booking = bookingResponse.bookings[0];
@@ -113,45 +114,45 @@ export default function voucher({ navigation, route }) {
         isInvoice: true
       };
     }
-    
+
     return null;
   };
 
   const transformInvoiceData = (invoiceResponse) => {
     const invoice = Array.isArray(invoiceResponse) ? invoiceResponse[0] : invoiceResponse;
-    
+
     return {
       // Invoice identification
       invoiceNo: invoice.invoice_no || invoice.invoiceNumber || invoice.InvoiceNumber || `INV-${bookingId}`,
       bookingId: invoice.bookingId || bookingId,
-      
+
       // Status and dates
       status: invoice.status || 'PENDING_PAYMENT',
       issued_at: invoice.issued_at || new Date().toISOString(),
       issued_by: invoice.issued_by || 'System',
-      
+
       // Due date and instructions
       dueDate: invoice.dueDate,
       instructions: invoice.instructions,
       paymentChannels: invoice.paymentChannels,
       bookingSummary: invoice.bookingSummary,
-      
+
       // Room information
       roomType: roomType?.name,
       roomNumber: selectedRoom?.roomNumber,
-      
+
       // Booking dates
       checkIn: bookingData?.checkIn,
       checkOut: bookingData?.checkOut,
       numberOfAdults: bookingData?.numberOfAdults || 1,
       numberOfChildren: bookingData?.numberOfChildren || 0,
       numberOfRooms: bookingData?.numberOfRooms || 1,
-      
+
       // Payment information
       totalPrice: bookingData?.totalPrice || invoice.amount || invoice.totalPrice,
       paymentMode: invoice.payment_mode || invoice.paymentMode || 'PENDING',
       paymentStatus: invoice.payment_status || 'PENDING',
-      
+
       // Additional fields
       transaction_id: invoice.transaction_id,
       remarks: invoice.remarks,
@@ -162,13 +163,13 @@ export default function voucher({ navigation, route }) {
   const createTemporaryInvoice = () => {
     console.log('🔄 Creating temporary invoice as fallback');
     const tempInvoice = bookingService.createLocalInvoice(
-      bookingId, 
-      bookingData, 
-      roomType, 
-      selectedRoom, 
+      bookingId,
+      bookingData,
+      roomType,
+      selectedRoom,
       bookingResponse?.Data?.InvoiceNumber
     );
-    
+
     setInvoiceData(tempInvoice);
   };
 
@@ -183,8 +184,8 @@ export default function voucher({ navigation, route }) {
       'Redirect to payment gateway to complete your booking?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Proceed to Payment', 
+        {
+          text: 'Proceed to Payment',
           onPress: () => {
             // Here you would integrate with your payment gateway
             Alert.alert(
@@ -201,7 +202,7 @@ export default function voucher({ navigation, route }) {
   const handleShareInvoice = async () => {
     try {
       setShareLoading(true);
-      
+
       if (!invoiceData) {
         Alert.alert('Error', 'No invoice data to share');
         return;
@@ -300,14 +301,22 @@ Thank you for your booking!
   if (loading) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#dbc9a5" />
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Booking Invoice</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <StatusBar backgroundColor="#fffaf2" barStyle="dark-content" />
+        <ImageBackground
+          source={require("../../assets/notch.jpg")}
+          style={styles.notch}
+          imageStyle={styles.notchImage}
+        >
+          <View style={styles.notchRow}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconWrapper}>
+              <Icon name="arrow-back" size={28} color="#000" />
+            </TouchableOpacity>
+
+            <Text style={styles.notchTitle}>Booking Invoice</Text>
+
+            <View style={styles.iconWrapper} />
+          </View>
+        </ImageBackground>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#b48a64" />
           <Text style={styles.loadingText}>Generating your invoice...</Text>
@@ -321,20 +330,29 @@ Thank you for your booking!
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#dbc9a5" />
-      
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Booking Invoice</Text>
-        <TouchableOpacity onPress={handleRefresh} disabled={refreshing}>
-          <Icon name="refresh" size={24} color={refreshing ? '#ccc' : '#000'} />
-        </TouchableOpacity>
-      </View>
+      <StatusBar backgroundColor="#fffaf2" barStyle="dark-content" />
 
-      <ScrollView 
-        style={styles.content} 
+      {/* Replaced Header with Notch Image */}
+      <ImageBackground
+        source={require("../../assets/notch.jpg")}
+        style={styles.notch}
+        imageStyle={styles.notchImage}
+      >
+        <View style={styles.notchRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconWrapper}>
+            <Icon name="arrow-back" size={28} color="#000" />
+          </TouchableOpacity>
+
+          <Text style={styles.notchTitle}>Booking Invoice</Text>
+
+          <TouchableOpacity onPress={handleRefresh} disabled={refreshing} style={styles.iconWrapper}>
+            <Icon name="refresh" size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
+
+      <ScrollView
+        style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -348,10 +366,10 @@ Thank you for your booking!
           <View style={styles.invoiceContainer}>
             {/* Invoice Header */}
             <View style={styles.invoiceHeader}>
-              <Icon 
-                name={statusInfo.icon} 
-                size={40} 
-                color="#ff9800" 
+              <Icon
+                name={statusInfo.icon}
+                size={40}
+                color="#ff9800"
               />
               <Text style={styles.invoiceTitle}>
                 BOOKING INVOICE
@@ -369,7 +387,7 @@ Thank you for your booking!
                 <Text style={styles.paymentAlertText}>
                   Complete payment to confirm your booking and receive confirmation
                 </Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.paymentButton}
                   onPress={handleMakePayment}
                 >
@@ -381,21 +399,21 @@ Thank you for your booking!
             {/* Invoice Details */}
             <View style={styles.invoiceSection}>
               <Text style={styles.sectionTitle}>Invoice Details</Text>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Invoice Number:</Text>
                 <Text style={styles.detailValue}>
                   {invoiceData.invoiceNo}
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Booking ID:</Text>
                 <Text style={styles.detailValue}>
                   {invoiceData.bookingId}
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Status:</Text>
                 <View style={[styles.statusBadge, statusInfo.style]}>
@@ -432,14 +450,14 @@ Thank you for your booking!
             {/* Room Information */}
             <View style={styles.invoiceSection}>
               <Text style={styles.sectionTitle}>Room Information</Text>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Room Type:</Text>
                 <Text style={styles.detailValue}>
                   {invoiceData.roomType || 'N/A'}
                 </Text>
               </View>
-              
+
               {invoiceData.roomNumber && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Room Number:</Text>
@@ -448,21 +466,21 @@ Thank you for your booking!
                   </Text>
                 </View>
               )}
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Check-in:</Text>
                 <Text style={styles.detailValue}>
                   {formatDate(invoiceData.checkIn)}
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Check-out:</Text>
                 <Text style={styles.detailValue}>
                   {formatDate(invoiceData.checkOut)}
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Guests:</Text>
                 <Text style={styles.detailValue}>
@@ -475,21 +493,21 @@ Thank you for your booking!
             {/* Payment Information */}
             <View style={styles.invoiceSection}>
               <Text style={styles.sectionTitle}>Payment Details</Text>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Total Amount:</Text>
                 <Text style={[styles.detailValue, styles.amount]}>
                   ${invoiceData.totalPrice ? parseFloat(invoiceData.totalPrice).toFixed(2) : '0.00'}
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Payment Status:</Text>
                 <View style={[styles.statusBadge, styles.pendingBadge]}>
                   <Text style={styles.statusText}>PENDING</Text>
                 </View>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Payment Mode:</Text>
                 <Text style={styles.detailValue}>
@@ -540,7 +558,7 @@ Thank you for your booking!
 
             {/* Action Buttons */}
             <View style={styles.actionButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.secondaryButton}
                 onPress={handleRefresh}
                 disabled={refreshing}
@@ -550,8 +568,8 @@ Thank you for your booking!
                   {refreshing ? 'Refreshing...' : 'Refresh Invoice'}
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.shareButton}
                 onPress={handleShareInvoice}
                 disabled={shareLoading}
@@ -564,7 +582,7 @@ Thank you for your booking!
             </View>
 
             {/* Make Payment Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.paymentActionButton}
               onPress={handleMakePayment}
             >
@@ -573,7 +591,7 @@ Thank you for your booking!
             </TouchableOpacity>
 
             <View style={styles.actionButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.primaryButton}
                 onPress={() => navigation.navigate('Bookings')}
               >
@@ -589,7 +607,7 @@ Thank you for your booking!
             <Text style={styles.noInvoiceText}>
               Unable to load invoice at this time.
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.retryButton}
               onPress={handleRefresh}
             >
@@ -604,22 +622,37 @@ Thank you for your booking!
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9f3eb' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  // notch styles
+  notch: {
+    paddingTop: 50,
+    paddingBottom: 25,
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#dbc9a5',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    paddingTop: 40,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    overflow: "hidden",
+    backgroundColor: "#D2B48C",
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
+  notchImage: {
+    resizeMode: "cover",
   },
+  notchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 10,
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  notchTitle: {
+    fontSize: 22,
+    fontWeight: "600",
+    color: "#000",
+  },
+
   content: { flex: 1 },
   loadingContainer: {
     flex: 1,
@@ -889,7 +922,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#28a745',
+    backgroundColor: '#bdaea1ff',
     padding: 15,
     borderRadius: 8,
     marginBottom: 15,

@@ -1,0 +1,52 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: psc_db
+    command: --lower_case_table_names=1
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+  backend:
+    build:
+      context: ./psc-backend
+    container_name: psc-backend-app
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: "development"
+      DATABASE_URL: "mysql://root:root@mysql:3306/psc_db"
+      JWT_ACCESS_SECRET: "asdaskdpanqweqejlsadnasnd"
+      JWT_REFRESH_SECRET: "09190199219jjkdjasjdnasnd"
+      NODEMAILER_HOST: "smtp.hostinger.com"
+      NODEMAILER_PORT: 465
+      NODEMAILER_USER: "info@codeclub.tech"
+      NODEMAILER_PASS: "Affan@1234!"
+      CLOUDINARY_URL: "cloudinary://369676299629912:q7KnhQPgAOSx1kwhdMh1iYw0wrA@dtqdpntlc"
+      CLOUD_NAME: "dtqdpntlc"
+      CLOUDINARY_API_KEY: "369676299629912"
+      CLOUDINARY_API_SECRET: "q7KnhQPgAOSx1kwhdMh1iYw0wrA"
+
+  admin-portal:
+    build:
+      context: ./admin-portal
+    container_name: psc-admin-portal
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

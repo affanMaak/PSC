@@ -1,4 +1,4 @@
-import React from 'react'; 
+import React from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -10,8 +10,11 @@ import {
   Linking,
   ImageBackground
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const contact = () => {
+  const navigation = useNavigation();
 
   const handlePhonePress = (phoneNumber) => {
     Linking.openURL(`tel:${phoneNumber}`);
@@ -25,23 +28,30 @@ const contact = () => {
     <>
       <StatusBar barStyle="dark-content" />
       <View style={styles.container}>
-        
+
         {/* 🔹 Notch with Image Background */}
         <ImageBackground
-          source={require('../assets/logo.jpeg')}
+          source={require('../assets/notch.jpg')}
           style={styles.notch}
           imageStyle={styles.notchImage}
         >
-          <Text style={styles.ctext}>Contact Us</Text>
+          <View style={styles.notchContent}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.navigate('Home')}>
+              <Icon name="arrow-back" size={28} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.ctext}>Contact Us</Text>
+          </View>
         </ImageBackground>
 
         <SafeAreaView style={styles.safeArea}>
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-            
+
             {/* Info Desk Card */}
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Info Desk</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactRow}
                 onPress={() => handlePhonePress('0919212753')}>
                 <Text style={styles.icon}>📞</Text>
@@ -52,13 +62,13 @@ const contact = () => {
             {/* Event Booking Card */}
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Event Booking</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactRow}
                 onPress={() => handlePhonePress('03419777711')}>
                 <Text style={styles.icon}>📞</Text>
                 <Text style={styles.phoneText}>0341-9777711</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactRow}
                 onPress={() => handlePhonePress('0919212753')}>
                 <Text style={styles.icon}>📞</Text>
@@ -69,13 +79,13 @@ const contact = () => {
             {/* Room Reservation Card */}
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Room Reservation</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactRow}
                 onPress={() => handlePhonePress('03458518696')}>
                 <Text style={styles.icon}>📞</Text>
                 <Text style={styles.phoneText}>03458518696</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactRow}
                 onPress={() => handlePhonePress('0919212753')}>
                 <Text style={styles.icon}>📞</Text>
@@ -88,13 +98,13 @@ const contact = () => {
               <Text style={styles.sectionTitle}>Address</Text>
               <Text style={styles.addressText}>Peshawar Services Club</Text>
               <Text style={styles.addressText}>40-The Mall, Peshawar Cantt.</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactRow}
                 onPress={() => handlePhonePress('0919212753')}>
                 <Text style={styles.icon}>📞</Text>
                 <Text style={styles.phoneText}>091-9212753-5</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactRow}
                 onPress={handleEmailPress}>
                 <Text style={styles.icon}>✉️</Text>
@@ -119,21 +129,29 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomEndRadius: 30,
     borderBottomStartRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    overflow: 'hidden', // Ensures image respects rounded corners
+    overflow: 'hidden',
+    paddingHorizontal: 20,
   },
   notchImage: {
     resizeMode: 'cover',
   },
+  notchContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    width: '100%',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    padding: 5,
+  },
+
   ctext: {
-    paddingBottom: 10,
     fontSize: 25,
     fontWeight: 'bold',
     color: '#000000',
-    // backgroundColor: 'rgba(255,255,255,0.6)', // optional for readability
-    borderRadius: 10,
     paddingHorizontal: 10,
   },
   safeArea: {

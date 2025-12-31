@@ -157,7 +157,7 @@ export class RoomController {
 
 
 
-   // reserve room(s)
+  // reserve room(s)
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @Patch('reserve/rooms')
@@ -169,6 +169,7 @@ export class RoomController {
       reserve: boolean;
       reserveFrom?: string;
       reserveTo?: string;
+      remarks?: string;
     },
   ) {
     console.log(payload)
@@ -178,6 +179,7 @@ export class RoomController {
       req.user?.id,
       payload.reserveFrom,
       payload.reserveTo,
+      payload.remarks,
     );
   }
 
@@ -188,6 +190,17 @@ export class RoomController {
     return await this.room.getMemberRoomsForDate(dates.from, dates.to, Number(roomType));
   }
 
+
+  // room logs
+  @UseGuards(JwtAccGuard)
+  @Get('logs')
+  async getRoomLogs(
+    @Query('roomId') roomId: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ) {
+    return await this.room.getRoomLogs(Number(roomId), from, to);
+  }
 
   // calendar
   @UseGuards(JwtAccGuard)

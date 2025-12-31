@@ -10,6 +10,9 @@ async function bootstrap() {
       const allowed = [
         'https://psc.up.railway.app',
         'http://localhost:5173',
+        'https://193.203.169.122',
+        'http://193.203.169.122',
+        'http://193.203.169.122:8080'
       ];
 
       if (!origin || allowed.includes(origin)) {
@@ -23,6 +26,7 @@ async function bootstrap() {
     credentials: true,
   });
   app.use(cookieParser());
+  app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

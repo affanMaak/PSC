@@ -29,8 +29,8 @@ export interface Room {
   reservedFrom?: string;
   reservedTo?: string;
   outOfOrders?: any[]
-  reservations?: [];
-  bookings?: []
+  reservations?: any[];
+  bookings?: any[];
   status?: "AVAILABLE" | "OUT_OF_ORDER" | "RESERVED";
 }
 
@@ -45,7 +45,7 @@ export interface Booking {
   checkIn: string;
   checkOut: string;
   totalPrice: number;
-  paymentStatus: "UNPAID" | "HALF_PAID" | "PAID";
+  paymentStatus: "UNPAID" | "HALF_PAID" | "PAID" | "TO_BILL";
   pricingType: "member" | "guest";
   paidBy: "MEMBER" | "GUEST",
   guestContact: "",
@@ -85,7 +85,7 @@ export interface BookingForm {
   checkIn: string;
   checkOut: string;
   totalPrice: number;
-  paymentStatus: "UNPAID" | "HALF_PAID" | "PAID";
+  paymentStatus: "UNPAID" | "HALF_PAID" | "PAID" | "TO_BILL";
   paidAmount: number;
   pendingAmount: number;
   paymentMode: "CASH";

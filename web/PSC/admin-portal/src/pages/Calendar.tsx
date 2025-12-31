@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, differenceInDays, addDays, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, differenceInDays, addDays, isWithinInterval } from "date-fns";
 import { CalendarIcon, ChevronLeft, ChevronRight, Bed, Users, AlertTriangle, Clock, CheckCircle, XCircle, Building, TreePalm, Camera, Menu, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -116,7 +116,7 @@ export default function FacilityCalendar() {
   const [selectedRoomType, setSelectedRoomType] = useState("ALL");
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<any>(null);
-  const [daysToShow, setDaysToShow] = useState(30); // Default to 30 days view
+  const [viewMode, setViewMode] = useState<'MONTH' | 'WEEK'>('MONTH');
 
   // Fetch data based on selected facility type
   const { data: rooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
@@ -179,12 +179,9 @@ export default function FacilityCalendar() {
 
   // Generate date range for the timeline
   const generateDateRange = () => {
-    const startDate = new Date(currentDate);
-    const dates = [];
-    for (let i = 0; i < daysToShow; i++) {
-      dates.push(addDays(startDate, i));
-    }
-    return dates;
+    const start = viewMode === 'MONTH' ? startOfMonth(currentDate) : startOfWeek(currentDate);
+    const end = viewMode === 'MONTH' ? endOfMonth(currentDate) : endOfWeek(currentDate);
+    return eachDayOfInterval({ start, end });
   };
 
   const dateRange = generateDateRange();
@@ -296,10 +293,12 @@ export default function FacilityCalendar() {
   };
 
   // Get period color
-  const getPeriodColor = (type: 'booking' | 'reservation' | 'outOfOrder') => {
+  const getPeriodColor = (type: 'booking' | 'reservation' | 'outOfOrder', paymentStatus?: string) => {
     switch (type) {
       case 'booking':
-        return 'bg-blue-500 hover:bg-blue-600';
+        if (paymentStatus === 'PAID') return 'bg-blue-700 hover:bg-blue-800';
+        if (paymentStatus === 'HALF_PAID') return 'bg-blue-500 hover:bg-blue-600';
+        return 'bg-blue-300 hover:bg-blue-400'; // UNPAID or default
       case 'reservation':
         return 'bg-yellow-500 hover:bg-yellow-600';
       case 'outOfOrder':
@@ -318,8 +317,14 @@ export default function FacilityCalendar() {
   };
 
   // Navigation
-  const nextPeriod = () => setCurrentDate(addDays(currentDate, daysToShow));
-  const prevPeriod = () => setCurrentDate(addDays(currentDate, -daysToShow));
+  const nextPeriod = () => {
+    if (viewMode === 'MONTH') setCurrentDate(addMonths(currentDate, 1));
+    else setCurrentDate(addWeeks(currentDate, 1));
+  };
+  const prevPeriod = () => {
+    if (viewMode === 'MONTH') setCurrentDate(subMonths(currentDate, 1));
+    else setCurrentDate(subWeeks(currentDate, 1));
+  };
   const goToToday = () => setCurrentDate(new Date());
 
   // Get unique room types for filter (only for rooms)
@@ -455,17 +460,14 @@ export default function FacilityCalendar() {
                 </>
               )}
 
-              {/* Days to show filter */}
-              <Select value={daysToShow.toString()} onValueChange={(value) => setDaysToShow(parseInt(value))}>
+              {/* View Mode selection */}
+              <Select value={viewMode} onValueChange={(value: 'MONTH' | 'WEEK') => setViewMode(value)}>
                 <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Days to show" />
+                  <SelectValue placeholder="View Mode" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="7">7 Days</SelectItem>
-                  <SelectItem value="14">14 Days</SelectItem>
-                  <SelectItem value="30">30 Days</SelectItem>
-                  <SelectItem value="60">60 Days</SelectItem>
-                  <SelectItem value="90">90 Days</SelectItem>
+                  <SelectItem value="MONTH">Monthly</SelectItem>
+                  <SelectItem value="WEEK">Weekly</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -484,7 +486,7 @@ export default function FacilityCalendar() {
                 </Button>
               </div>
               <div className="font-semibold min-w-[200px] text-center text-sm sm:text-base">
-                {format(dateRange[0], "MMM d, yyyy")} - {format(dateRange[dateRange.length - 1], "MMM d, yyyy")}
+                {viewMode === 'MONTH' ? format(currentDate, "MMMM yyyy") : `${format(dateRange[0], "MMM d")} - ${format(dateRange[dateRange.length - 1], "MMM d, yyyy")}`}
               </div>
             </div>
           </div>
@@ -496,9 +498,19 @@ export default function FacilityCalendar() {
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex flex-wrap gap-3 items-center text-xs sm:text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-3 rounded bg-blue-500"></div>
-                <span>Bookings</span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-3 rounded bg-blue-700"></div>
+                  <span>Paid</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-3 rounded bg-blue-500"></div>
+                  <span>Half-Paid</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-3 rounded bg-blue-300"></div>
+                  <span>Unpaid</span>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-3 rounded bg-yellow-500"></div>
@@ -607,7 +619,7 @@ export default function FacilityCalendar() {
                                         <div
                                           className={cn(
                                             "absolute h-6 rounded cursor-pointer transition-all mb-1",
-                                            getPeriodColor(period.type)
+                                            getPeriodColor(period.type, period.data.paymentStatus)
                                           )}
                                           style={{
                                             ...style,

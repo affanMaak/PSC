@@ -29,7 +29,7 @@ export interface PhotoshootBooking {
   startTime: string;
   endTime: string;
   totalPrice: string;
-  paymentStatus: "PAID" | "HALF_PAID" | "UNPAID";
+  paymentStatus: "PAID" | "HALF_PAID" | "UNPAID" | "TO_BILL";
   pricingType: string;
   paidAmount: string;
   pendingAmount: string;
@@ -118,9 +118,21 @@ const PhotoshootPaymentSection = React.memo(
               <SelectItem value="UNPAID">Unpaid</SelectItem>
               <SelectItem value="HALF_PAID">Half Paid</SelectItem>
               <SelectItem value="PAID">Paid</SelectItem>
+              <SelectItem value="TO_BILL">To Bill</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        {form.paymentStatus === "TO_BILL" && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center">
+              <Receipt className="h-4 w-4 text-blue-600 mr-2" />
+              <span className="text-sm font-medium text-blue-800">
+                Remaining amount will be added to Member's Ledger/Balance
+              </span>
+            </div>
+          </div>
+        )}
 
         {form.paymentStatus === "HALF_PAID" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -382,6 +394,7 @@ export default function PhotoshootBookings() {
       paymentStatus,
       pricingType,
       paidAmount: paymentStatus === "HALF_PAID" ? paidAmount : (paymentStatus === "PAID" ? totalPrice : 0),
+      pendingAmount: totalPrice - (paymentStatus === "HALF_PAID" ? paidAmount : (paymentStatus === "PAID" ? totalPrice : 0)),
       paymentMode: "CASH",
       paidBy: guestSec.paidBy,
       guestName: guestSec.guestName,
@@ -405,6 +418,7 @@ export default function PhotoshootBookings() {
       paymentStatus,
       pricingType,
       paidAmount: paymentStatus === "HALF_PAID" ? paidAmount : (paymentStatus === "PAID" ? totalPrice : 0),
+      pendingAmount: totalPrice - (paymentStatus === "HALF_PAID" ? paidAmount : (paymentStatus === "PAID" ? totalPrice : 0)),
       paymentMode: "CASH",
       paidBy: guestSec.paidBy,
       guestName: guestSec.guestName,
@@ -448,6 +462,7 @@ export default function PhotoshootBookings() {
       case "PAID": return <Badge className="bg-green-600">Paid</Badge>;
       case "HALF_PAID": return <Badge className="bg-yellow-600">Half Paid</Badge>;
       case "UNPAID": return <Badge variant="destructive">Unpaid</Badge>;
+      case "TO_BILL": return <Badge className="bg-blue-600 text-white">To Bill</Badge>;
       default: return <Badge>{status}</Badge>;
     }
   };
@@ -514,6 +529,7 @@ export default function PhotoshootBookings() {
               <SelectItem value="PAID">Paid</SelectItem>
               <SelectItem value="HALF_PAID">Half Paid</SelectItem>
               <SelectItem value="UNPAID">Unpaid</SelectItem>
+              <SelectItem value="TO_BILL">To Bill</SelectItem>
             </SelectContent>
           </Select>
           <Dialog open={isAddOpen} onOpenChange={(open) => {

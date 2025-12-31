@@ -37,7 +37,7 @@
 
 // // // //   return (
 // // // //     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      
+
 
 // // // //       <View style={styles.header}>
 // // // //         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -68,7 +68,7 @@
 // // // //               styles.categoryBtn,
 // // // //               index === activeIndex && styles.categoryBtnActive,
 // // // //             ]}
-        
+
 // // // //             onPress={() => navigation.navigate(cat.screen)}
 // // // //           >
 // // // //             <Text
@@ -83,7 +83,7 @@
 // // // //         ))}
 // // // //       </View>
 
-   
+
 // // // //       <View style={styles.featuresSection}>
 // // // //         <Text style={styles.featureTitle}>WHY OUR GUEST ROOMS</Text>
 // // // //         <Text style={styles.featureSubtitle}>
@@ -278,7 +278,7 @@
 // // //   const userRole = route.params?.userRole;
 // // //   const userName = route.params?.userName;
 // // //   const userEmail = route.params?.userEmail;
-  
+
 // // //   const [showWelcome, setShowWelcome] = useState(true);
 // // //   const activeIndex = 1;
 
@@ -292,7 +292,7 @@
 // // //   // Show welcome alert based on user role
 // // //   useEffect(() => {
 // // //     console.log("🔔 Welcome effect running, userRole:", userRole, "showWelcome:", showWelcome);
-    
+
 // // //     if (userRole && showWelcome) {
 // // //       let welcomeMessage = '';
 // // //       let alertTitle = 'Welcome';
@@ -315,7 +315,7 @@
 // // //       }
 
 // // //       console.log("🎯 Showing alert:", alertTitle);
-      
+
 // // //       // Show alert after a short delay
 // // //       const timer = setTimeout(() => {
 // // //         Alert.alert(
@@ -364,7 +364,7 @@
 // // //         <TouchableOpacity onPress={() => navigation.goBack()}>
 // // //           <Icon name="arrow-left" size={24} color="#fff" />
 // // //         </TouchableOpacity>
-        
+
 // // //         <View style={styles.headerInfo}>
 // // //           <Text style={styles.headerTitle}>Guest Room</Text>
 // // //           {userRole ? (
@@ -376,7 +376,7 @@
 // // //             <Text style={styles.noRole}>No Role Detected</Text>
 // // //           )}
 // // //         </View>
-        
+
 // // //         <TouchableOpacity>
 // // //           <Icon name="bell-outline" size={24} color="#fff" />
 // // //         </TouchableOpacity>
@@ -643,7 +643,7 @@
 // //   const userRole = route.params?.userRole;
 // //   const userName = route.params?.userName;
 // //   const userEmail = route.params?.userEmail;
-  
+
 // //   const [showWelcome, setShowWelcome] = useState(true);
 // //   const [roomTypes, setRoomTypes] = useState([]);
 // //   const [loading, setLoading] = useState(false);
@@ -679,7 +679,7 @@
 // //       setError(null);
 // //       const types = await roomService.getRoomTypes();
 // //       console.log("Fetched room types:", types);
-      
+
 // //       // Transform the data to match your existing structure
 // //       const transformedTypes = types.map(type => ({
 // //         id: type.id,
@@ -688,7 +688,7 @@
 // //         priceMember: type.priceMember,
 // //         priceGuest: type.priceGuest,
 // //       }));
-      
+
 // //       setRoomTypes(transformedTypes);
 // //       if (transformedTypes.length > 0) {
 // //         setActiveCategory(0);
@@ -696,7 +696,7 @@
 // //     } catch (err) {
 // //       console.error('Error fetching room types:', err);
 // //       setError(err.message);
-      
+
 // //       // Handle authentication errors
 // //       if (err.message.includes('Authentication failed') || err.message.includes('No authentication token')) {
 // //         Alert.alert(
@@ -786,7 +786,7 @@
 // //       );
 // //       return;
 // //     }
-    
+
 // //     setActiveCategory(index);
 // //     navigation.navigate('details', { 
 // //       roomType: category,
@@ -859,7 +859,7 @@
 // //       return (
 // //         <>
 // //           <Text style={styles.subHeading}>Room Categories</Text>
-          
+
 // //           {roomTypes.length > 0 ? (
 // //             <View style={styles.categoryContainer}>
 // //               {roomTypes.map((category, index) => (
@@ -918,7 +918,7 @@
 // //         <TouchableOpacity onPress={() => navigation.goBack()}>
 // //           <Icon name="arrow-left" size={24} color="#fff" />
 // //         </TouchableOpacity>
-        
+
 // //         <View style={styles.headerInfo}>
 // //           <Text style={styles.headerTitle}>Guest Room</Text>
 // //           {userRole ? (
@@ -933,7 +933,7 @@
 // //             <Text style={styles.noRole}>No Role Detected</Text>
 // //           )}
 // //         </View>
-        
+
 // //         <TouchableOpacity>
 // //           <Icon name="bell-outline" size={24} color="#fff" />
 // //         </TouchableOpacity>
@@ -1316,12 +1316,12 @@
 
 // export default function home({ navigation }) {
 //   const { user, isAuthenticated, logout } = useAuth();
-  
+
 //   // Use user from global auth context
 //   const userRole = user?.role;
 //   const userName = user?.name;
 //   const userEmail = user?.email;
-  
+
 //   const [showWelcome, setShowWelcome] = useState(true);
 //   const [roomTypes, setRoomTypes] = useState([]);
 //   const [loading, setLoading] = useState(false);
@@ -1334,9 +1334,9 @@
 //       console.log('🚫 No authenticated user found in Home');
 //       return;
 //     }
-    
+
 //     console.log('🏠 Home mounted with user:', user);
-    
+
 //     if (isAdminUser()) {
 //       fetchRoomTypes();
 //     }
@@ -1364,7 +1364,7 @@
 //       setError(null);
 //       const types = await roomService.getRoomTypes();
 //       console.log("Fetched room types:", types);
-      
+
 //       // Transform the data to match your existing structure
 //       const transformedTypes = types.map(type => ({
 //         id: type.id,
@@ -1373,7 +1373,7 @@
 //         priceMember: type.priceMember,
 //         priceGuest: type.priceGuest,
 //       }));
-      
+
 //       setRoomTypes(transformedTypes);
 //       if (transformedTypes.length > 0) {
 //         setActiveCategory(0);
@@ -1381,7 +1381,7 @@
 //     } catch (err) {
 //       console.error('Error fetching room types:', err);
 //       setError(err.message);
-      
+
 //       // Handle authentication errors
 //       if (err.message.includes('Authentication failed') || err.message.includes('No authentication token')) {
 //         Alert.alert(
@@ -1471,7 +1471,7 @@
 //       );
 //       return;
 //     }
-    
+
 //     setActiveCategory(index);
 //     navigation.navigate('details', { 
 //       roomType: category
@@ -1560,7 +1560,7 @@
 //       return (
 //         <>
 //           <Text style={styles.subHeading}>Room Categories</Text>
-          
+
 //           {roomTypes.length > 0 ? (
 //             <View style={styles.categoryContainer}>
 //               {roomTypes.map((category, index) => (
@@ -1619,7 +1619,7 @@
 //         <TouchableOpacity onPress={() => navigation.goBack()}>
 //           <Icon name="arrow-left" size={24} color="#fff" />
 //         </TouchableOpacity>
-        
+
 //         <View style={styles.headerInfo}>
 //           <Text style={styles.headerTitle}>Guest Room</Text>
 //           {userRole ? (
@@ -1634,7 +1634,7 @@
 //             <Text style={styles.noRole}>No Role Detected</Text>
 //           )}
 //         </View>
-        
+
 //         <TouchableOpacity onPress={handleLogout}>
 //           <Icon name="logout" size={24} color="#fff" />
 //         </TouchableOpacity>
@@ -1988,6 +1988,8 @@
 // });
 
 // screens/Home.js
+
+//2nd
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -2000,6 +2002,7 @@ import {
   Image,
   RefreshControl,
   Dimensions,
+  ImageBackground,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { roomService } from '../../services/roomService';
@@ -2018,15 +2021,15 @@ const features = [
   { icon: "credit-card-outline", label: "E-Payment" },
   { icon: "room-service-outline", label: "Room Service" },
   { icon: "atm", label: "ATM" },
-  { icon: "account-group", label: "Club Facilities" }, 
+  { icon: "account-group", label: "Club Facilities" },
 ];
 
 export default function home({ navigation }) {
   const { user, isAuthenticated, logout } = useAuth();
-  
+
   const userRole = user?.role;
   const userName = user?.name;
-  
+
   const [showWelcome, setShowWelcome] = useState(true);
   const [roomTypes, setRoomTypes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -2063,11 +2066,11 @@ export default function home({ navigation }) {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log('📡 Fetching room types for user:', userRole);
       const types = await roomService.getRoomTypes();
       console.log("✅ Fetched room types:", types);
-      
+
       if (types && Array.isArray(types)) {
         // Transform the data with images
         const transformedTypes = types.map(type => ({
@@ -2080,7 +2083,7 @@ export default function home({ navigation }) {
           description: `Premium ${type.type} accommodation`, // You can customize this
           originalData: type
         }));
-        
+
         setRoomTypes(transformedTypes);
         if (transformedTypes.length > 0) {
           setActiveCategory(0);
@@ -2092,17 +2095,22 @@ export default function home({ navigation }) {
       console.error('❌ Error fetching room types:', err);
       const errorMessage = err.message || 'Failed to load room types';
       setError(errorMessage);
-      
-      if (errorMessage.includes('Authentication failed') || 
-          errorMessage.includes('No authentication token') ||
-          errorMessage.includes('401')) {
+
+      if (errorMessage.includes('Authentication failed') ||
+        errorMessage.includes('No authentication token') ||
+        errorMessage.includes('401')) {
+        // Clear auth state and reset navigation stack
+        await logout();
         Alert.alert(
           'Session Expired',
           'Please login again to continue.',
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('LoginScr')
+              onPress: () => navigation.reset({
+                index: 0,
+                routes: [{ name: 'LoginScr' }],
+              })
             }
           ]
         );
@@ -2144,11 +2152,11 @@ export default function home({ navigation }) {
 
       const timer = setTimeout(() => {
         Alert.alert(
-          alertTitle, 
-          welcomeMessage, 
+          alertTitle,
+          welcomeMessage,
           [
-            { 
-              text: 'Get Started', 
+            {
+              text: 'Get Started',
               onPress: () => setShowWelcome(false)
             }
           ]
@@ -2180,7 +2188,7 @@ export default function home({ navigation }) {
   const handleCategoryPress = (category, index) => {
     setActiveCategory(index);
     // Navigate to RoomDetailsScreen with the room type data
-    navigation.navigate('details', { 
+    navigation.navigate('details', {
       roomType: category
     });
   };
@@ -2191,12 +2199,15 @@ export default function home({ navigation }) {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
+        {
+          text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             await logout();
-            navigation.navigate('LoginScr');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'LoginScr' }],
+            });
           }
         }
       ]
@@ -2220,8 +2231,8 @@ export default function home({ navigation }) {
         {/* Room Image */}
         <View style={styles.imageContainer}>
           {firstImage ? (
-            <Image 
-              source={{ uri: firstImage.url }} 
+            <Image
+              source={{ uri: firstImage.url }}
               style={styles.roomImage}
               resizeMode="cover"
             />
@@ -2239,7 +2250,7 @@ export default function home({ navigation }) {
           <Text style={styles.roomName} numberOfLines={1}>
             {category.name}
           </Text>
-          
+
           {/* Pricing */}
           <View style={styles.pricingContainer}>
             {category.priceMember && (
@@ -2251,7 +2262,7 @@ export default function home({ navigation }) {
                 <Text style={styles.priceLabel}>Member</Text>
               </View>
             )}
-            
+
             {category.priceGuest && (
               <View style={styles.priceRow}>
                 <Icon name="account-outline" size={14} color="#666" />
@@ -2327,9 +2338,9 @@ export default function home({ navigation }) {
             {roomTypes.length} type{roomTypes.length !== 1 ? 's' : ''} available
           </Text>
         </View>
-        
-        <ScrollView 
-          horizontal 
+
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.roomTypesScroll}
           contentContainerStyle={styles.roomTypesContainer}
@@ -2350,9 +2361,12 @@ export default function home({ navigation }) {
           <Text style={styles.accessDeniedText}>
             Please login to access room information.
           </Text>
-          <TouchableOpacity 
-            style={styles.loginButton} 
-            onPress={() => navigation.navigate('LoginScr')}
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => navigation.reset({
+              index: 0,
+              routes: [{ name: 'LoginScr' }],
+            })}
           >
             <Text style={styles.loginButtonText}>Go to Login</Text>
           </TouchableOpacity>
@@ -2364,8 +2378,8 @@ export default function home({ navigation }) {
   };
 
   return (
-    <ScrollView 
-      style={styles.container} 
+    <ScrollView
+      style={styles.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
@@ -2377,11 +2391,11 @@ export default function home({ navigation }) {
       }
     >
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        
+
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Guest Rooms</Text>
           {userRole ? (
@@ -2396,21 +2410,59 @@ export default function home({ navigation }) {
             <Text style={styles.noRole}>Not Logged In</Text>
           )}
         </View>
-        
+
         <TouchableOpacity onPress={handleLogout}>
           <Icon name="logout" size={24} color="#fff" />
         </TouchableOpacity>
-      </View>
+      </View> */}
+      {/* Image-based Notch Header */}
+      <ImageBackground
+        source={require('../../assets/notch.jpg')}
+        style={styles.notch}
+        imageStyle={styles.notchImage}
+      >
+        <View style={styles.notchContent}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.navigate('start')}
+            activeOpacity={0.7}
+          >
+            <Icon name="arrow-left" size={28} color="#000" />
+          </TouchableOpacity>
 
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>Guest Room</Text>
+            {userRole ? (
+              <View style={styles.roleContainer}>
+                <Icon name={getRoleIcon()} size={14} color="#000" />
+                <Text style={styles.userRole}>{getRoleDisplayName()}</Text>
+                {isAdminUser() && (
+                  <Icon name="shield-check" size={12} color="#4CAF50" style={styles.adminBadge} />
+                )}
+              </View>
+            ) : (
+              <Text style={styles.noRole}>Not Logged In</Text>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => {/* Add notification handler */ }}
+            activeOpacity={0.7}
+          >
+            <Icon name="bell" size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
       {/* Welcome Section */}
       <View style={styles.welcomeSection}>
         <Text style={styles.welcomeTitle}>Enjoy Your Stay With Us</Text>
         <Text style={styles.welcomeText}>
-          {isAdminUser() 
+          {isAdminUser()
             ? "Manage and browse all available room types for club members and guests."
             : isMemberUser()
-            ? "Discover our premium guest rooms with exclusive member benefits and pricing."
-            : "Explore our comfortable and well-equipped guest rooms for your perfect stay."
+              ? "Discover our premium guest rooms with exclusive member benefits and pricing."
+              : "Explore our comfortable and well-equipped guest rooms for your perfect stay."
           }
         </Text>
       </View>
@@ -2420,20 +2472,21 @@ export default function home({ navigation }) {
 
       {/* Features Section */}
       <View style={styles.featuresSection}>
-        <Text style={styles.featureTitle}>PREMIUM AMENITIES</Text>
+        <Text style={styles.featureTitle}>WHY OUR GUEST ROOMS</Text>
         <Text style={styles.featureSubtitle}>
-          All club amenities available for your comfort
+          All club activities available on check in.
         </Text>
         <View style={styles.featuresGrid}>
           {features.map((item, index) => (
             <View key={index} style={styles.featureItem}>
-              <Icon name={item.icon} size={26} color="#a3875c" />
+              <View style={styles.featureIconBox}>
+                <Icon name={item.icon} size={32} color="#b8976d" />
+              </View>
               <Text style={styles.featureText}>{item.label}</Text>
             </View>
           ))}
         </View>
       </View>
-
       {/* Policy Section */}
       <View style={styles.policySection}>
         <Text style={styles.policyTitle}>Guest Room Policy</Text>
@@ -2465,9 +2518,9 @@ export default function home({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#fff" 
+  container: {
+    flex: 1,
+    backgroundColor: "#FEF9F3"
   },
   header: {
     backgroundColor: "#b48a64",
@@ -2479,12 +2532,68 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
+  notch: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomEndRadius: 30,
+    borderBottomStartRadius: 30,
+    overflow: 'hidden',
+    minHeight: 140,
+  },
+  notchImage: {
+    resizeMode: 'cover',
+  },
+  notchContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerInfo: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: "#000",
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  roleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userRole: {
+    color: "#000",
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  adminBadge: {
+    marginLeft: 6,
+  },
+  noRole: {
+    color: "#ff6b6b",
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  notificationButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerInfo: {
     alignItems: 'center',
   },
-  headerTitle: { 
-    color: "#fff", 
-    fontSize: 18, 
+  headerTitle: {
+    color: "black",
+    fontSize: 18,
     fontWeight: "bold",
     marginBottom: 2,
   },
@@ -2493,7 +2602,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   userRole: {
-    color: "#fff", 
+    color: "black",
     fontSize: 12,
     marginLeft: 4,
   },
@@ -2501,7 +2610,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   noRole: {
-    color: "#ff6b6b", 
+    color: "#ff6b6b",
     fontSize: 12,
     fontStyle: 'italic',
   },
@@ -2512,9 +2621,9 @@ const styles = StyleSheet.create({
     margin: 15,
     borderRadius: 15,
   },
-  welcomeTitle: { 
-    fontSize: 18, 
-    fontWeight: "bold", 
+  welcomeTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
     marginBottom: 8,
     color: '#333',
     textAlign: 'center',
@@ -2748,6 +2857,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   // Features and policy styles
+  // Features and policy styles
   featuresSection: {
     backgroundColor: "#fff",
     marginHorizontal: 15,
@@ -2759,17 +2869,19 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  featureTitle: { 
-    fontSize: 16, 
-    fontWeight: "bold", 
-    color: "#b48a64",
+  featureTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
     textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 8,
+    letterSpacing: 1,
   },
-  featureSubtitle: { 
-    color: "#666", 
-    marginBottom: 15,
+  featureSubtitle: {
+    color: "#666",
+    marginBottom: 25,
     textAlign: 'center',
+    fontSize: 14,
   },
   featuresGrid: {
     flexDirection: "row",
@@ -2779,13 +2891,25 @@ const styles = StyleSheet.create({
   featureItem: {
     width: "30%",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 25,
   },
-  featureText: { 
-    fontSize: 13, 
-    color: "#555", 
-    marginTop: 5, 
-    textAlign: "center" 
+  featureIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: "#b8976d",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    marginBottom: 10,
+  },
+  featureText: {
+    fontSize: 12,
+    color: "#333",
+    marginTop: 5,
+    textAlign: "center",
+    fontWeight: "500",
   },
   policySection: {
     backgroundColor: "#fff8f2",

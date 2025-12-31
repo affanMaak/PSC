@@ -69,7 +69,7 @@
 //         },
 //         timeout: 100000
 //       });
-      
+
 //       console.log('✅ OTP sent response:', response.data);
 //       setOtpSent(true);
 //       Alert.alert('Success', 'OTP sent to your registered email.');
@@ -89,11 +89,11 @@
 //   const handleVerifyOTP = async () => {
 //     if (!otp) return Alert.alert('Error', 'Please enter the OTP.');
 //     if (!memberId) return Alert.alert('Error', 'Member ID is required.');
-    
+
 //     setLoading(true);
 //     try {
 //       console.log('🔐 Verifying OTP:', { memberId, otp });
-      
+
 //       const res = await axios.post(`${BASE_URL}/login/member`, {
 //         memberID: memberId,
 //         otp: otp,
@@ -103,9 +103,9 @@
 //         },
 //         timeout: 10000
 //       });
-      
+
 //       console.log('✅ OTP verification response:', res.data);
-      
+
 //       let tokens = {};
 //       let userInfo = {};
 
@@ -140,19 +140,19 @@
 //       }
 
 //       console.log('📝 UserInfo to be stored:', userInfo);
-      
+
 //       // Store tokens and user data
 //       await storeAuthData(tokens, userInfo);
-      
+
 //       // Update global auth state
 //       login(userInfo);
-      
+
 //       Alert.alert('Success', 'Login successful!');
 //       console.log('✅ Tokens saved and global auth updated');
-      
+
 //       // Navigate to start without params
 //       navigation.navigate('start');
-      
+
 //     } catch (err) {
 //       console.error('❌ OTP verification error:', {
 //         message: err.message,
@@ -163,9 +163,9 @@
 //           data: err.config?.data
 //         }
 //       });
-      
+
 //       let errorMessage = 'Invalid OTP. Please try again.';
-      
+
 //       if (err.response?.status === 401) {
 //         errorMessage = 'Invalid OTP. Please check and try again.';
 //       } else if (err.response?.status === 404) {
@@ -179,7 +179,7 @@
 //       }
 
 //       authContext.login(userData);
-      
+
 //       Alert.alert('Error', errorMessage);
 //     } finally {
 //       setLoading(false);
@@ -193,7 +193,7 @@
 //     setLoading(true);
 //     try {
 //       console.log('🔐 Admin login attempt:', { email });
-      
+
 //       const res = await axios.post(`${BASE_URL}/login/admin`, { 
 //         email, 
 //         password 
@@ -203,9 +203,9 @@
 //         },
 //         timeout: 10000
 //       });
-      
+
 //       console.log('✅ Admin login response:', res.data);
-      
+
 //       let tokens = {};
 //       let userInfo = {};
 
@@ -238,24 +238,24 @@
 //       }
 
 //       await storeAuthData(tokens, userInfo);
-      
+
 //       // Update global auth state
 //       login(userInfo);
-      
+
 //       Alert.alert('Success', 'Admin login successful!');
 //       console.log('✅ Admin tokens saved and global auth updated');
-      
+
 //       navigation.navigate('start');
-      
+
 //     } catch (err) {
 //       console.error('❌ Admin login error:', {
 //         message: err.message,
 //         status: err.response?.status,
 //         data: err.response?.data
 //       });
-      
+
 //       let errorMessage = 'Login failed. Please try again.';
-      
+
 //       if (err.response?.status === 401) {
 //         errorMessage = 'Invalid email or password.';
 //       } else if (err.response?.status === 404) {
@@ -267,7 +267,7 @@
 //       }
 
 //       authContext.login(userData);
-      
+
 //       Alert.alert('Error', errorMessage);
 //     } finally {
 //       setLoading(false);
@@ -491,20 +491,20 @@
 // export default LoginScr;
 
 import React, { useState } from 'react';
-import { 
-  ImageBackground, 
-  Image, 
-  StyleSheet, 
-  SafeAreaView, 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  KeyboardAvoidingView, 
-  Platform, 
+import {
+  ImageBackground,
+  Image,
+  StyleSheet,
+  SafeAreaView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   Alert,
-  ActivityIndicator 
+  ActivityIndicator
 } from 'react-native';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode'; // Use library instead of custom decoder
@@ -527,6 +527,38 @@ const LoginScr = ({ navigation }) => {
   const BASE_URL = `${getBaseUrl()}/auth`;
 
   // === MEMBER LOGIN ===
+  // Helper function to mask email
+  const maskEmail = (email) => {
+    if (!email || typeof email !== 'string') return '***@***';
+
+    const [localPart, domain] = email.split('@');
+    if (!localPart || !domain) return '***@***';
+
+    // Mask local part (show first 3 and last 1 character)
+    let maskedLocal;
+    if (localPart.length <= 4) {
+      // For very short emails, show first char and mask the rest
+      maskedLocal = localPart[0] + '*'.repeat(localPart.length - 1);
+    } else {
+      const firstThree = localPart.substring(0, 3);
+      const lastOne = localPart.substring(localPart.length - 1);
+      const middleLength = localPart.length - 4;
+      maskedLocal = firstThree + '*'.repeat(middleLength) + lastOne;
+    }
+
+    // Mask domain completely to show only ***
+    const domainParts = domain.split('.');
+    let maskedDomain = '***';
+
+    // Preserve the extension if it exists
+    if (domainParts.length > 1) {
+      const extension = domainParts.slice(1).join('.');
+      maskedDomain += '.' + extension;
+    }
+
+    return `${maskedLocal}@${maskedDomain}`;
+  };
+
   const handleSendOTP = async () => {
     if (!memberId.trim()) {
       Alert.alert('Error', 'Please enter your Member ID.');
@@ -537,22 +569,63 @@ const LoginScr = ({ navigation }) => {
     try {
       console.log('📤 Sending OTP for member:', memberId);
       const response = await axios.post(
-        `${BASE_URL}/sendOTP/member`, 
+        `${BASE_URL}/sendOTP/member`,
         { memberID: memberId.trim() },
         {
           headers: { 'client-type': 'mobile' },
           timeout: 10000
         }
       );
-      
+
       console.log('✅ OTP sent response:', response.data);
+
+      // Extract email from response - the email is in 'accepted' array or 'envelope.to' array
+      const userEmail = response.data?.accepted?.[0] ||
+        response.data?.envelope?.to?.[0] ||
+        response.data?.email ||
+        response.data?.data?.email;
+
+      console.log('📧 Extracted email:', userEmail);
+      const maskedEmail = maskEmail(userEmail);
+      console.log('🔒 Masked email:', maskedEmail);
+
       setOtpSent(true);
-      Alert.alert('Success', 'OTP sent to your registered email.');
+
+      // Display success alert with masked email and expiry info
+      Alert.alert(
+        'Success',
+        `OTP sent to your registered email "${maskedEmail}"\n\nNote: OTP will expire after 1 hour.`
+      );
     } catch (err) {
       console.error('❌ OTP send error:', err);
-      const errorMessage = err.response?.data?.message || 
-                          err.message || 
-                          'Failed to send OTP. Please try again.';
+
+      // Check if the member is blocked or deactivated (403 Forbidden)
+      if (err.response?.status === 403) {
+        const message = err.response?.data?.message || 'Your account access has been restricted.';
+        Alert.alert(
+          '⚠️ Account Restricted',
+          message + '\n\nIf you believe this is an error, please visit the club office or call the administration desk.',
+          [
+            { text: 'OK', style: 'cancel' }
+          ]
+        );
+        return;
+      }
+
+      // Handle member not found
+      if (err.response?.status === 400 || err.response?.status === 404) {
+        Alert.alert(
+          'Member Not Found',
+          'The Member ID you entered was not found. Please check and try again.',
+          [{ text: 'OK', style: 'cancel' }]
+        );
+        return;
+      }
+
+      // Generic error handling
+      const errorMessage = err.response?.data?.message ||
+        err.message ||
+        'Failed to send OTP. Please try again.';
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
@@ -568,11 +641,11 @@ const LoginScr = ({ navigation }) => {
       Alert.alert('Error', 'Member ID is required.');
       return;
     }
-    
+
     setLoading(true);
     try {
       console.log('🔐 Verifying OTP:', { memberId, otp });
-      
+
       const response = await axios.post(
         `${BASE_URL}/login/member`,
         {
@@ -584,11 +657,11 @@ const LoginScr = ({ navigation }) => {
           timeout: 10000
         }
       );
-      
+
       console.log('✅ OTP verification response:', response.data);
-      
+
       const { access_token, refresh_token } = response.data;
-      
+
       if (!access_token || !refresh_token) {
         throw new Error('No tokens received from server');
       }
@@ -608,28 +681,30 @@ const LoginScr = ({ navigation }) => {
         name: decodedToken?.name || 'Member',
         email: decodedToken?.email || '',
         memberId: decodedToken?.id || memberId.trim(),
+        membershipNo: decodedToken?.membershipNo || decodedToken?.id || memberId.trim(),
+        status: decodedToken?.status || 'ACTIVE', // Include member status for booking restrictions
         ...(decodedToken?.id && { id: decodedToken.id })
       };
 
       console.log('📝 UserInfo to be stored:', userInfo);
-      
+
       // Store tokens and user data
       await storeAuthData({ access_token, refresh_token }, userInfo);
-      
+
       // Update global auth state
       login(userInfo, access_token, refresh_token);
-      
+
       Alert.alert('Success', 'Login successful!');
       console.log('✅ Tokens saved and global auth updated');
-      
+
       // Navigate to start
       navigation.navigate('start');
-      
+
     } catch (err) {
       console.error('❌ OTP verification error:', err);
-      
+
       let errorMessage = 'Invalid OTP. Please try again.';
-      
+
       if (err.response?.status === 401) {
         errorMessage = 'Invalid OTP. Please check and try again.';
       } else if (err.response?.status === 404) {
@@ -658,11 +733,11 @@ const LoginScr = ({ navigation }) => {
     setLoading(true);
     try {
       console.log('🔐 Admin login attempt:', { email });
-      
+
       const response = await axios.post(
-        `${BASE_URL}/login/admin`, 
-        { 
-          email: email.trim(), 
+        `${BASE_URL}/login/admin`,
+        {
+          email: email.trim(),
           password: password.trim()
         },
         {
@@ -670,11 +745,11 @@ const LoginScr = ({ navigation }) => {
           timeout: 10000
         }
       );
-      
+
       console.log('✅ Admin login response:', response.data);
-      
+
       const { access_token, refresh_token } = response.data;
-      
+
       if (!access_token || !refresh_token) {
         throw new Error('No tokens received from server');
       }
@@ -697,20 +772,20 @@ const LoginScr = ({ navigation }) => {
       };
 
       await storeAuthData({ access_token, refresh_token }, userInfo);
-      
+
       // Update global auth state
       login(userInfo, access_token, refresh_token);
-      
+
       Alert.alert('Success', 'Admin login successful!');
       console.log('✅ Admin tokens saved and global auth updated');
-      
+
       navigation.navigate('start');
-      
+
     } catch (err) {
       console.error('❌ Admin login error:', err);
-      
+
       let errorMessage = 'Login failed. Please try again.';
-      
+
       if (err.response?.status === 401) {
         errorMessage = 'Invalid email or password.';
       } else if (err.response?.status === 404) {
@@ -737,33 +812,33 @@ const LoginScr = ({ navigation }) => {
   };
 
   // In your login/signup success handler:
-const handleLoginSuccess = async (responseData) => {
-  try {
-    const { access_token, refresh_token, user } = responseData;
-    
-    // Store auth tokens and user data
-    await storeAuthData(
-      { access_token, refresh_token },
-      user
-    );
-    
-    console.log('✅ Login successful, stored user:', user);
-    
-    // Navigate to home
-    navigation.navigate('Home');
-  } catch (error) {
-    console.error('Login storage error:', error);
-    Alert.alert('Error', 'Failed to save login information');
-  }
-};
+  const handleLoginSuccess = async (responseData) => {
+    try {
+      const { access_token, refresh_token, user } = responseData;
+
+      // Store auth tokens and user data
+      await storeAuthData(
+        { access_token, refresh_token },
+        user
+      );
+
+      console.log('✅ Login successful, stored user:', user);
+
+      // Navigate to home
+      navigation.navigate('Home');
+    } catch (error) {
+      console.error('Login storage error:', error);
+      Alert.alert('Error', 'Failed to save login information');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
         >
@@ -838,7 +913,7 @@ const handleLoginSuccess = async (responseData) => {
                         )}
                       </TouchableOpacity>
 
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         onPress={() => {
                           setOtpSent(false);
                           setOtp('');
@@ -899,14 +974,22 @@ const handleLoginSuccess = async (responseData) => {
                 </>
               )}
 
-              <TouchableOpacity 
-                onPress={toggleMode} 
+              <TouchableOpacity
+                onPress={toggleMode}
                 style={styles.modeToggle}
                 disabled={loading}
               >
                 <Text style={styles.modeToggleText}>
                   {mode === 'member' ? 'Login as Admin?' : 'Login as Member?'}
                 </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.aboutButton}
+                onPress={() => navigation.navigate('about')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.aboutIcon}>ℹ️</Text>
+                <Text style={styles.aboutText}>About PSC</Text>
               </TouchableOpacity>
             </View>
           </ImageBackground>
@@ -928,7 +1011,7 @@ const styles = StyleSheet.create({
   logoContainer: { alignItems: 'center' },
   logo: { width: 400, height: 300, opacity: 0.6 },
   welcome: {
-    marginTop: 100,
+    marginTop: 70,
     alignItems: 'center',
     width: '80%',
   },
@@ -972,17 +1055,39 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
   modeToggle: { marginTop: 20 },
-  modeToggleText: { 
-    color: 'white', 
-    fontWeight: 'bold', 
+  modeToggleText: {
+    color: 'white',
+    fontWeight: 'bold',
     fontSize: 16,
-    textDecorationLine: 'underline' 
+    textDecorationLine: 'underline'
   },
   backLink: { marginTop: 15 },
-  backLinkText: { 
-    color: 'white', 
-    fontSize: 14, 
-    textDecorationLine: 'underline' 
+  backLinkText: {
+    color: 'white',
+    fontSize: 14,
+    textDecorationLine: 'underline'
+  },
+  aboutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginTop: 30,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  aboutIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  aboutText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });
 

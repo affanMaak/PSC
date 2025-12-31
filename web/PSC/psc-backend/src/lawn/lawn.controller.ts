@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -24,7 +25,7 @@ import { LawnDto } from './dtos/lawn.dto';
 
 @Controller('lawn')
 export class LawnController {
-  constructor(private lawn: LawnService) {}
+  constructor(private lawn: LawnService) { }
 
   // lawn cateogry
   @UseGuards(JwtAccGuard)
@@ -41,7 +42,7 @@ export class LawnController {
   async getLawnNames(@Query() catId: { catId: string }) {
     return this.lawn.getLawnNames(Number(catId.catId));
   }
-  
+
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @UseInterceptors(FileFieldsInterceptor([{ name: 'files', maxCount: 5 }]))
@@ -60,7 +61,7 @@ export class LawnController {
       files?.files || [],
     );
   }
-  
+
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
   @Patch('update/lawn/category')
@@ -106,7 +107,7 @@ export class LawnController {
   async deleteLawnCategory(@Query('catID') catID: string) {
     return this.lawn.deleteLawnCategory(Number(catID));
   }
-  
+
   // lawns
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN)
@@ -129,14 +130,14 @@ export class LawnController {
   async getLawns() {
     return this.lawn.getLawns();
   }
-  
+
   @UseGuards(JwtAccGuard, RolesGuard)
   @Roles(RolesEnum.SUPER_ADMIN, RolesEnum.ADMIN)
   @Get('get/lawns/calendar')
   async getCalendarLawns() {
     return this.lawn.getCalendarLawns();
   }
-  
+
   // @UseGuards(JwtAccGuard, RolesGuard)
   // @Roles(RolesEnum.SUPER_ADMIN)
   @UseGuards(JwtAccGuard)
@@ -149,5 +150,30 @@ export class LawnController {
   @Delete('delete/lawn')
   async deleteLawn(@Query('id') id: string) {
     return this.lawn.deleteLawn(Number(id));
+  }
+
+  // ─────────────────────────── LAWN RESERVATIONS ───────────────────────────
+  @UseGuards(JwtAccGuard, RolesGuard)
+  @Roles(RolesEnum.SUPER_ADMIN, RolesEnum.ADMIN)
+  @Patch('reserve/lawns')
+  async reserveLawns(
+    @Req() req,
+    @Body()
+    payload: {
+      lawnIds: number[];
+      reserve: boolean;
+      reserveFrom?: string;
+      reserveTo?: string;
+      timeSlot: string;
+    },
+  ) {
+    return await this.lawn.reserveLawns(
+      payload.lawnIds,
+      payload.reserve,
+      req.user.id,
+      payload.timeSlot,
+      payload.reserveFrom,
+      payload.reserveTo,
+    );
   }
 }

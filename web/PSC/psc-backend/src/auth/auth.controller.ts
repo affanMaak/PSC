@@ -70,18 +70,22 @@ export class AuthController {
         const admin = await this.authService.loginAdmin(payload);
         // return jwt cookie if clientType == web || return jwt/json object if clientType == native/mobile
         const { access_token, refresh_token } =
-            await this.authService.generateTokens({...admin, permissions: Array.isArray(admin.permissions)? admin.permissions : [] });
+            await this.authService.generateTokens({ ...admin, permissions: Array.isArray(admin.permissions) ? admin.permissions : [] });
         if (clientType === 'web') {
             res.cookie('access_token', access_token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: true,
+                // secure: process.env.NODE_ENV === 'production',
+                // sameSite: true,
+                sameSite: 'lax',
+                secure: false,
                 maxAge: 24 * 60 * 60 * 1000, // 1 day
             });
             res.cookie('refresh_token', refresh_token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: true,
+                sameSite: 'lax',
+                secure: false,
+                // secure: process.env.NODE_ENV === 'production',
+                // sameSite: true,
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
             return res.status(200).json({ message: 'Login successful' });
@@ -121,7 +125,7 @@ export class AuthController {
             permissions?: any[];
         };
         const { access_token, refresh_token } =
-            await this.authService.refreshTokens({ id, name, email, role, permissions: Array.isArray(permissions)? permissions : [] });
+            await this.authService.refreshTokens({ id, name, email, role, permissions: Array.isArray(permissions) ? permissions : [] });
         // for web
         if (clientType === 'web') {
             res.cookie('access_token', access_token, {
@@ -147,8 +151,8 @@ export class AuthController {
     async userWho(
         @Req() req: { user: { id: string | undefined; role: string | undefined, permissions: any[] } },
     ) {
-        if(req?.user?.role != RolesEnum.ADMIN){
-            if(req?.user?.role != RolesEnum.SUPER_ADMIN){
+        if (req?.user?.role != RolesEnum.ADMIN) {
+            if (req?.user?.role != RolesEnum.SUPER_ADMIN) {
 
                 const activeUser = await this.authService.checkActive(req.user?.id!);
                 if (!activeUser) {
@@ -159,14 +163,23 @@ export class AuthController {
                 }
             }
         }
-        return { id: req.user?.id, role: req.user?.role, permissions: req.user?.permissions };
-    }
+        return { id: req.user?.id, role: req.user?.role, permissions: req.user?.permissions };
+    }
 
     // members
 
     @Post('sendOTP/member')
     async sendOTP(@Body() payload: { memberID: string }) {
         const member = await this.authService.getMember(payload?.memberID);
+
+        // Check if member is blocked - prevent login
+        if (member.Status === 'BLOCKED') {
+            throw new HttpException(
+                'Your account has been blocked. Please contact the club administration for assistance.',
+                HttpStatus.FORBIDDEN,
+            );
+        }
+
         // generate an OTP and combine with OTP_MSG
         const otp = generateRandomNumber(4) || 1234;
         // store in member table

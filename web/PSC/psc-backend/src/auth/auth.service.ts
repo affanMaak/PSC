@@ -179,7 +179,7 @@ export class AuthService {
     }
 
     async sendOTP(to: string, subject: string, body: string) {
-        return await this.mailer.sendMail(to, subject, body);
+        return await this.mailer.sendMail(to, [],subject, body);
     }
     async storeOTP(memberID: string, otp: number) {
         const otpSaved = await this.prisma.member.update({

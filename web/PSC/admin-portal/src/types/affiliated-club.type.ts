@@ -5,6 +5,7 @@ export interface AffiliatedClub {
     contactNo?: string;
     email?: string;
     description?: string;
+    image?: string;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -32,6 +33,8 @@ export interface CreateAffiliatedClubDto {
     contactNo?: string;
     email?: string;
     description?: string;
+    image?: string; // URL
+    file?: File; // For upload
     isActive?: boolean;
 }
 

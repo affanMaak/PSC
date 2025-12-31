@@ -8,87 +8,92 @@ import {
   ScrollView,
   TouchableOpacity,
   ImageBackground,
-  Image
+  Image,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const about = () => {
+const About = ({ navigation }) => {
   return (
     <>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar backgroundColor="#fffaf2" barStyle="dark-content" />
       <View style={styles.container}>
-
-        
+        {/* Notch Header */}
         <ImageBackground
-          source={require('../assets/logo.jpeg')}
+          source={require('../assets/notch.jpg')}
           style={styles.notch}
           imageStyle={styles.notchImage}
         >
-          <TouchableOpacity style={styles.backButton}>
-            <Text style={styles.backIcon}>←</Text>
+          {/* Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Icon name="arrow-back" size={28} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.ctext}>About PSC</Text>
+
+          {/* Title */}
+          <Text style={styles.headerText}>About PSC</Text>
         </ImageBackground>
 
+        {/* Scrollable Content */}
         <SafeAreaView style={styles.safeArea}>
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             {/* About PSC Card */}
             <View style={styles.card}>
               <Text style={styles.contentText}>
-                Established in 1863 as the "Games Club", the Peshawar Services Club (PSC) has undergone various transformations, from being the HQ for the Vale Hunt Club in 1870 to "Peshawar Club" in 1899. Since 1947, its name changed multiple times until settling on "Peshawar Services Club" in 2011.
+                Established in 1863 as the "Games Club", the Peshawar Services
+                Club (PSC) has undergone various transformations, from being the
+                HQ for the Vale Hunt Club in 1870 to "Peshawar Club" in 1899.
+                Since 1947, its name changed multiple times until settling on
+                "Peshawar Services Club" in 2011.
               </Text>
               <Text style={styles.contentText}>
-                Spanning acres of land, PSC offers its members a place for socializing, various amenities, including indoor and outdoor sports facilities, dining areas, and elegant accommodations.
+                Spanning acres of land, PSC offers its members a place for
+                socializing, various amenities, including indoor and outdoor
+                sports facilities, dining areas, and elegant accommodations.
               </Text>
             </View>
 
-            {/* Down the Memory Lane Section */}
+            {/* Divider */}
             <View style={styles.lineContainer}>
               <View style={styles.line} />
               <Text style={styles.lineText}>Down the Memory Lane</Text>
               <View style={styles.line} />
             </View>
 
-            {/* Image 1 */}
-            <View style={styles.imageCard}>
-              <Image
-                source={require('../assets/logo.jpeg')}
-                style={styles.memoryImage}
-                resizeMode="cover"
-              />
-              <Text style={styles.imageCaption}>Club Premier View from Mall Road (1863)</Text>
-            </View>
-
-            {/* Image 2 */}
-            <View style={styles.imageCard}>
-              <Image
-                source={require('../assets/logo.jpeg')}
-                style={styles.memoryImage}
-                resizeMode="cover"
-              />
-              <Text style={styles.imageCaption}>Peshawar Vale Hunt (1880)</Text>
-            </View>
-
-            {/* Image 3 */}
-            <View style={styles.imageCard}>
-              <Image
-                source={require('../assets/logo.jpeg')}
-                style={styles.memoryImage}
-                resizeMode="cover"
-              />
-              <Text style={styles.imageCaption}>Peshawar Club Limited (1940)</Text>
-            </View>
-
-            {/* Image 4 */}
-            <View style={styles.imageCard}>
-              <Image
-                source={require('../assets/logo.jpeg')}
-                style={styles.memoryImage}
-                resizeMode="cover"
-              />
-              <Text style={styles.imageCaption}>Peshawar Service Club (2023)</Text>
-            </View>
-
+            {/* Image Cards */}
+            {[
+              {
+                src: require('../assets/img1.jpeg'),
+                caption: 'Club Premier View from Mall Road (1863)',
+              },
+              {
+                src: require('../assets/img2.jpeg'),
+                caption: 'Peshawar Vale Hunt (1880)',
+              },
+              {
+                src: require('../assets/img3.jpeg'),
+                caption: 'Peshawar Club Limited (1940)',
+              },
+              {
+                src: require('../assets/img4.jpeg'),
+                caption: 'Peshawar Services Club (2023)',
+              },
+            ].map((item, index) => (
+              <View style={styles.imageCard} key={index}>
+                <Image
+                  source={item.src}
+                  style={styles.memoryImage}
+                  resizeMode="cover"
+                />
+                <Text style={styles.imageCaption}>{item.caption}</Text>
+              </View>
+            ))}
           </ScrollView>
         </SafeAreaView>
       </View>
@@ -101,41 +106,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
+
+  /* Fixed height notch header */
   notch: {
-    paddingTop: 60,
-    paddingBottom: 20,
-    borderBottomEndRadius: 30,
-    borderBottomStartRadius: 30,
+    height: 120, // 🔒 Fixed height (doesn't grow/shrink)
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
+    paddingHorizontal: 60, // space for arrow and title
+    borderBottomEndRadius: 30,
+    borderBottomStartRadius: 30,
     overflow: 'hidden',
   },
   notchImage: {
     resizeMode: 'cover',
   },
+
+  /* Perfect horizontal alignment for arrow and title */
   backButton: {
     position: 'absolute',
     left: 20,
-    width: 40,
-    height: 40,
+    top: 0,
+    bottom: 0,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  backIcon: {
-    fontSize: 28,
-    color: '#000',
-    fontWeight: 'bold',
-  },
-  ctext: {
-    paddingBottom: 10,
+
+  headerText: {
     fontSize: 25,
     fontWeight: 'bold',
-    color: '#000000',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    color: '#000',
   },
+
   safeArea: {
     flex: 1,
   },
@@ -207,4 +208,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default about;
+export default About;

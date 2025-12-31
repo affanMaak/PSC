@@ -2,7 +2,7 @@ import { Member, Voucher, DateStatus } from "@/types/room-booking.type";
 
 export type HallBookingTime = "MORNING" | "EVENING" | "NIGHT";
 export type PricingType = "member" | "guest";
-export type PaymentStatus = "UNPAID" | "HALF_PAID" | "PAID";
+export type PaymentStatus = "UNPAID" | "HALF_PAID" | "PAID" | "TO_BILL";
 
 
 export interface HallBooking {

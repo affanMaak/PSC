@@ -113,7 +113,8 @@ export class BookingController {
     if (bookingFor === 'rooms') return this.bookingService.gBookingsRoom();
     if (bookingFor === 'halls') return this.bookingService.gBookingsHall();
     if (bookingFor === 'lawns') return this.bookingService.gBookingsLawn();
-    if (bookingFor === 'photoshoots') return this.bookingService.gBookingPhotoshoot();
+    if (bookingFor === 'photoshoots')
+      return this.bookingService.gBookingPhotoshoot();
   }
 
   @UseGuards(JwtAccGuard, RolesGuard)
@@ -132,8 +133,6 @@ export class BookingController {
     if (bookingFor === 'photoshoots')
       return this.bookingService.dBookingPhotoshoot(Number(bookID.bookID));
   }
-
-
 
   @Get('member/bookings')
   async getMemberBookings(@Query('membershipNo') membershipNo: string) {
@@ -156,11 +155,11 @@ export class BookingController {
       totalPrice,
       selectedRoomIds,
       roomTypeId,
-      paidBy= "MEMBER",
+      paidBy = 'MEMBER',
       guestName,
       guestContact,
     } = payload.bookingData;
-    console.log(payload)
+    console.log(payload);
 
     if (!membership_no) {
       throw new NotFoundException('Membership number must be provided');
@@ -210,7 +209,7 @@ export class BookingController {
       specialRequest,
       totalPrice,
 
-      paidBy= "MEMBER",
+      paidBy = 'MEMBER',
       guestName,
       guestContact,
     } = payload.bookingData;
@@ -251,13 +250,14 @@ export class BookingController {
       guestName,
       guestContact,
     };
-    console.log("data:", data)
+    console.log('data:', data);
 
     return await this.bookingService.cBookingHallMember(data);
   }
 
   @Post('member/booking/lawn')
   async memberBookingLawn(@Body() payload: any) {
+    console.log("test:", payload)
     const { membership_no } = payload.consumerInfo;
     const {
       lawnId,
@@ -265,10 +265,11 @@ export class BookingController {
       eventTime,
       eventType,
       pricingType,
+      numberOfGuests,
       specialRequest,
       totalPrice,
 
-      paidBy= "MEMBER",
+      paidBy = 'MEMBER',
       guestName,
       guestContact,
     } = payload.bookingData;
@@ -304,7 +305,7 @@ export class BookingController {
       paidAmount: totalPrice,
       pendingAmount: 0,
       paymentMode: 'ONLINE',
-
+      numberOfGuests,
       paidBy,
       guestName,
       guestContact,
@@ -324,7 +325,7 @@ export class BookingController {
       specialRequest,
       totalPrice,
 
-      paidBy= "MEMBER",
+      paidBy = 'MEMBER',
       guestName,
       guestContact,
     } = payload.bookingData;
@@ -362,12 +363,23 @@ export class BookingController {
       guestName,
       guestContact,
     };
-    console.log("data:", data)
+    console.log('data:', data);
 
     const done = await this.bookingService.cBookingPhotoshootMember(data);
     // console.log(done)
     return done;
   }
 
+  @UseGuards(JwtAccGuard)
+  @Get('member/bookings/all')
+  async memberBookings(
+    @Req() req: { user: { id: string } },
+    @Query('type') type: 'Room' | 'Hall' | 'Lawn' | 'Photoshoot',
+    @Query('membership_no') membership_no?: string
+  ) {
 
+    const memberId = membership_no ? membership_no : req.user?.id;
+    return await this.bookingService.memberBookings(memberId, type)
+
+  }
 }
